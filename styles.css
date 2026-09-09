@@ -853,3 +853,39 @@ resultsContainer.innerHTML = `
     grid-template-columns: 1fr;
   }
 }
+/* FINAL VERDICT VISIBILITY FIX */
+
+.verdict-card,
+.verdict-card * {
+  opacity: 1 !important;
+}
+
+.verdict-card {
+  background: #111827 !important;
+  color: #ffffff !important;
+}
+
+.verdict-card .eyebrow {
+  color: #aeb8ca !important;
+}
+
+.verdict-card h3 {
+  color: #ffffff !important;
+}
+
+.verdict-card > p {
+  color: #d8deea !important;
+}
+
+.verdict-card .verdict-scores > div {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.verdict-card .verdict-scores span {
+  color: #cbd5e1 !important;
+}
+
+.verdict-card .verdict-scores strong {
+  color: #ffffff !important;
+}
