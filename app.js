@@ -37,6 +37,11 @@ const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
 const compareButton = document.getElementById("compareBtn");
 const resultsContainer = document.getElementById("result");
+const playerASearch = document.getElementById("playerASearch");
+const playerBSearch = document.getElementById("playerBSearch");
+
+const playerAResults = document.getElementById("playerAResults");
+const playerBResults = document.getElementById("playerBResults");
 
 async function loadPlayers() {
   try {
@@ -94,7 +99,94 @@ async function loadPlayers() {
       return a.name.localeCompare(b.name);
     });
 
-    populatePlayerSelectors();
+    populatePlayerSelectors();setupPlayerSearch(
+  playerASearch,
+  playerAResults,
+  playerASelect
+);
+
+setupPlayerSearch(
+  playerBSearch,
+  playerBResults,
+  playerBSelect
+);
+    function setupPlayerSearch(
+  input,
+  resultsBox,
+  selectElement
+) {
+  input.addEventListener("input", () => {
+    const query = input.value
+      .trim()
+      .toLowerCase();
+
+    resultsBox.innerHTML = "";
+
+    if (query.length < 1) {
+      resultsBox.classList.remove("active");
+      return;
+    }
+
+    const matches = players
+      .filter((player) => {
+        const searchable =
+          `${player.name} ${player.position} ${player.team}`
+            .toLowerCase();
+
+        return searchable.includes(query);
+      })
+      .slice(0, 8);
+
+    if (matches.length === 0) {
+      resultsBox.innerHTML = `
+        <div class="player-search-empty">
+          No players found
+        </div>
+      `;
+
+      resultsBox.classList.add("active");
+      return;
+    }
+
+    matches.forEach((player) => {
+      const option = document.createElement("button");
+
+      option.type = "button";
+      option.className = "player-search-option";
+
+      option.innerHTML = `
+        <strong>${player.name}</strong>
+        <span>
+          ${player.position} • ${player.team}
+        </span>
+      `;
+
+      option.addEventListener("click", () => {
+        selectElement.value = player.id;
+
+        input.value =
+          `${player.name} — ${player.position} — ${player.team}`;
+
+        resultsBox.innerHTML = "";
+        resultsBox.classList.remove("active");
+
+        comparePlayers();
+      });
+
+      resultsBox.appendChild(option);
+    });
+
+    resultsBox.classList.add("active");
+  });
+
+  input.addEventListener("focus", () => {
+    if (input.value.length > 0) {
+      input.dispatchEvent(
+        new Event("input")
+      );
+    }
+  });
+}
 
     if (players.length >= 2) {
       playerASelect.value =
@@ -104,6 +196,18 @@ async function loadPlayers() {
       playerBSelect.value =
         players.find((player) => player.name === "Christian Watson")?.id ||
         players[1].id;
+      const defaultA = getPlayer(playerASelect.value);
+const defaultB = getPlayer(playerBSelect.value);
+
+if (defaultA) {
+  playerASearch.value =
+    `${defaultA.name} — ${defaultA.position} — ${defaultA.team}`;
+}
+
+if (defaultB) {
+  playerBSearch.value =
+    `${defaultB.name} — ${defaultB.position} — ${defaultB.team}`;
+}
 
       comparePlayers();
     }
