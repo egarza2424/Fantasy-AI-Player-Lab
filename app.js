@@ -1,67 +1,4 @@
-const players = [
-  {
-    id: "puka",
-    name: "Puka Nacua",
-    position: "WR",
-    metrics: {
-      opportunity: 94,
-      production: 91,
-      usage: 93,
-      matchup: 84,
-      redzone: 82,
-      expert: 95,
-      risk: 18
-    }
-  },
-
-  {
-    id: "watson",
-    name: "Christian Watson",
-    position: "WR",
-    metrics: {
-      opportunity: 78,
-      production: 76,
-      usage: 73,
-      matchup: 88,
-      redzone: 86,
-      expert: 79,
-      risk: 39
-    }
-  },
-
-  {
-    id: "parker",
-    name: "Parker Washington",
-    position: "WR",
-    metrics: {
-      opportunity: 71,
-      production: 69,
-      usage: 75,
-      matchup: 83,
-      redzone: 68,
-      expert: 72,
-      risk: 31
-    }
-  },
-
-  {
-    id: "brooks",
-    name: "Jonathon Brooks",
-    position: "RB",
-    metrics: {
-      opportunity: 67,
-      production: 63,
-      usage: 61,
-      matchup: 79,
-      redzone: 74,
-      expert: 70,
-      risk: 43
-    }
-  }
-];
-
-
-const baseWeights = {
+const WEIGHTS = {
   opportunity: 0.25,
   production: 0.20,
   usage: 0.15,
@@ -71,458 +8,318 @@ const baseWeights = {
   risk: 0.05
 };
 
-
-const labels = {
-  opportunity: "Opportunity",
-  production: "Recent production",
-  usage: "Usage",
-  matchup: "Matchup",
-  redzone: "Red-zone usage",
-  expert: "Expert confidence",
-  risk: "Risk adjustment"
+const riskProfiles = {
+  conservative: {
+    opportunity: 0.23,
+    production: 0.20,
+    usage: 0.15,
+    matchup: 0.12,
+    redzone: 0.08,
+    expert: 0.10,
+    risk: 0.12
+  },
+  balanced: WEIGHTS,
+  aggressive: {
+    opportunity: 0.28,
+    production: 0.22,
+    usage: 0.15,
+    matchup: 0.15,
+    redzone: 0.10,
+    expert: 0.08,
+    risk: 0.02
+  }
 };
 
+let players = [];
 
-const playerA =
-  document.getElementById("playerA");
+const playerASelect = document.getElementById("playerA");
+const playerBSelect = document.getElementById("playerB");
+const riskSelect = document.getElementById("riskTolerance");
+const compareButton = document.getElementById("compareButton");
+const resultsContainer = document.getElementById("results");
 
-const playerB =
-  document.getElementById("playerB");
+async function loadPlayers() {
+  try {
+    const response = await fetch("players.json");
 
-const riskTolerance =
-  document.getElementById("riskTolerance");
-
-const result =
-  document.getElementById("result");
-
-
-function populatePlayers() {
-
-  players.forEach(player => {
-
-    playerA.add(
-      new Option(
-        `${player.name} (${player.position})`,
-        player.id
-      )
-    );
-
-    playerB.add(
-      new Option(
-        `${player.name} (${player.position})`,
-        player.id
-      )
-    );
-
-  });
-
-  playerA.value = "puka";
-  playerB.value = "watson";
-}
-
-
-function getWeights(tolerance) {
-
-  const weights = {
-    ...baseWeights
-  };
-
-  if (tolerance === "conservative") {
-
-    weights.risk = 0.12;
-    weights.opportunity = 0.23;
-    weights.production = 0.20;
-
-  }
-
-  else if (tolerance === "aggressive") {
-
-    weights.risk = 0.02;
-    weights.opportunity = 0.28;
-    weights.production = 0.22;
-
-  }
-
-  const total =
-    Object.values(weights)
-      .reduce((a, b) => a + b, 0);
-
-  Object.keys(weights)
-    .forEach(key => {
-      weights[key] /= total;
-    });
-
-  return weights;
-}
-
-
-function scorePlayer(player, weights) {
-
-  let score = 0;
-
-  for (const key of Object.keys(weights)) {
-
-    let value =
-      player.metrics[key];
-
-    if (key === "risk") {
-      value = 100 - value;
+    if (!response.ok) {
+      throw new Error("Unable to load players.json");
     }
 
-    score +=
-      value * weights[key];
+    players = await response.json();
+
+    populatePlayerSelectors();
+
+  } catch (error) {
+    console.error(error);
+
+    resultsContainer.innerHTML = `
+      <div class="result-card">
+        <h3>Unable to load player database</h3>
+        <p>Please check that <strong>players.json</strong> exists in the repository.</p>
+      </div>
+    `;
   }
+}
+
+function populatePlayerSelectors() {
+  playerASelect.innerHTML = "";
+  playerBSelect.innerHTML = "";
+
+  players.forEach(player => {
+    const optionA = document.createElement("option");
+    optionA.value = player.id;
+    optionA.textContent = `${player.name} — ${player.position} — ${player.team}`;
+
+    const optionB = optionA.cloneNode(true);
+
+    playerASelect.appendChild(optionA);
+    playerBSelect.appendChild(optionB);
+  });
+
+  // Default selections
+  if (players.length > 1) {
+    playerASelect.value = players[0].id;
+    playerBSelect.value = players[1].id;
+  }
+}
+
+function getPlayer(id) {
+  return players.find(player => player.id === id);
+}
+
+function generateIllustrativeMetrics(player) {
+  /*
+    These values are temporary.
+    They allow the product experience to work while we
+    build the real statistical data layer.
+  */
+
+  const knownMetrics = {
+    "puka-nacua": {
+      opportunity: 94,
+      production: 91,
+      usage: 93,
+      matchup: 84,
+      redzone: 82,
+      expert: 95,
+      risk: 18
+    },
+
+    "christian-watson": {
+      opportunity: 78,
+      production: 76,
+      usage: 73,
+      matchup: 88,
+      redzone: 86,
+      expert: 79,
+      risk: 39
+    },
+
+    "parker-washington": {
+      opportunity: 71,
+      production: 69,
+      usage: 75,
+      matchup: 83,
+      redzone: 68,
+      expert: 72,
+      risk: 31
+    },
+
+    "jonathon-brooks": {
+      opportunity: 67,
+      production: 63,
+      usage: 61,
+      matchup: 79,
+      redzone: 74,
+      expert: 70,
+      risk: 43
+    }
+  };
+
+  if (knownMetrics[player.id]) {
+    return knownMetrics[player.id];
+  }
+
+  // Temporary neutral values for newly added players.
+  return {
+    opportunity: 50,
+    production: 50,
+    usage: 50,
+    matchup: 50,
+    redzone: 50,
+    expert: 50,
+    risk: 50
+  };
+}
+
+function calculateScore(player, profile) {
+  const metrics = generateIllustrativeMetrics(player);
+  const weights = riskProfiles[profile];
+
+  const score =
+    metrics.opportunity * weights.opportunity +
+    metrics.production * weights.production +
+    metrics.usage * weights.usage +
+    metrics.matchup * weights.matchup +
+    metrics.redzone * weights.redzone +
+    metrics.expert * weights.expert +
+    (100 - metrics.risk) * weights.risk;
 
   return Math.round(score * 10) / 10;
 }
 
-
-function recommendation(score, opponentScore) {
-
-  const edge =
-    score - opponentScore;
-
-  if (
-    score >= 82 ||
-    edge >= 8
-  ) {
+function getRecommendation(score, edge) {
+  if (score >= 82 || edge >= 8) {
     return {
-      text: "START",
-      cls: "good"
+      label: "START",
+      className: "start"
     };
   }
 
-  if (
-    score >= 72 ||
-    edge >= 2
-  ) {
+  if (score >= 72 || edge >= 2) {
     return {
-      text: "FLEX",
-      cls: "warn"
+      label: "FLEX",
+      className: "flex"
     };
   }
 
   return {
-    text: "SIT",
-    cls: "bad"
+    label: "SIT",
+    className: "sit"
   };
 }
 
+function getStrongestSignals(player) {
+  const metrics = generateIllustrativeMetrics(player);
 
-function metricRows(player, weights) {
-
-  return Object.keys(weights)
-    .map(key => {
-
-      const raw =
-        player.metrics[key];
-
-      const display =
-        key === "risk"
-          ? `${raw}% risk`
-          : `${raw}/100`;
-
-      const visual =
-        key === "risk"
-          ? 100 - raw
-          : raw;
-
-      return `
-        <div class="metric-row">
-
-          <div class="metric-top">
-
-            <span>
-              ${labels[key]}
-            </span>
-
-            <span>
-              ${display}
-            </span>
-
-          </div>
-
-          <div class="bar">
-
-            <div
-              class="fill"
-              style="width:${visual}%">
-            </div>
-
-          </div>
-
-        </div>
-      `;
-
-    })
-    .join("");
+  return Object.entries(metrics)
+    .filter(([key]) => key !== "risk")
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
 }
 
+function formatSignalName(signal) {
+  const names = {
+    opportunity: "Opportunity",
+    production: "Recent Production",
+    usage: "Usage",
+    matchup: "Matchup",
+    redzone: "Red-Zone Usage",
+    expert: "Expert Confidence"
+  };
 
-function whyText(
-  player,
-  score,
-  opponent,
-  weights
-) {
+  return names[signal] || signal;
+}
 
-  const positives =
-    Object.keys(weights)
-
-      .map(key => ({
-
-        key,
-
-        value:
-          key === "risk"
-            ? 100 - player.metrics[key]
-            : player.metrics[key]
-
-      }))
-
-      .sort(
-        (a, b) =>
-          b.value - a.value
-      )
-
-      .slice(0, 3)
-
-      .map(
-        item =>
-          labels[item.key]
-            .toLowerCase()
-      );
-
-
-  const edge =
-    score - opponent;
-
-  const direction =
-    edge >= 0
-      ? "ahead of the comparison player"
-      : "behind the comparison player";
-
+function renderPlayerCard(player, score, recommendation) {
+  const metrics = generateIllustrativeMetrics(player);
+  const signals = getStrongestSignals(player);
 
   return `
-    <strong>${player.name}</strong>
-    grades ${Math.abs(edge).toFixed(1)}
-    points ${direction}.
-
-    Its strongest model signals are
-    <strong>${positives.join(", ")}</strong>.
-
-    This is an illustrative decision trace,
-    not a live fantasy projection.
-  `;
-}
-
-
-function render() {
-
-  const a =
-    players.find(
-      player =>
-        player.id === playerA.value
-    );
-
-  const b =
-    players.find(
-      player =>
-        player.id === playerB.value
-    );
-
-
-  const weights =
-    getWeights(
-      riskTolerance.value
-    );
-
-
-  const scoreA =
-    scorePlayer(a, weights);
-
-  const scoreB =
-    scorePlayer(b, weights);
-
-
-  const recA =
-    recommendation(
-      scoreA,
-      scoreB
-    );
-
-  const recB =
-    recommendation(
-      scoreB,
-      scoreA
-    );
-
-
-  const winner =
-    scoreA >= scoreB
-      ? a.id
-      : b.id;
-
-
-  result.innerHTML = `
-
-    <div class="verdict">
-
-      <article
-        class="player-card
-        ${winner === a.id ? "winner" : ""}">
-
-        <div class="position">
-          ${a.position}
+    <div class="result-card">
+      <div class="result-header">
+        <div>
+          <h3>${player.name}</h3>
+          <p>${player.position} • ${player.team}</p>
         </div>
 
-        <div class="player-name">
-          ${a.name}
+        <div class="recommendation ${recommendation.className}">
+          ${recommendation.label}
         </div>
-
-        <div class="score">
-          ${scoreA}
-        </div>
-
-        <div class="score-label">
-          Decision score / 100
-        </div>
-
-        <span
-          class="recommendation ${recA.cls}">
-          ${recA.text}
-        </span>
-
-        <div class="metric-list">
-          ${metricRows(a, weights)}
-        </div>
-
-        <div class="why">
-          ${whyText(
-            a,
-            scoreA,
-            scoreB,
-            weights
-          )}
-        </div>
-
-      </article>
-
-
-      <div class="verdict-center">
-
-        <div class="eyebrow">
-          MODEL VERDICT
-        </div>
-
-        <h3>
-          ${
-            winner === a.id
-              ? a.name
-              : b.name
-          }
-        </h3>
-
-        <p>
-          wins this comparison under a
-          <strong>
-            ${riskTolerance.value}
-          </strong>
-          risk profile.
-        </p>
-
-        <div class="why">
-
-          <strong>
-            Decision rule
-          </strong>
-
-          <br>
-
-          Weighted signals →
-          explainable score →
-          recommendation
-
-        </div>
-
       </div>
 
+      <div class="score">
+        ${score}
+        <span>/100</span>
+      </div>
 
-      <article
-        class="player-card
-        ${winner === b.id ? "winner" : ""}">
+      <h4>Why this player?</h4>
 
-        <div class="position">
-          ${b.position}
+      <ul class="signal-list">
+        ${signals.map(([key, value]) => `
+          <li>
+            <strong>${formatSignalName(key)}</strong>
+            <span>${value}/100</span>
+          </li>
+        `).join("")}
+      </ul>
+
+      <div class="metric-grid">
+        <div>
+          <span>Opportunity</span>
+          <strong>${metrics.opportunity}</strong>
         </div>
 
-        <div class="player-name">
-          ${b.name}
+        <div>
+          <span>Production</span>
+          <strong>${metrics.production}</strong>
         </div>
 
-        <div class="score">
-          ${scoreB}
+        <div>
+          <span>Usage</span>
+          <strong>${metrics.usage}</strong>
         </div>
 
-        <div class="score-label">
-          Decision score / 100
+        <div>
+          <span>Matchup</span>
+          <strong>${metrics.matchup}</strong>
         </div>
 
-        <span
-          class="recommendation ${recB.cls}">
-          ${recB.text}
-        </span>
-
-        <div class="metric-list">
-          ${metricRows(b, weights)}
+        <div>
+          <span>Red Zone</span>
+          <strong>${metrics.redzone}</strong>
         </div>
 
-        <div class="why">
-          ${whyText(
-            b,
-            scoreB,
-            scoreA,
-            weights
-          )}
+        <div>
+          <span>Expert</span>
+          <strong>${metrics.expert}</strong>
         </div>
-
-      </article>
-
+      </div>
     </div>
-
   `;
 }
 
+function comparePlayers() {
+  const playerA = getPlayer(playerASelect.value);
+  const playerB = getPlayer(playerBSelect.value);
+  const profile = riskSelect.value;
 
-document
-  .getElementById("compareBtn")
-  .addEventListener(
-    "click",
-    render
-  );
+  if (!playerA || !playerB) {
+    return;
+  }
 
+  const scoreA = calculateScore(playerA, profile);
+  const scoreB = calculateScore(playerB, profile);
 
-riskTolerance
-  .addEventListener(
-    "change",
-    render
-  );
+  const edge = Math.abs(scoreA - scoreB);
 
+  const recommendationA = getRecommendation(scoreA, scoreA - scoreB);
+  const recommendationB = getRecommendation(scoreB, scoreB - scoreA);
 
-playerA
-  .addEventListener(
-    "change",
-    render
-  );
+  resultsContainer.innerHTML = `
+    <div class="results-summary">
+      <h2>${playerA.name} vs. ${playerB.name}</h2>
+      <p>
+        ${profile.charAt(0).toUpperCase() + profile.slice(1)}
+        risk profile
+      </p>
+    </div>
 
+    <div class="comparison-grid">
+      ${renderPlayerCard(playerA, scoreA, recommendationA)}
+      ${renderPlayerCard(playerB, scoreB, recommendationB)}
+    </div>
 
-playerB
-  .addEventListener(
-    "change",
-    render
-  );
+    <div class="model-note">
+      <strong>Model note:</strong>
+      This prototype currently uses illustrative player metrics.
+      The next product iteration will connect real NFL statistics
+      and weekly fantasy data.
+    </div>
+  `;
+}
 
+compareButton.addEventListener("click", comparePlayers);
 
-populatePlayers();
-
-render();
+loadPlayers();
