@@ -42,53 +42,73 @@ async function loadPlayers() {
   try {
     const positions = ["QB", "RB", "WR", "TE"];
 
-    const requests = positions.map(position =>
+    const requests = positions.map((position) =>
       fetch(
         `https://api.sleeper.app/v1/players/nfl?position=${position}&active=true`
-      ).then(response => {
+      ).then((response) => {
         if (!response.ok) {
           throw new Error(`Could not load ${position} players`);
         }
+
         return response.json();
       })
     );
 
     const responses = await Promise.all(requests);
 
-    const sleeperPlayers = responses.flatMap(playerMap =>
+    const sleeperPlayers = responses.flatMap((playerMap) =>
       Object.values(playerMap)
     );
 
-    players = sleeperPlayers
-      .filter(player =>
+    const uniquePlayers = new Map();
+
+    sleeperPlayers.forEach((player) => {
+      if (
         player.player_id &&
         player.first_name &&
         player.last_name &&
         player.team &&
         ["QB", "RB", "WR", "TE"].includes(player.position)
-      )
-      .map(player => ({
-        id: player.player_id,
-        name: `${player.first_name} ${player.last_name}`,
-        position: player.position,
-        team: player.team
-      }))
-      .sort((a, b) => {
-        if (a.position !== b.position) {
-          return a.position.localeCompare(b.position);
-        }
+      ) {
+        uniquePlayers.set(player.player_id, {
+          id: player.player_id,
+          name: `${player.first_name} ${player.last_name}`,
+          position: player.position,
+          team: player.team
+        });
+      }
+    });
 
-        return a.name.localeCompare(b.name);
-      });
+    players = Array.from(uniquePlayers.values()).sort((a, b) => {
+      const positionOrder = {
+        QB: 1,
+        RB: 2,
+        WR: 3,
+        TE: 4
+      };
+
+      if (a.position !== b.position) {
+        return positionOrder[a.position] - positionOrder[b.position];
+      }
+
+      return a.name.localeCompare(b.name);
+    });
 
     populatePlayerSelectors();
 
     if (players.length >= 2) {
+      playerASelect.value =
+        players.find((player) => player.name === "Puka Nacua")?.id ||
+        players[0].id;
+
+      playerBSelect.value =
+        players.find((player) => player.name === "Christian Watson")?.id ||
+        players[1].id;
+
       comparePlayers();
     }
-
   } catch (error) {
-    console.error("Player database error:", error);
+    console.error("NFL player loading error:", error);
 
     resultsContainer.innerHTML = `
       <div class="result-card">
