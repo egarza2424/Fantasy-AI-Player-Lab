@@ -264,6 +264,49 @@ function getPlayer(id) {
   return players.find((player) => player.id === id);
 }
 
+function calculatePlayerRisk(player) {
+  let risk = 10;
+
+  const injury = (player.injuryStatus || "").toLowerCase();
+  const practice = (player.practiceParticipation || "").toLowerCase();
+
+  // Injury designation
+  if (injury.includes("out")) {
+    risk += 80;
+  } else if (injury.includes("doubtful")) {
+    risk += 65;
+  } else if (injury.includes("questionable")) {
+    risk += 35;
+  } else if (injury.includes("probable")) {
+    risk += 10;
+  }
+
+  // Practice participation
+  if (
+    practice.includes("did not participate") ||
+    practice.includes("dnp")
+  ) {
+    risk += 30;
+  } else if (practice.includes("limited")) {
+    risk += 15;
+  } else if (practice.includes("full")) {
+    risk -= 5;
+  }
+
+  // Depth-chart uncertainty
+  if (player.depthChartOrder) {
+    if (player.depthChartOrder >= 4) {
+      risk += 20;
+    } else if (player.depthChartOrder === 3) {
+      risk += 12;
+    } else if (player.depthChartOrder === 2) {
+      risk += 5;
+    }
+  }
+
+  // Clamp between 0 and 100
+  return Math.max(0, Math.min(100, Math.round(risk)));
+}
 function getMetrics(player) {
   const knownMetrics = {
     "Puka Nacua": {
@@ -272,8 +315,7 @@ function getMetrics(player) {
       usage: 93,
       matchup: 84,
       redzone: 82,
-      expert: 95,
-      risk: 18
+      expert: 95
     },
 
     "Christian Watson": {
@@ -282,8 +324,7 @@ function getMetrics(player) {
       usage: 73,
       matchup: 88,
       redzone: 86,
-      expert: 79,
-      risk: 39
+      expert: 79
     },
 
     "Parker Washington": {
@@ -292,8 +333,7 @@ function getMetrics(player) {
       usage: 75,
       matchup: 83,
       redzone: 68,
-      expert: 72,
-      risk: 31
+      expert: 72
     },
 
     "Jonathon Brooks": {
@@ -302,19 +342,23 @@ function getMetrics(player) {
       usage: 61,
       matchup: 79,
       redzone: 74,
-      expert: 70,
-      risk: 43
+      expert: 70
     }
   };
 
-  return knownMetrics[player.name] || {
-    opportunity: 50,
-    production: 50,
-    usage: 50,
-    matchup: 50,
-    redzone: 50,
-    expert: 50,
-    risk: 50
+  const baseMetrics =
+    knownMetrics[player.name] || {
+      opportunity: 50,
+      production: 50,
+      usage: 50,
+      matchup: 50,
+      redzone: 50,
+      expert: 50
+    };
+
+  return {
+    ...baseMetrics,
+    risk: calculatePlayerRisk(player)
   };
 }
 
@@ -390,7 +434,36 @@ function renderPlayerCard(player, score, recommendation) {
       <div class="player-result-top">
         <div>
           <h3 class="player-name">${player.name}</h3>
-          <p class="player-meta">${player.position} • ${player.team}</p>
+          <p class="player-meta">
+  ${player.position} • ${player.team}
+</p>
+
+<div class="player-status">
+  <span>
+    Injury:
+    <strong>
+      ${player.injuryStatus || "None"}
+    </strong>
+  </span>
+
+  <span>
+    Practice:
+    <strong>
+      ${player.practiceParticipation || "No designation"}
+    </strong>
+  </span>
+
+  ${
+    player.depthChartOrder
+      ? `
+        <span>
+          Depth chart:
+          <strong>#${player.depthChartOrder}</strong>
+        </span>
+      `
+      : ""
+  }
+</div>
         </div>
 
         <div class="recommendation-badge">
