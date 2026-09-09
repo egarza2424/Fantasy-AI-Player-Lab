@@ -71,31 +71,54 @@
 
 <section class="panel controls">
 
-  <div class="control">
+ <div class="control player-search-control">
+  <label for="playerASearch">
+    Player A
+  </label>
 
-    <label for="playerA">
-      Player A
-    </label>
+  <div class="player-search">
+    <input
+      id="playerASearch"
+      type="text"
+      placeholder="Search NFL player..."
+      autocomplete="off"
+    >
 
-    <select id="playerA"></select>
+    <div
+      id="playerAResults"
+      class="player-search-results">
+    </div>
 
+    <select id="playerA" hidden></select>
   </div>
-
+</div>
 
   <div class="vs">
     VS
   </div>
 
 
-  <div class="control">
+  <div class="control player-search-control">
+  <label for="playerBSearch">
+    Player B
+  </label>
 
-    <label for="playerB">
-      Player B
-    </label>
+  <div class="player-search">
+    <input
+      id="playerBSearch"
+      type="text"
+      placeholder="Search NFL player..."
+      autocomplete="off"
+    >
 
-    <select id="playerB"></select>
+    <div
+      id="playerBResults"
+      class="player-search-results">
+    </div>
 
+    <select id="playerB" hidden></select>
   </div>
+</div>
 
 
   <div class="control">
