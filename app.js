@@ -347,6 +347,7 @@ function comparePlayers() {
     </div>
   </section>
 `;
+}
 
 compareButton.addEventListener("click", comparePlayers);
 
