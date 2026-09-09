@@ -1,0 +1,274 @@
+echo "# Fantasy-AI-Player-Lab" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin https://github.com/egarza2424/Fantasy-AI-Player-Lab.git
+git push -u origin main
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Fantasy AI Player Lab — an explainable fantasy football decision-support prototype.">
+  <title>Fantasy AI Player Lab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<header class="site-header">
+  <div class="container nav">
+
+    <div>
+      <div class="eyebrow">PERSONAL PRODUCT PROJECT</div>
+      <h1>Fantasy AI Player Lab</h1>
+    </div>
+
+    <span class="status-pill">
+      MVP • Explainable Scoring
+    </span>
+
+  </div>
+</header>
+
+
+<main class="container">
+
+<section class="hero">
+
+  <div>
+
+    <div class="eyebrow">
+      DECISION SUPPORT FOR FANTASY MANAGERS
+    </div>
+
+    <h2>
+      Compare two players. See the signals. Make the call.
+    </h2>
+
+    <p class="hero-copy">
+      A product prototype that turns multiple fantasy-football
+      signals into a transparent decision score instead of hiding
+      the reasoning behind a black box.
+    </p>
+
+  </div>
+
+
+  <div class="hero-card">
+
+    <div class="mini-label">
+      MODEL DESIGN
+    </div>
+
+    <strong>
+      7 weighted signals
+    </strong>
+
+    <span>
+      Opportunity • Production • Usage • Matchup • Red Zone •
+      Expert Confidence • Risk
+    </span>
+
+  </div>
+
+</section>
+
+
+<section class="panel controls">
+
+  <div class="control">
+
+    <label for="playerA">
+      Player A
+    </label>
+
+    <select id="playerA"></select>
+
+  </div>
+
+
+  <div class="vs">
+    VS
+  </div>
+
+
+  <div class="control">
+
+    <label for="playerB">
+      Player B
+    </label>
+
+    <select id="playerB"></select>
+
+  </div>
+
+
+  <div class="control">
+
+    <label for="riskTolerance">
+      Risk tolerance
+    </label>
+
+    <select id="riskTolerance">
+
+      <option value="conservative">
+        Conservative
+      </option>
+
+      <option value="balanced" selected>
+        Balanced
+      </option>
+
+      <option value="aggressive">
+        Aggressive
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <button id="compareBtn" class="primary-btn">
+    Compare players
+  </button>
+
+</section>
+
+
+<section
+  id="result"
+  class="results"
+  aria-live="polite">
+</section>
+
+
+<section class="panel product-thinking">
+
+  <div>
+
+    <div class="eyebrow">
+      PRODUCT THINKING
+    </div>
+
+    <h3>
+      Why this prototype?
+    </h3>
+
+    <p>
+      Fantasy managers rarely lack information. The harder problem
+      is converting conflicting signals into a decision they can
+      trust. This MVP makes the decision trace visible: users can
+      see which factors helped or hurt each player and how risk
+      tolerance changes the recommendation.
+    </p>
+
+  </div>
+
+
+  <div class="principles">
+
+    <div>
+      <span>01</span>
+      <strong>Transparent</strong>
+      <p>
+        Weighted inputs are visible.
+      </p>
+    </div>
+
+
+    <div>
+      <span>02</span>
+      <strong>Actionable</strong>
+      <p>
+        Ends with a clear Start/Flex/Sit direction.
+      </p>
+    </div>
+
+
+    <div>
+      <span>03</span>
+      <strong>Iterative</strong>
+      <p>
+        Built to accept live data, experiments and feedback.
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="panel roadmap">
+
+  <div class="eyebrow">
+    ROADMAP
+  </div>
+
+  <h3>
+    From prototype to production
+  </h3>
+
+
+  <div class="roadmap-grid">
+
+    <div>
+      <b>01</b>
+      <strong>Live data</strong>
+      <p>
+        Player, injury, schedule and usage APIs.
+      </p>
+    </div>
+
+
+    <div>
+      <b>02</b>
+      <strong>League context</strong>
+      <p>
+        Scoring settings, roster construction and positional scarcity.
+      </p>
+    </div>
+
+
+    <div>
+      <b>03</b>
+      <strong>AI explanations</strong>
+      <p>
+        Natural-language weekly reasoning grounded in structured signals.
+      </p>
+    </div>
+
+
+    <div>
+      <b>04</b>
+      <strong>Learning loop</strong>
+      <p>
+        Track recommendations versus outcomes and improve weights.
+      </p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<footer>
+
+  <p>
+    Fantasy AI Player Lab • Product prototype • Illustrative data only
+  </p>
+
+  <a href="docs/case-study.md">
+    View product case study
+  </a>
+
+</footer>
+
+</main>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
