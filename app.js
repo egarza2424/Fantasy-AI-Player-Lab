@@ -40,25 +40,60 @@ const resultsContainer = document.getElementById("result");
 
 async function loadPlayers() {
   try {
-    const response = await fetch("./players.json");
+    const positions = ["QB", "RB", "WR", "TE"];
 
-    if (!response.ok) {
-      throw new Error("Could not load players.json");
-    }
+    const requests = positions.map(position =>
+      fetch(
+        `https://api.sleeper.app/v1/players/nfl?position=${position}&active=true`
+      ).then(response => {
+        if (!response.ok) {
+          throw new Error(`Could not load ${position} players`);
+        }
+        return response.json();
+      })
+    );
 
-    players = await response.json();
+    const responses = await Promise.all(requests);
+
+    const sleeperPlayers = responses.flatMap(playerMap =>
+      Object.values(playerMap)
+    );
+
+    players = sleeperPlayers
+      .filter(player =>
+        player.player_id &&
+        player.first_name &&
+        player.last_name &&
+        player.team &&
+        ["QB", "RB", "WR", "TE"].includes(player.position)
+      )
+      .map(player => ({
+        id: player.player_id,
+        name: `${player.first_name} ${player.last_name}`,
+        position: player.position,
+        team: player.team
+      }))
+      .sort((a, b) => {
+        if (a.position !== b.position) {
+          return a.position.localeCompare(b.position);
+        }
+
+        return a.name.localeCompare(b.name);
+      });
+
     populatePlayerSelectors();
 
     if (players.length >= 2) {
       comparePlayers();
     }
+
   } catch (error) {
     console.error("Player database error:", error);
 
     resultsContainer.innerHTML = `
       <div class="result-card">
-        <h3>Unable to load player database</h3>
-        <p>Please confirm that players.json is in the root of the repository.</p>
+        <h3>Unable to load NFL players</h3>
+        <p>The live NFL player database could not be reached.</p>
       </div>
     `;
   }
@@ -95,7 +130,7 @@ function getPlayer(id) {
 
 function getMetrics(player) {
   const knownMetrics = {
-    "puka-nacua": {
+    "Puka Nacua": {
       opportunity: 94,
       production: 91,
       usage: 93,
@@ -105,7 +140,7 @@ function getMetrics(player) {
       risk: 18
     },
 
-    "christian-watson": {
+    "Christian Watson": {
       opportunity: 78,
       production: 76,
       usage: 73,
@@ -115,7 +150,7 @@ function getMetrics(player) {
       risk: 39
     },
 
-    "parker-washington": {
+    "Parker Washington": {
       opportunity: 71,
       production: 69,
       usage: 75,
@@ -125,7 +160,7 @@ function getMetrics(player) {
       risk: 31
     },
 
-    "jonathon-brooks": {
+    "Jonathon Brooks": {
       opportunity: 67,
       production: 63,
       usage: 61,
@@ -136,7 +171,7 @@ function getMetrics(player) {
     }
   };
 
-  return knownMetrics[player.id] || {
+  return knownMetrics[player.name] || {
     opportunity: 50,
     production: 50,
     usage: 50,
