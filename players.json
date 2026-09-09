@@ -1,0 +1,26 @@
+[
+  {
+    "id": "puka-nacua",
+    "name": "Puka Nacua",
+    "position": "WR",
+    "team": "LAR"
+  },
+  {
+    "id": "christian-watson",
+    "name": "Christian Watson",
+    "position": "WR",
+    "team": "GB"
+  },
+  {
+    "id": "parker-washington",
+    "name": "Parker Washington",
+    "position": "WR",
+    "team": "JAX"
+  },
+  {
+    "id": "jonathon-brooks",
+    "name": "Jonathon Brooks",
+    "position": "RB",
+    "team": "CAR"
+  }
+]
