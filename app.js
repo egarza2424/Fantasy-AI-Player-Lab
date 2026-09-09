@@ -31,6 +31,7 @@ const riskProfiles = {
 };
 
 let players = [];
+let weeklyStats = [];
 
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
@@ -43,6 +44,178 @@ const playerBSearch = document.getElementById("playerBSearch");
 const playerAResults = document.getElementById("playerAResults");
 const playerBResults = document.getElementById("playerBResults");
 
+async function loadWeeklyStats() {
+  function getPlayerWeeklyStats(player) {
+  if (!player || weeklyStats.length === 0) {
+    return [];
+  }
+
+  const normalizedPlayerName =
+    player.name.toLowerCase().trim();
+
+  return weeklyStats.filter(row => {
+    const statName =
+      String(row.player_display_name || "")
+        .toLowerCase()
+        .trim();
+
+    return (
+      statName === normalizedPlayerName &&
+      row.team === player.team
+    );
+  });
+}
+  function calculateProductionScore(player) {
+  const games = getPlayerWeeklyStats(player);
+
+  if (games.length === 0) {
+    return 50;
+  }
+
+  const recentGames = games
+    .sort((a, b) => b.week - a.week)
+    .slice(0, 4);
+
+  let totalFantasyPoints = 0;
+
+  recentGames.forEach(game => {
+    const passingYards =
+      Number(game.passing_yards || 0);
+
+    const passingTDs =
+      Number(game.passing_tds || 0);
+
+    const interceptions =
+      Number(game.interceptions || 0);
+
+    const rushingYards =
+      Number(game.rushing_yards || 0);
+
+    const rushingTDs =
+      Number(game.rushing_tds || 0);
+
+    const receptions =
+      Number(game.receptions || 0);
+
+    const receivingYards =
+      Number(game.receiving_yards || 0);
+
+    const receivingTDs =
+      Number(game.receiving_tds || 0);
+
+    const fantasyPoints =
+      passingYards / 25 +
+      passingTDs * 4 -
+      interceptions * 2 +
+      rushingYards / 10 +
+      rushingTDs * 6 +
+      receptions +
+      receivingYards / 10 +
+      receivingTDs * 6;
+
+    totalFantasyPoints += fantasyPoints;
+  });
+
+  const average =
+    totalFantasyPoints / recentGames.length;
+
+  /*
+    Convert fantasy output into 0–100 score.
+    25+ PPG ≈ elite
+  */
+
+  const score =
+    (average / 25) * 100;
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round(score))
+  );
+}
+  function calculateUsageScore(player) {
+  const games = getPlayerWeeklyStats(player);
+
+  if (games.length === 0) {
+    return 50;
+  }
+
+  const recentGames = games
+    .sort((a, b) => b.week - a.week)
+    .slice(0, 4);
+
+  let totalUsage = 0;
+
+  recentGames.forEach(game => {
+    const carries =
+      Number(game.carries || 0);
+
+    const targets =
+      Number(game.targets || 0);
+
+    const attempts =
+      Number(game.attempts || 0);
+
+    let usage = 0;
+
+    if (player.position === "QB") {
+      usage = attempts;
+    } else {
+      usage = carries + targets;
+    }
+
+    totalUsage += usage;
+  });
+
+  const averageUsage =
+    totalUsage / recentGames.length;
+
+  let score;
+
+  if (player.position === "QB") {
+    score =
+      (averageUsage / 38) * 100;
+  } else {
+    score =
+      (averageUsage / 22) * 100;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round(score))
+  );
+}
+  try {
+    const statsUrl =
+      "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv";
+
+    const response = await fetch(statsUrl);
+
+    if (!response.ok) {
+      throw new Error("Could not load NFL weekly statistics");
+    }
+
+    const csvText = await response.text();
+
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true
+    });
+
+    weeklyStats = parsed.data.filter(row =>
+      row.player_display_name &&
+      ["QB", "RB", "WR", "TE"].includes(row.position)
+    );
+
+    console.log(
+      `Loaded ${weeklyStats.length} weekly NFL stat records`
+    );
+
+  } catch (error) {
+    console.error("Weekly stats error:", error);
+    weeklyStats = [];
+  }
+}
 async function loadPlayers() {
   try {
     const positions = ["QB", "RB", "WR", "TE"];
@@ -308,6 +481,32 @@ function calculatePlayerRisk(player) {
   return Math.max(0, Math.min(100, Math.round(risk)));
 }
 function getMetrics(player) {
+
+  const production =
+    calculateProductionScore(player);
+
+  const usage =
+    calculateUsageScore(player);
+
+  const risk =
+    calculatePlayerRisk(player);
+
+  return {
+    opportunity: usage,
+
+    production: production,
+
+    usage: usage,
+
+    matchup: 50,
+
+    redzone: 50,
+
+    expert: 50,
+
+    risk: risk
+  };
+}
   const knownMetrics = {
     "Puka Nacua": {
       opportunity: 94,
@@ -595,4 +794,9 @@ function comparePlayers() {
 
 compareButton.addEventListener("click", comparePlayers);
 
-loadPlayers();
+async function initializeApp() {
+  await loadWeeklyStats();
+  await loadPlayers();
+}
+
+initializeApp();
