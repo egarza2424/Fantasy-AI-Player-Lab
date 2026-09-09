@@ -782,3 +782,74 @@ resultsContainer.innerHTML = `
     </div>
   </section>
 `;
+/* =========================
+   VERDICT CARD
+   ========================= */
+
+.verdict-card {
+  margin-top: 24px;
+  padding: 28px;
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.12);
+}
+
+.verdict-card .eyebrow {
+  color: #aeb8ca !important;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  margin: 0 0 12px;
+}
+
+.verdict-card h3 {
+  color: #ffffff !important;
+  font-size: 26px;
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+
+.verdict-card > p:not(.eyebrow) {
+  color: #d8deea !important;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.verdict-scores {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.verdict-scores > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+}
+
+.verdict-scores span {
+  color: #cbd3e1 !important;
+  font-size: 14px;
+}
+
+.verdict-scores strong {
+  color: #ffffff !important;
+  font-size: 28px;
+  line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .verdict-card {
+    padding: 22px;
+  }
+
+  .verdict-scores {
+    grid-template-columns: 1fr;
+  }
+}
