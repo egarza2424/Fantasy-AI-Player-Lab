@@ -1,4 +1,4 @@
-const WEIGHTS = {
+const BASE_WEIGHTS = {
   opportunity: 0.25,
   production: 0.20,
   usage: 0.15,
@@ -18,7 +18,7 @@ const riskProfiles = {
     expert: 0.10,
     risk: 0.12
   },
-  balanced: WEIGHTS,
+  balanced: BASE_WEIGHTS,
   aggressive: {
     opportunity: 0.28,
     production: 0.22,
@@ -40,23 +40,25 @@ const resultsContainer = document.getElementById("result");
 
 async function loadPlayers() {
   try {
-    const response = await fetch("players.json");
+    const response = await fetch("./players.json");
 
     if (!response.ok) {
-      throw new Error("Unable to load players.json");
+      throw new Error("Could not load players.json");
     }
 
     players = await response.json();
-
     populatePlayerSelectors();
 
+    if (players.length >= 2) {
+      comparePlayers();
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Player database error:", error);
 
     resultsContainer.innerHTML = `
       <div class="result-card">
         <h3>Unable to load player database</h3>
-        <p>Please check that <strong>players.json</strong> exists in the repository.</p>
+        <p>Please confirm that players.json is in the root of the repository.</p>
       </div>
     `;
   }
@@ -66,18 +68,21 @@ function populatePlayerSelectors() {
   playerASelect.innerHTML = "";
   playerBSelect.innerHTML = "";
 
-  players.forEach(player => {
+  players.forEach((player) => {
+    const label = `${player.name} — ${player.position} — ${player.team}`;
+
     const optionA = document.createElement("option");
     optionA.value = player.id;
-    optionA.textContent = `${player.name} — ${player.position} — ${player.team}`;
+    optionA.textContent = label;
 
-    const optionB = optionA.cloneNode(true);
+    const optionB = document.createElement("option");
+    optionB.value = player.id;
+    optionB.textContent = label;
 
     playerASelect.appendChild(optionA);
     playerBSelect.appendChild(optionB);
   });
 
-  // Default selections
   if (players.length > 1) {
     playerASelect.value = players[0].id;
     playerBSelect.value = players[1].id;
@@ -85,16 +90,10 @@ function populatePlayerSelectors() {
 }
 
 function getPlayer(id) {
-  return players.find(player => player.id === id);
+  return players.find((player) => player.id === id);
 }
 
-function generateIllustrativeMetrics(player) {
-  /*
-    These values are temporary.
-    They allow the product experience to work while we
-    build the real statistical data layer.
-  */
-
+function getMetrics(player) {
   const knownMetrics = {
     "puka-nacua": {
       opportunity: 94,
@@ -137,12 +136,7 @@ function generateIllustrativeMetrics(player) {
     }
   };
 
-  if (knownMetrics[player.id]) {
-    return knownMetrics[player.id];
-  }
-
-  // Temporary neutral values for newly added players.
-  return {
+  return knownMetrics[player.id] || {
     opportunity: 50,
     production: 50,
     usage: 50,
@@ -154,7 +148,7 @@ function generateIllustrativeMetrics(player) {
 }
 
 function calculateScore(player, profile) {
-  const metrics = generateIllustrativeMetrics(player);
+  const metrics = getMetrics(player);
   const weights = riskProfiles[profile];
 
   const score =
@@ -169,157 +163,156 @@ function calculateScore(player, profile) {
   return Math.round(score * 10) / 10;
 }
 
-function getRecommendation(score, edge) {
-  if (score >= 82 || edge >= 8) {
-    return {
-      label: "START",
-      className: "start"
-    };
+function getRecommendation(score, advantage) {
+  if (score >= 82 || advantage >= 8) {
+    return "START";
   }
 
-  if (score >= 72 || edge >= 2) {
-    return {
-      label: "FLEX",
-      className: "flex"
-    };
+  if (score >= 72 || advantage >= 2) {
+    return "FLEX";
   }
 
-  return {
-    label: "SIT",
-    className: "sit"
-  };
+  return "SIT";
 }
 
-function getStrongestSignals(player) {
-  const metrics = generateIllustrativeMetrics(player);
+function getTopSignals(player) {
+  const metrics = getMetrics(player);
 
-  return Object.entries(metrics)
-    .filter(([key]) => key !== "risk")
+  const positiveSignals = [
+    ["Expert Confidence", metrics.expert],
+    ["Opportunity", metrics.opportunity],
+    ["Recent Production", metrics.production],
+    ["Usage", metrics.usage],
+    ["Matchup", metrics.matchup],
+    ["Red-Zone Usage", metrics.redzone],
+    ["Risk Adjustment", 100 - metrics.risk]
+  ];
+
+  return positiveSignals
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
 }
 
-function formatSignalName(signal) {
-  const names = {
-    opportunity: "Opportunity",
-    production: "Recent Production",
-    usage: "Usage",
-    matchup: "Matchup",
-    redzone: "Red-Zone Usage",
-    expert: "Expert Confidence"
-  };
+function metricRow(label, value, isRisk = false) {
+  const displayValue = isRisk ? `${value}/100` : `${value}/100`;
 
-  return names[signal] || signal;
+  return `
+    <div class="metric-row">
+      <div class="metric-label-row">
+        <span>${label}</span>
+        <strong>${displayValue}</strong>
+      </div>
+      <div class="metric-track">
+        <div class="metric-fill" style="width:${value}%"></div>
+      </div>
+    </div>
+  `;
 }
 
 function renderPlayerCard(player, score, recommendation) {
-  const metrics = generateIllustrativeMetrics(player);
-  const signals = getStrongestSignals(player);
+  const metrics = getMetrics(player);
+  const topSignals = getTopSignals(player);
+  const riskAdjustment = 100 - metrics.risk;
 
   return `
-    <div class="result-card">
-      <div class="result-header">
+    <article class="player-result-card">
+      <div class="player-result-top">
         <div>
-          <h3>${player.name}</h3>
-          <p>${player.position} • ${player.team}</p>
+          <h3 class="player-name">${player.name}</h3>
+          <p class="player-meta">${player.position} • ${player.team}</p>
         </div>
 
-        <div class="recommendation ${recommendation.className}">
-          ${recommendation.label}
+        <div class="recommendation-badge">
+          ${recommendation}
         </div>
       </div>
 
-      <div class="score">
-        ${score}
-        <span>/100</span>
+      <div class="player-score">
+        ${score}<span>/100</span>
       </div>
 
-      <h4>Why this player?</h4>
-
-      <ul class="signal-list">
-        ${signals.map(([key, value]) => `
-          <li>
-            <strong>${formatSignalName(key)}</strong>
-            <span>${value}/100</span>
-          </li>
-        `).join("")}
-      </ul>
-
-      <div class="metric-grid">
-        <div>
-          <span>Opportunity</span>
-          <strong>${metrics.opportunity}</strong>
-        </div>
-
-        <div>
-          <span>Production</span>
-          <strong>${metrics.production}</strong>
-        </div>
-
-        <div>
-          <span>Usage</span>
-          <strong>${metrics.usage}</strong>
-        </div>
-
-        <div>
-          <span>Matchup</span>
-          <strong>${metrics.matchup}</strong>
-        </div>
-
-        <div>
-          <span>Red Zone</span>
-          <strong>${metrics.redzone}</strong>
-        </div>
-
-        <div>
-          <span>Expert</span>
-          <strong>${metrics.expert}</strong>
-        </div>
+      <div class="why-section">
+        <h4>Why this player?</h4>
+        <ul>
+          ${topSignals.map(([label, value]) => `
+            <li>
+              <strong>${label}</strong> ${value}/100
+            </li>
+          `).join("")}
+        </ul>
       </div>
-    </div>
+
+      <div class="metrics-section">
+        ${metricRow("Opportunity", metrics.opportunity)}
+        ${metricRow("Recent Production", metrics.production)}
+        ${metricRow("Usage", metrics.usage)}
+        ${metricRow("Matchup", metrics.matchup)}
+        ${metricRow("Red-Zone Usage", metrics.redzone)}
+        ${metricRow("Expert Confidence", metrics.expert)}
+        ${metricRow("Risk Adjustment", riskAdjustment, true)}
+      </div>
+    </article>
   `;
 }
 
 function comparePlayers() {
   const playerA = getPlayer(playerASelect.value);
   const playerB = getPlayer(playerBSelect.value);
-  const profile = riskSelect.value;
 
   if (!playerA || !playerB) {
     return;
   }
 
+  const profile = riskSelect.value;
+
   const scoreA = calculateScore(playerA, profile);
   const scoreB = calculateScore(playerB, profile);
 
-  const edge = Math.abs(scoreA - scoreB);
+  const recommendationA = getRecommendation(
+    scoreA,
+    scoreA - scoreB
+  );
 
-  const recommendationA = getRecommendation(scoreA, scoreA - scoreB);
-  const recommendationB = getRecommendation(scoreB, scoreB - scoreA);
+  const recommendationB = getRecommendation(
+    scoreB,
+    scoreB - scoreA
+  );
+
+  const profileName =
+    profile.charAt(0).toUpperCase() + profile.slice(1);
 
   resultsContainer.innerHTML = `
-    <div class="results-summary">
-      <h2>${playerA.name} vs. ${playerB.name}</h2>
-      <p>
-        ${profile.charAt(0).toUpperCase() + profile.slice(1)}
-        risk profile
-      </p>
-    </div>
+    <section class="comparison-results">
+      <div class="comparison-heading">
+        <p class="eyebrow">PLAYER COMPARISON</p>
+        <h2>${playerA.name} vs. ${playerB.name}</h2>
+        <p>${profileName} risk profile</p>
+      </div>
 
-    <div class="comparison-grid">
-      ${renderPlayerCard(playerA, scoreA, recommendationA)}
-      ${renderPlayerCard(playerB, scoreB, recommendationB)}
-    </div>
+      <div class="player-results-grid">
+        ${renderPlayerCard(
+          playerA,
+          scoreA,
+          recommendationA
+        )}
 
-    <div class="model-note">
-      <strong>Model note:</strong>
-      This prototype currently uses illustrative player metrics.
-      The next product iteration will connect real NFL statistics
-      and weekly fantasy data.
-    </div>
+        ${renderPlayerCard(
+          playerB,
+          scoreB,
+          recommendationB
+        )}
+      </div>
+
+      <div class="model-note">
+        <strong>Model note:</strong>
+        This MVP currently uses illustrative player metrics.
+        The next product iteration will connect real NFL statistics,
+        weekly matchup data, injuries, and expert consensus.
+      </div>
+    </section>
   `;
 }
 
-document.getElementById("compareBtn").addEventListener("click", comparePlayers);
+compareButton.addEventListener("click", comparePlayers);
 
 loadPlayers();
