@@ -35,7 +35,7 @@ let players = [];
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
-const compareButton = document.getElementById("compareButton");
+const compareButton = document.getElementById("compareBtn");
 const resultsContainer = document.getElementById("result");
 
 async function loadPlayers() {
