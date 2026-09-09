@@ -975,4 +975,24 @@ resultsContainer.innerHTML = `
   padding: 14px;
   font-size: 14px;
   color: #6b7280;
+
 }
+
+.player-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.player-status span {
+  padding: 6px 9px;
+  background: #f4f6f9;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.player-status strong {
+  color: #111827;
+}                                                                                                
