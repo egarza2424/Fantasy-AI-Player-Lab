@@ -282,36 +282,71 @@ function comparePlayers() {
     profile.charAt(0).toUpperCase() + profile.slice(1);
 
   resultsContainer.innerHTML = `
-    <section class="comparison-results">
-      <div class="comparison-heading">
-        <p class="eyebrow">PLAYER COMPARISON</p>
-        <h2>${playerA.name} vs. ${playerB.name}</h2>
-        <p>${profileName} risk profile</p>
-      </div>
+  <section class="comparison-results">
+    <div class="comparison-heading">
+      <p class="eyebrow">PLAYER COMPARISON</p>
+      <h2>${playerA.name} vs. ${playerB.name}</h2>
+      <p>${profileName} risk profile</p>
+    </div>
 
-      <div class="player-results-grid">
-        ${renderPlayerCard(
-          playerA,
-          scoreA,
-          recommendationA
-        )}
+    <div class="player-results-grid">
+      ${renderPlayerCard(
+        playerA,
+        scoreA,
+        recommendationA
+      )}
 
-        ${renderPlayerCard(
-          playerB,
-          scoreB,
-          recommendationB
-        )}
-      </div>
+      ${renderPlayerCard(
+        playerB,
+        scoreB,
+        recommendationB
+      )}
+    </div>
 
-      <div class="model-note">
-        <strong>Model note:</strong>
-        This MVP currently uses illustrative player metrics.
-        The next product iteration will connect real NFL statistics,
-        weekly matchup data, injuries, and expert consensus.
+    <div class="verdict-card">
+      <p class="eyebrow">VERDICT</p>
+
+      <h3>
+        ${
+          scoreA > scoreB
+            ? `${playerA.name} gets the edge`
+            : scoreB > scoreA
+            ? `${playerB.name} gets the edge`
+            : `This matchup is essentially even`
+        }
+      </h3>
+
+      <p>
+        ${
+          scoreA > scoreB
+            ? `${playerA.name} leads by ${(scoreA - scoreB).toFixed(1)} points in the current ${profileName.toLowerCase()} model.`
+            : scoreB > scoreA
+            ? `${playerB.name} leads by ${(scoreB - scoreA).toFixed(1)} points in the current ${profileName.toLowerCase()} model.`
+            : `Both players currently score the same in the ${profileName.toLowerCase()} model.`
+        }
+      </p>
+
+      <div class="verdict-scores">
+        <div>
+          <span>${playerA.name}</span>
+          <strong>${scoreA}</strong>
+        </div>
+
+        <div>
+          <span>${playerB.name}</span>
+          <strong>${scoreB}</strong>
+        </div>
       </div>
-    </section>
-  `;
-}
+    </div>
+
+    <div class="model-note">
+      <strong>Model note:</strong>
+      This MVP currently uses illustrative player metrics.
+      The next product iteration will connect real NFL statistics,
+      weekly matchup data, injuries, and expert consensus.
+    </div>
+  </section>
+`;
 
 compareButton.addEventListener("click", comparePlayers);
 
