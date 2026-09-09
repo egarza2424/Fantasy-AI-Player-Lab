@@ -75,12 +75,24 @@ async function loadPlayers() {
         player.team &&
         ["QB", "RB", "WR", "TE"].includes(player.position)
       ) {
-        uniquePlayers.set(player.player_id, {
-          id: player.player_id,
-          name: `${player.first_name} ${player.last_name}`,
-          position: player.position,
-          team: player.team
-        });
+uniquePlayers.set(player.player_id, {
+  id: player.player_id,
+  name: `${player.first_name} ${player.last_name}`,
+  position: player.position,
+  team: player.team,
+
+  status: player.status || "Unknown",
+  injuryStatus: player.injury_status || null,
+  injuryStartDate: player.injury_start_date || null,
+  practiceParticipation: player.practice_participation || null,
+
+  depthChartPosition: player.depth_chart_position ?? null,
+  depthChartOrder: player.depth_chart_order ?? null,
+
+  age: player.age ?? null,
+  yearsExp: player.years_exp ?? null,
+  number: player.number ?? null
+});
       }
     });
 
