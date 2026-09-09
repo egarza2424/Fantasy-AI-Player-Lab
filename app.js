@@ -36,7 +36,7 @@ const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
 const compareButton = document.getElementById("compareButton");
-const resultsContainer = document.getElementById("results");
+const resultsContainer = document.getElementById("result");
 
 async function loadPlayers() {
   try {
@@ -320,6 +320,6 @@ function comparePlayers() {
   `;
 }
 
-compareButton.addEventListener("click", comparePlayers);
+document.getElementById("compareBtn").addEventListener("click", comparePlayers);
 
 loadPlayers();
