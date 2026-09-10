@@ -31,11 +31,7 @@ const riskProfiles = {
 };
 
 let players = [];
-let weeklyStats = {
-  passing: [],
-  rushing: [],
-  receiving: []
-};
+let weeklyStats = [];
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
@@ -48,48 +44,20 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-    const currentSeason = 2026;
+    const response = await fetch("./nfl-stats.json");
 
-    const [passingRes, rushingRes, receivingRes] = await Promise.all([
-      fetch(
-        `https://api.nfldata.org/v1/stats/passing?season=${currentSeason}`
-      ),
-      fetch(
-        `https://api.nfldata.org/v1/stats/rushing?season=${currentSeason}`
-      ),
-      fetch(
-        `https://api.nfldata.org/v1/stats/receiving?season=${currentSeason}`
-      )
-    ]);
-
-    if (
-      !passingRes.ok ||
-      !rushingRes.ok ||
-      !receivingRes.ok
-    ) {
-      throw new Error("Could not load NFL stats");
+    if (!response.ok) {
+      throw new Error(`Could not load nfl-stats.json: ${response.status}`);
     }
 
-    const passing = await passingRes.json();
-    const rushing = await rushingRes.json();
-    const receiving = await receivingRes.json();
+    const data = await response.json();
 
-    weeklyStats = {
-      passing: Array.isArray(passing) ? passing : passing.data || [],
-      rushing: Array.isArray(rushing) ? rushing : rushing.data || [],
-      receiving: Array.isArray(receiving) ? receiving : receiving.data || []
-    };
+    weeklyStats = data.players || [];
 
-    console.log("Real NFL stats loaded:", weeklyStats);
-
+    console.log("Local NFL stats loaded:", weeklyStats);
   } catch (error) {
-    console.error("NFL stats error:", error);
-
-    weeklyStats = {
-      passing: [],
-      rushing: [],
-      receiving: []
-    };
+    console.error("Local NFL stats error:", error);
+    weeklyStats = [];
   }
 }
 function normalizeName(name) {
