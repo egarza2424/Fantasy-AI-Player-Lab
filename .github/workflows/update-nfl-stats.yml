@@ -1,0 +1,135 @@
+name: Update NFL Stats
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download and convert NFL stats
+        run: |
+          python <<'PY'
+          import csv
+          import io
+          import json
+          import urllib.request
+          from datetime import datetime, timezone
+
+          seasons = [2026, 2025]
+
+          selected_fields = [
+              "player_id",
+              "player_name",
+              "player_display_name",
+              "position",
+              "position_group",
+              "season",
+              "week",
+              "season_type",
+              "team",
+              "opponent_team",
+              "attempts",
+              "passing_yards",
+              "passing_tds",
+              "interceptions",
+              "carries",
+              "rushing_yards",
+              "rushing_tds",
+              "targets",
+              "receptions",
+              "receiving_yards",
+              "receiving_tds"
+          ]
+
+          rows = []
+          season_used = None
+
+          for season in seasons:
+              url = (
+                  "https://github.com/nflverse/nflverse-data/"
+                  f"releases/download/stats_player/stats_player_week_{season}.csv"
+              )
+
+              print(f"Trying {url}")
+
+              try:
+                  with urllib.request.urlopen(url) as response:
+                      content = response.read().decode("utf-8")
+
+                  reader = csv.DictReader(io.StringIO(content))
+
+                  season_rows = []
+
+                  for row in reader:
+                      if row.get("position") not in {"QB", "RB", "WR", "TE"}:
+                          continue
+
+                      if row.get("season_type") not in {"REG", ""}:
+                          continue
+
+                      clean_row = {
+                          field: row.get(field, "")
+                          for field in selected_fields
+                      }
+
+                      season_rows.append(clean_row)
+
+                  if season_rows:
+                      rows = season_rows
+                      season_used = season
+                      print(
+                          f"Loaded {len(rows)} player-week records "
+                          f"for {season}"
+                      )
+                      break
+
+              except Exception as error:
+                  print(f"{season} unavailable: {error}")
+
+          if not rows:
+              raise RuntimeError("No NFL player stats could be downloaded.")
+
+          output = {
+              "season": season_used,
+              "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+              "source": "nflverse",
+              "players": rows
+          }
+
+          with open("nfl-stats.json", "w", encoding="utf-8") as file:
+              json.dump(output, file, indent=2)
+
+          print(
+              f"Created nfl-stats.json with {len(rows)} records "
+              f"from the {season_used} season."
+          )
+          PY
+
+      - name: Commit updated stats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add nfl-stats.json
+
+          if git diff --cached --quiet; then
+            echo "No stats changes to commit."
+          else
+            git commit -m "Update NFL player stats"
+            git push
+          fi
