@@ -301,63 +301,107 @@ function calculateOpportunityScore(player) {
     return 50;
   }
 
-  const recentGames = [...games]
-    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
-    .slice(0, 4);
+  const position = player.position;
+  const playerTotals = {};
 
-  let carries = 0;
-  let targets = 0;
-  let attempts = 0;
+  weeklyStats.forEach((game) => {
+    if (game.position !== position) {
+      return;
+    }
 
-  recentGames.forEach((game) => {
-    carries += Number(
+    const name = normalizeName(
+      game.player_display_name ||
+      game.player_name ||
+      game.name
+    );
+
+    if (!name) {
+      return;
+    }
+
+    if (!playerTotals[name]) {
+      playerTotals[name] = {
+        opportunities: 0,
+        games: 0
+      };
+    }
+
+    const carries = Number(
       game.carries ||
       game.rushing_attempts ||
       0
     );
 
-    targets += Number(game.targets || 0);
+    const targets = Number(game.targets || 0);
 
-    attempts += Number(
+    const passAttempts = Number(
       game.attempts ||
       game.passing_attempts ||
       0
     );
+
+    let opportunities = 0;
+
+    if (position === "QB") {
+      opportunities =
+        passAttempts + carries;
+    }
+
+    if (position === "RB") {
+      opportunities =
+        carries + targets;
+    }
+
+    if (
+      position === "WR" ||
+      position === "TE"
+    ) {
+      opportunities =
+        targets + carries;
+    }
+
+    playerTotals[name].opportunities +=
+      opportunities;
+
+    playerTotals[name].games += 1;
   });
 
-  const gamesPlayed = Math.max(1, recentGames.length);
+  const playerAverages = Object.values(playerTotals)
+    .filter((data) => data.games > 0)
+    .map(
+      (data) =>
+        data.opportunities / data.games
+    );
 
-  const avgCarries = carries / gamesPlayed;
-  const avgTargets = targets / gamesPlayed;
-  const avgAttempts = attempts / gamesPlayed;
-
-  let opportunity = 0;
-
-  if (player.position === "QB") {
-    opportunity =
-      ((avgAttempts + avgCarries * 0.5) / 38) * 100;
+  if (playerAverages.length === 0) {
+    return 50;
   }
 
-  if (player.position === "RB") {
-    opportunity =
-      ((avgCarries + avgTargets * 1.25) / 24) * 100;
+  const leagueHigh =
+    Math.max(...playerAverages);
+
+  const playerName = normalizeName(player.name);
+  const playerData = playerTotals[playerName];
+
+  if (!playerData || playerData.games === 0) {
+    return 50;
   }
 
-  if (player.position === "WR") {
-    opportunity =
-      ((avgTargets + avgCarries * 0.5) / 12) * 100;
-  }
-
-  if (player.position === "TE") {
-    opportunity =
-      ((avgTargets + avgCarries * 0.5) / 10) * 100;
-  }
+  const playerAverage =
+    playerData.opportunities /
+    playerData.games;
 
   return Math.max(
     0,
-    Math.min(100, Math.round(opportunity))
+    Math.min(
+      100,
+      Math.round(
+        (playerAverage / leagueHigh) * 100
+      )
+    )
   );
 }
+
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
 
