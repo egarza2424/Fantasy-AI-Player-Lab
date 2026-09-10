@@ -299,7 +299,100 @@ jobs:
               f"Created defensive matchup data for "
               f"{len(defense_position_allowed)} teams."
           )
-          output = {
+          # -------------------------------------------------
+          # 2026 CURRENT / NEXT OPPONENT DATA
+          # -------------------------------------------------
+
+          schedule_url = (
+              "https://raw.githubusercontent.com/"
+              "nflverse/nfldata/master/data/games.csv"
+          )
+
+          print(f"Trying schedule data: {schedule_url}")
+
+          with urllib.request.urlopen(schedule_url) as response:
+              schedule_content = (
+                  response.read().decode("utf-8")
+              )
+
+          schedule_reader = csv.DictReader(
+              io.StringIO(schedule_content)
+          )
+
+          today = datetime.now(timezone.utc).date()
+
+          upcoming_games = []
+
+          for game in schedule_reader:
+              if str(game.get("season")) != "2026":
+                  continue
+
+              if game.get("game_type") not in {"REG", ""}:
+                  continue
+
+              gameday = game.get("gameday")
+
+              if not gameday:
+                  continue
+
+              try:
+                  game_date = datetime.strptime(
+                      gameday,
+                      "%Y-%m-%d"
+                  ).date()
+              except ValueError:
+                  continue
+
+              if game_date < today:
+                  continue
+
+              away_team = game.get("away_team")
+              home_team = game.get("home_team")
+
+              if not away_team or not home_team:
+                  continue
+
+              upcoming_games.append({
+                  "date": game_date,
+                  "week": int(game.get("week") or 0),
+                  "away_team": away_team,
+                  "home_team": home_team
+              })
+
+          upcoming_games.sort(
+              key=lambda game: (
+                  game["date"],
+                  game["week"]
+              )
+          )
+
+          team_next_opponent = {}
+
+          for game in upcoming_games:
+              away_team = game["away_team"]
+              home_team = game["home_team"]
+
+              if away_team not in team_next_opponent:
+                  team_next_opponent[away_team] = {
+                      "opponent": home_team,
+                      "week": game["week"],
+                      "gameday": game["date"].isoformat(),
+                      "location": "away"
+                  }
+
+              if home_team not in team_next_opponent:
+                  team_next_opponent[home_team] = {
+                      "opponent": away_team,
+                      "week": game["week"],
+                      "gameday": game["date"].isoformat(),
+                      "location": "home"
+                  }
+
+          print(
+              f"Created next-opponent data for "
+              f"{len(team_next_opponent)} teams."
+          )
+           output = {
               "season": season_used,
               "updated": datetime.now(
                   timezone.utc
@@ -307,7 +400,9 @@ jobs:
               "source": "nflverse",
               "players": rows,
               "defense_position_allowed":
-                  defense_position_allowed
+                  defense_position_allowed,
+              "team_next_opponent":
+                  team_next_opponent
           }
           with open(
               "nfl-stats.json",
