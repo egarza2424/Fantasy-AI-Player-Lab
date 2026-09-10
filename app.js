@@ -364,31 +364,77 @@ function getPlayer(id) {
 }
 
 function calculatePlayerRisk(player) {
-  let risk = 10;
+  let risk = 5;
 
   const injury = (player.injuryStatus || "").toLowerCase();
   const practice = (player.practiceParticipation || "").toLowerCase();
+  const status = (player.status || "").toLowerCase();
 
-  if (injury.includes("out")) risk += 80;
-  else if (injury.includes("doubtful")) risk += 65;
-  else if (injury.includes("questionable")) risk += 35;
-  else if (injury.includes("probable")) risk += 10;
-
-  if (practice.includes("did not participate") || practice.includes("dnp")) {
+  // Injury designation
+  if (injury.includes("out")) {
+    risk += 75;
+  } else if (injury.includes("doubtful")) {
+    risk += 60;
+  } else if (injury.includes("questionable")) {
     risk += 30;
-  } else if (practice.includes("limited")) {
-    risk += 15;
-  } else if (practice.includes("full")) {
-    risk -= 5;
+  } else if (injury.includes("probable")) {
+    risk += 8;
   }
 
+  // Practice participation
+  if (
+    practice.includes("did not participate") ||
+    practice.includes("dnp")
+  ) {
+    risk += 25;
+  } else if (practice.includes("limited")) {
+    risk += 12;
+  } else if (practice.includes("full")) {
+    risk -= 3;
+  }
+
+  // Active roster status
+  if (
+    status.includes("inactive") ||
+    status.includes("reserve") ||
+    status.includes("suspended")
+  ) {
+    risk += 35;
+  }
+
+  // Depth-chart role
   if (player.depthChartOrder) {
-    if (player.depthChartOrder >= 4) risk += 20;
-    else if (player.depthChartOrder === 3) risk += 12;
-    else if (player.depthChartOrder === 2) risk += 5;
+    if (player.depthChartOrder >= 4) {
+      risk += 25;
+    } else if (player.depthChartOrder === 3) {
+      risk += 16;
+    } else if (player.depthChartOrder === 2) {
+      risk += 8;
+    } else if (player.depthChartOrder === 1) {
+      risk -= 3;
+    }
+  }
+
+  // Experience uncertainty
+  if (player.yearsExp !== null && player.yearsExp !== undefined) {
+    if (player.yearsExp === 0) {
+      risk += 8;
+    } else if (player.yearsExp === 1) {
+      risk += 4;
+    }
+  }
+
+  // Age-based availability risk
+  if (player.age) {
+    if (player.age >= 33) {
+      risk += 8;
+    } else if (player.age >= 30) {
+      risk += 4;
+    }
   }
 
   return Math.max(0, Math.min(100, Math.round(risk)));
+}
 }
 
 function getMetrics(player) {
