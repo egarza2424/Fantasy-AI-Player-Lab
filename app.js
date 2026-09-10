@@ -641,16 +641,19 @@ function calculateMatchupScore(player) {
     leagueHigh
   });
   
-  const score =
+  const normalized =
     (
       (opponentPointsAllowed - leagueLow) /
       (leagueHigh - leagueLow)
-    ) * 100;
+    );
+
+  const score =
+    20 + normalized * 60;
 
   return Math.max(
-    0,
+    20,
     Math.min(
-      100,
+      80,
       Math.round(score)
     )
   );
