@@ -179,7 +179,70 @@ function calculateUsageScore(player) {
     )
   );
 }
+function calculateOpportunityScore(player) {
+  const games = getPlayerWeeklyStats(player);
 
+  if (games.length === 0) {
+    return 50;
+  }
+
+  const recentGames = [...games]
+    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
+    .slice(0, 4);
+
+  let carries = 0;
+  let targets = 0;
+  let attempts = 0;
+
+  recentGames.forEach((game) => {
+    carries += Number(
+      game.carries ||
+      game.rushing_attempts ||
+      0
+    );
+
+    targets += Number(game.targets || 0);
+
+    attempts += Number(
+      game.attempts ||
+      game.passing_attempts ||
+      0
+    );
+  });
+
+  const gamesPlayed = Math.max(1, recentGames.length);
+
+  const avgCarries = carries / gamesPlayed;
+  const avgTargets = targets / gamesPlayed;
+  const avgAttempts = attempts / gamesPlayed;
+
+  let opportunity = 0;
+
+  if (player.position === "QB") {
+    opportunity =
+      ((avgAttempts + avgCarries * 0.5) / 38) * 100;
+  }
+
+  if (player.position === "RB") {
+    opportunity =
+      ((avgCarries + avgTargets * 1.25) / 24) * 100;
+  }
+
+  if (player.position === "WR") {
+    opportunity =
+      ((avgTargets + avgCarries * 0.5) / 12) * 100;
+  }
+
+  if (player.position === "TE") {
+    opportunity =
+      ((avgTargets + avgCarries * 0.5) / 10) * 100;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round(opportunity))
+  );
+}
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
 
@@ -438,11 +501,12 @@ function calculatePlayerRisk(player) {
 
 function getMetrics(player) {
   const production = calculateProductionScore(player);
-  const usage = calculateUsageScore(player);
-  const risk = calculatePlayerRisk(player);
-
+const usage = calculateUsageScore(player);
+const opportunity = calculateOpportunityScore(player);
+const risk = calculatePlayerRisk(player);
+  
   return {
-    opportunity: usage,
+    opportunity,
     production,
     usage,
     matchup: 50,
