@@ -32,6 +32,8 @@ const riskProfiles = {
 
 let players = [];
 let weeklyStats = [];
+let defensePositionAllowed = {};
+let teamNextOpponent = {};
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
@@ -55,9 +57,23 @@ async function loadWeeklyStats() {
     const data = await response.json();
 
     weeklyStats = data.players || [];
+    defensePositionAllowed =
+      data.defense_position_allowed || {};
+    teamNextOpponent =
+      data.team_next_opponent || {};
 
     console.log(
       `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
+    );
+
+    console.log(
+      "Defensive matchup teams:",
+      Object.keys(defensePositionAllowed).length
+    );
+
+    console.log(
+      "Next-opponent teams:",
+      Object.keys(teamNextOpponent).length
     );
   } catch (error) {
     console.error("Local NFL stats error:", error);
@@ -553,6 +569,81 @@ function calculateRedZoneScore(player) {
     )
   );
 }
+function calculateMatchupScore(player) {
+  if (
+    !player ||
+    !player.team ||
+    !player.position
+  ) {
+    return 50;
+  }
+
+  const nextGame =
+    teamNextOpponent[player.team];
+
+  if (
+    !nextGame ||
+    !nextGame.opponent
+  ) {
+    return 50;
+  }
+
+  const opponent =
+    nextGame.opponent;
+
+  const opponentDefense =
+    defensePositionAllowed[opponent];
+
+  if (
+    !opponentDefense ||
+    opponentDefense[player.position] === undefined
+  ) {
+    return 50;
+  }
+
+  const opponentPointsAllowed =
+    Number(
+      opponentDefense[player.position]
+    );
+
+  const positionValues = Object.values(
+    defensePositionAllowed
+  )
+    .map((defense) =>
+      Number(defense[player.position])
+    )
+    .filter((value) =>
+      Number.isFinite(value)
+    );
+
+  if (positionValues.length < 2) {
+    return 50;
+  }
+
+  const leagueHigh =
+    Math.max(...positionValues);
+
+  const leagueLow =
+    Math.min(...positionValues);
+
+  if (leagueHigh === leagueLow) {
+    return 50;
+  }
+
+  const score =
+    (
+      (opponentPointsAllowed - leagueLow) /
+      (leagueHigh - leagueLow)
+    ) * 100;
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(score)
+    )
+  );
+}
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
 
@@ -827,22 +918,35 @@ function getMetrics(player) {
   };
 }
 
-function calculateScore(player, profile) {
-  const metrics = getMetrics(player);
-  const weights = riskProfiles[profile];
+function getMetrics(player) {
+  const production =
+    calculateProductionScore(player);
 
-  const score =
-    metrics.opportunity * weights.opportunity +
-    metrics.production * weights.production +
-    metrics.usage * weights.usage +
-    metrics.matchup * weights.matchup +
-    metrics.redzone * weights.redzone +
-    metrics.expert * weights.expert +
-    (100 - metrics.risk) * weights.risk;
+  const usage =
+    calculateUsageScore(player);
 
-  return Math.round(score * 10) / 10;
+  const opportunity =
+    calculateOpportunityScore(player);
+
+  const matchup =
+    calculateMatchupScore(player);
+
+  const redzone =
+    calculateRedZoneScore(player);
+
+  const risk =
+    calculatePlayerRisk(player);
+
+  return {
+    opportunity,
+    production,
+    usage,
+    matchup,
+    redzone,
+    expert: 50,
+    risk
+  };
 }
-
 function getRecommendation(score, advantage) {
   if (score >= 82 || advantage >= 8) {
     return "START";
