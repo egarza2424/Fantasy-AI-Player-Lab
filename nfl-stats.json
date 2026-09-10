@@ -157159,5 +157159,199 @@
       "WR": 35.82,
       "TE": 13.67
     }
+  },
+  "team_next_opponent": {
+    "SF": {
+      "opponent": "LA",
+      "week": 1,
+      "gameday": "2026-09-10",
+      "location": "away"
+    },
+    "LA": {
+      "opponent": "SF",
+      "week": 1,
+      "gameday": "2026-09-10",
+      "location": "home"
+    },
+    "CHI": {
+      "opponent": "CAR",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "CAR": {
+      "opponent": "CHI",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "TB": {
+      "opponent": "CIN",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "CIN": {
+      "opponent": "TB",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "NO": {
+      "opponent": "DET",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "DET": {
+      "opponent": "NO",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "BUF": {
+      "opponent": "HOU",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "HOU": {
+      "opponent": "BUF",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "BAL": {
+      "opponent": "IND",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "IND": {
+      "opponent": "BAL",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "CLE": {
+      "opponent": "JAX",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "JAX": {
+      "opponent": "CLE",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "ATL": {
+      "opponent": "PIT",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "PIT": {
+      "opponent": "ATL",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "NYJ": {
+      "opponent": "TEN",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "TEN": {
+      "opponent": "NYJ",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "ARI": {
+      "opponent": "LAC",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "LAC": {
+      "opponent": "ARI",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "MIA": {
+      "opponent": "LV",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "LV": {
+      "opponent": "MIA",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "GB": {
+      "opponent": "MIN",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "MIN": {
+      "opponent": "GB",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "WAS": {
+      "opponent": "PHI",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "PHI": {
+      "opponent": "WAS",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "DAL": {
+      "opponent": "NYG",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "away"
+    },
+    "NYG": {
+      "opponent": "DAL",
+      "week": 1,
+      "gameday": "2026-09-13",
+      "location": "home"
+    },
+    "DEN": {
+      "opponent": "KC",
+      "week": 1,
+      "gameday": "2026-09-14",
+      "location": "away"
+    },
+    "KC": {
+      "opponent": "DEN",
+      "week": 1,
+      "gameday": "2026-09-14",
+      "location": "home"
+    },
+    "NE": {
+      "opponent": "PIT",
+      "week": 2,
+      "gameday": "2026-09-20",
+      "location": "home"
+    },
+    "SEA": {
+      "opponent": "ARI",
+      "week": 2,
+      "gameday": "2026-09-20",
+      "location": "away"
+    }
   }
 }
