@@ -29,7 +29,49 @@ const riskProfiles = {
     risk: 0.02
   }
 };
+const metricDescriptions = {
+  Opportunity: {
+    weight: "25%",
+    description:
+      "Measures how often a player has the chance to produce compared with others at the same position. QB: pass attempts + carries. RB: carries + targets. WR/TE: targets + carries."
+  },
 
+  "Recent Production": {
+    weight: "20%",
+    description:
+      "Measures fantasy production using the player's four most recent games and PPR scoring, including passing, rushing and receiving production."
+  },
+
+  Usage: {
+    weight: "15%",
+    description:
+      "Measures how heavily a player is involved in the offense. WR/TE uses team target share, RB uses team rushing-attempt share, and QB uses passing + rushing attempts."
+  },
+
+  Matchup: {
+    weight: "15%",
+    description:
+      "Evaluates the player's next opponent using PPR fantasy points that defense allowed to the player's position last season. Easier matchups receive higher scores."
+  },
+
+  "Red-Zone Usage": {
+    weight: "10%",
+    description:
+      "Measures involvement inside the opponent's 20-yard line. QB uses red-zone pass attempts + carries. RB/WR/TE use their share of team red-zone carries + targets."
+  },
+
+  "Model Confidence": {
+    weight: "10%",
+    description:
+      "Measures how dependable the player's projection appears based on recent production consistency, opportunity stability, usage stability and availability."
+  },
+
+  "Risk Adjustment": {
+    weight: "5%",
+    description:
+      "Measures player reliability using injury status, practice participation, roster status, depth-chart role, experience and age. A higher score means lower risk."
+  }
+};
 let players = [];
 let weeklyStats = [];
 let defensePositionAllowed = {};
@@ -863,6 +905,165 @@ function calculateModelConfidence(player) {
     )
   );
 }
+function getModelConfidenceBreakdown(player) {
+  const games = getPlayerWeeklyStats(player);
+
+  if (games.length < 2) {
+    return null;
+  }
+
+  const recentGames = [...games]
+    .sort(
+      (a, b) =>
+        Number(b.week || 0) -
+        Number(a.week || 0)
+    )
+    .slice(0, 4);
+
+  function stabilityScore(values) {
+    const validValues = values.filter(
+      (value) => Number.isFinite(value)
+    );
+
+    if (validValues.length < 2) {
+      return 50;
+    }
+
+    const average =
+      validValues.reduce(
+        (total, value) => total + value,
+        0
+      ) / validValues.length;
+
+    if (average <= 0) {
+      return 50;
+    }
+
+    const variance =
+      validValues.reduce(
+        (total, value) =>
+          total +
+          Math.pow(value - average, 2),
+        0
+      ) / validValues.length;
+
+    const standardDeviation =
+      Math.sqrt(variance);
+
+    const coefficientOfVariation =
+      standardDeviation / average;
+
+    return Math.max(
+      20,
+      Math.min(
+        100,
+        Math.round(
+          100 -
+          coefficientOfVariation * 100
+        )
+      )
+    );
+  }
+
+  const fantasyPoints =
+    recentGames.map((game) => (
+      Number(game.passing_yards || 0) / 25 +
+      Number(game.passing_tds || 0) * 4 -
+      Number(game.interceptions || 0) * 2 +
+      Number(game.rushing_yards || 0) / 10 +
+      Number(game.rushing_tds || 0) * 6 +
+      Number(game.receptions || 0) +
+      Number(game.receiving_yards || 0) / 10 +
+      Number(game.receiving_tds || 0) * 6
+    ));
+
+  const opportunityValues =
+    recentGames.map((game) => {
+      const carries =
+        Number(game.carries || 0);
+
+      const targets =
+        Number(game.targets || 0);
+
+      const passAttempts =
+        Number(game.attempts || 0);
+
+      if (player.position === "QB") {
+        return passAttempts + carries;
+      }
+
+      if (player.position === "RB") {
+        return carries + targets;
+      }
+
+      return targets + carries;
+    });
+
+  const usageValues =
+    recentGames.map((game) => {
+      const week = Number(game.week);
+      const team = game.team;
+
+      const teamGameRows =
+        weeklyStats.filter(
+          (row) =>
+            row.team === team &&
+            Number(row.week) === week
+        );
+
+      if (player.position === "QB") {
+        return (
+          Number(game.attempts || 0) +
+          Number(game.carries || 0)
+        );
+      }
+
+      if (
+        player.position === "WR" ||
+        player.position === "TE"
+      ) {
+        const teamTargets =
+          teamGameRows.reduce(
+            (total, row) =>
+              total +
+              Number(row.targets || 0),
+            0
+          );
+
+        return teamTargets > 0
+          ? Number(game.targets || 0) /
+            teamTargets
+          : 0;
+      }
+
+      const teamCarries =
+        teamGameRows.reduce(
+          (total, row) =>
+            total +
+            Number(row.carries || 0),
+          0
+        );
+
+      return teamCarries > 0
+        ? Number(game.carries || 0) /
+          teamCarries
+        : 0;
+    });
+
+  return {
+    productionConsistency:
+      stabilityScore(fantasyPoints),
+
+    opportunityStability:
+      stabilityScore(opportunityValues),
+
+    usageStability:
+      stabilityScore(usageValues),
+
+    availability:
+      100 - calculatePlayerRisk(player)
+  };
+}
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
 
@@ -1196,17 +1397,105 @@ function getTopSignals(player) {
     .slice(0, 3);
 }
 
-function metricRow(label, value, isRisk = false) {
-  const displayValue = isRisk ? `${value}/100` : `${value}/100`;
+function metricRow(
+  label,
+  value,
+  isRisk = false,
+  breakdown = null
+) {
+  const info =
+    metricDescriptions[label];
+
+  const description = info
+    ? info.description
+    : "";
+
+  const weight = info
+    ? info.weight
+    : "";
+
+  const breakdownHtml =
+    label === "Model Confidence" &&
+    breakdown
+      ? `
+        <div class="confidence-breakdown">
+          <strong>Confidence breakdown</strong>
+
+          <div>
+            Production Consistency
+            <span>
+              ${breakdown.productionConsistency}/100
+              · 35%
+            </span>
+          </div>
+
+          <div>
+            Opportunity Stability
+            <span>
+              ${breakdown.opportunityStability}/100
+              · 30%
+            </span>
+          </div>
+
+          <div>
+            Usage Stability
+            <span>
+              ${breakdown.usageStability}/100
+              · 20%
+            </span>
+          </div>
+
+          <div>
+            Availability
+            <span>
+              ${breakdown.availability}/100
+              · 15%
+            </span>
+          </div>
+        </div>
+      `
+      : "";
 
   return `
     <div class="metric-row">
       <div class="metric-label-row">
-        <span>${label}</span>
-        <strong>${displayValue}</strong>
+
+        <span class="metric-name">
+          ${label}
+
+          <button
+            type="button"
+            class="metric-info-button"
+            aria-label="Explain ${label}"
+            onclick="
+              this.closest('.metric-row')
+                .querySelector('.metric-explanation')
+                .classList.toggle('active')
+            "
+          >
+            i
+          </button>
+        </span>
+
+        <strong>${value}/100</strong>
       </div>
+
       <div class="metric-track">
-        <div class="metric-fill" style="width:${value}%"></div>
+        <div
+          class="metric-fill"
+          style="width:${value}%"
+        ></div>
+      </div>
+
+      <div class="metric-explanation">
+        <div class="metric-explanation-heading">
+          <strong>${label}</strong>
+          <span>${weight} of Balanced score</span>
+        </div>
+
+        <p>${description}</p>
+
+        ${breakdownHtml}
       </div>
     </div>
   `;
@@ -1216,6 +1505,8 @@ function renderPlayerCard(player, score, recommendation) {
   const metrics = getMetrics(player);
   const topSignals = getTopSignals(player);
   const riskAdjustment = 100 - metrics.risk;
+    const confidenceBreakdown =
+    getModelConfidenceBreakdown(player);
 
   return `
     <article class="player-result-card">
@@ -1280,7 +1571,12 @@ function renderPlayerCard(player, score, recommendation) {
         ${metricRow("Usage", metrics.usage)}
         ${metricRow("Matchup", metrics.matchup)}
         ${metricRow("Red-Zone Usage", metrics.redzone)}
-        ${metricRow("Model Confidence", metrics.expert)}
+        ${metricRow(
+          "Model Confidence",
+          metrics.expert,
+          false,
+          confidenceBreakdown
+        )}
         ${metricRow("Risk Adjustment", riskAdjustment, true)}
       </div>
     </article>
