@@ -21,13 +21,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Download and convert NFL stats
+          - name: Download and convert NFL stats
         run: |
           python <<'PY'
           import csv
+          import gzip
           import io
           import json
           import urllib.request
+          from collections import defaultdict
           from datetime import datetime, timezone
 
           seasons = [2025]
@@ -60,15 +62,15 @@ jobs:
           season_used = None
 
           for season in seasons:
-              url = (
+              stats_url = (
                   "https://github.com/nflverse/nflverse-data/"
                   f"releases/download/stats_player/stats_player_week_{season}.csv"
               )
 
-              print(f"Trying {url}")
+              print(f"Trying player stats: {stats_url}")
 
               try:
-                  with urllib.request.urlopen(url) as response:
+                  with urllib.request.urlopen(stats_url) as response:
                       content = response.read().decode("utf-8")
 
                   reader = csv.DictReader(io.StringIO(content))
@@ -87,39 +89,145 @@ jobs:
                           for field in selected_fields
                       }
 
+                      clean_row["red_zone_pass_attempts"] = 0
+                      clean_row["red_zone_carries"] = 0
+                      clean_row["red_zone_targets"] = 0
+
                       season_rows.append(clean_row)
 
                   if season_rows:
                       rows = season_rows
                       season_used = season
+
                       print(
                           f"Loaded {len(rows)} player-week records "
                           f"for {season}"
                       )
+
                       break
 
               except Exception as error:
-                  print(f"{season} unavailable: {error}")
+                  print(f"{season} player stats unavailable: {error}")
 
           if not rows:
-              raise RuntimeError("No NFL player stats could be downloaded.")
+              raise RuntimeError(
+                  "No NFL player stats could be downloaded."
+              )
+
+          pbp_url = (
+              "https://github.com/nflverse/nflverse-data/"
+              f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
+          )
+
+          print(f"Trying play-by-play: {pbp_url}")
+
+          red_zone_stats = defaultdict(
+              lambda: {
+                  "red_zone_pass_attempts": 0,
+                  "red_zone_carries": 0,
+                  "red_zone_targets": 0
+              }
+          )
+
+          with urllib.request.urlopen(pbp_url) as response:
+              compressed = response.read()
+
+          content = gzip.decompress(compressed).decode("utf-8")
+
+          reader = csv.DictReader(io.StringIO(content))
+
+          for play in reader:
+              if play.get("season_type") != "REG":
+                  continue
+
+              try:
+                  yardline = float(play.get("yardline_100") or 999)
+              except ValueError:
+                  continue
+
+              if yardline > 20:
+                  continue
+
+              week = play.get("week")
+              team = play.get("posteam")
+
+              if not week or not team:
+                  continue
+
+              passer_id = play.get("passer_player_id")
+              rusher_id = play.get("rusher_player_id")
+              receiver_id = play.get("receiver_player_id")
+
+              pass_attempt = play.get("pass_attempt") == "1"
+              rush_attempt = play.get("rush_attempt") == "1"
+
+              if pass_attempt and passer_id:
+                  key = (passer_id, str(week))
+
+                  red_zone_stats[key][
+                      "red_zone_pass_attempts"
+                  ] += 1
+
+              if rush_attempt and rusher_id:
+                  key = (rusher_id, str(week))
+
+                  red_zone_stats[key][
+                      "red_zone_carries"
+                  ] += 1
+
+              if pass_attempt and receiver_id:
+                  key = (receiver_id, str(week))
+
+                  red_zone_stats[key][
+                      "red_zone_targets"
+                  ] += 1
+
+          matched = 0
+
+          for row in rows:
+              player_id = row.get("player_id")
+              week = str(row.get("week"))
+
+              key = (player_id, week)
+
+              rz = red_zone_stats.get(key)
+
+              if rz:
+                  row.update(rz)
+                  matched += 1
+
+          print(
+              f"Matched red-zone stats to "
+              f"{matched} player-week rows."
+          )
 
           output = {
               "season": season_used,
-              "updated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+              "updated": datetime.now(
+                  timezone.utc
+              ).strftime("%Y-%m-%d"),
               "source": "nflverse",
               "players": rows
           }
 
-          with open("nfl-stats.json", "w", encoding="utf-8") as file:
-              json.dump(output, file, indent=2)
+          with open(
+              "nfl-stats.json",
+              "w",
+              encoding="utf-8"
+          ) as file:
+              json.dump(
+                  output,
+                  file,
+                  indent=2
+              )
 
           print(
-              f"Created nfl-stats.json with {len(rows)} records "
+              f"Created nfl-stats.json with "
+              f"{len(rows)} records "
               f"from the {season_used} season."
           )
           PY
-
+          
       - name: Commit updated stats
         run: |
           git config user.name "github-actions[bot]"
