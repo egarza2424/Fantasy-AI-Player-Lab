@@ -199,16 +199,116 @@ jobs:
               f"Matched red-zone stats to "
               f"{matched} player-week rows."
           )
+          # -------------------------------------------------
+          # MATCHUP DATA
+          # Calculate 2025 fantasy points allowed per game
+          # by each defense to QB, RB, WR and TE.
+          # -------------------------------------------------
 
-          output = {
+          defense_position_totals = defaultdict(
+              lambda: {
+                  "fantasy_points": 0.0,
+                  "games": set()
+              }
+          )
+
+          for row in rows:
+              defense = row.get("opponent_team")
+              position = row.get("position")
+              week = str(row.get("week") or "")
+
+              if (
+                  not defense or
+                  position not in {"QB", "RB", "WR", "TE"} or
+                  not week
+              ):
+                  continue
+
+              passing_yards = float(
+                  row.get("passing_yards") or 0
+              )
+
+              passing_tds = float(
+                  row.get("passing_tds") or 0
+              )
+
+              interceptions = float(
+                  row.get("interceptions") or 0
+              )
+
+              rushing_yards = float(
+                  row.get("rushing_yards") or 0
+              )
+
+              rushing_tds = float(
+                  row.get("rushing_tds") or 0
+              )
+
+              receptions = float(
+                  row.get("receptions") or 0
+              )
+
+              receiving_yards = float(
+                  row.get("receiving_yards") or 0
+              )
+
+              receiving_tds = float(
+                  row.get("receiving_tds") or 0
+              )
+
+              fantasy_points = (
+                  passing_yards / 25 +
+                  passing_tds * 4 -
+                  interceptions * 2 +
+                  rushing_yards / 10 +
+                  rushing_tds * 6 +
+                  receptions +
+                  receiving_yards / 10 +
+                  receiving_tds * 6
+              )
+
+              key = (defense, position)
+
+              defense_position_totals[key][
+                  "fantasy_points"
+              ] += fantasy_points
+
+              defense_position_totals[key][
+                  "games"
+              ].add(week)
+
+          defense_position_allowed = {}
+
+          for (defense, position), data in (
+              defense_position_totals.items()
+          ):
+              game_count = len(data["games"])
+
+              if game_count == 0:
+                  continue
+
+              if defense not in defense_position_allowed:
+                  defense_position_allowed[defense] = {}
+
+              defense_position_allowed[defense][position] = round(
+                  data["fantasy_points"] / game_count,
+                  2
+              )
+
+          print(
+              f"Created defensive matchup data for "
+              f"{len(defense_position_allowed)} teams."
+          )
+                    output = {
               "season": season_used,
               "updated": datetime.now(
                   timezone.utc
               ).strftime("%Y-%m-%d"),
               "source": "nflverse",
-              "players": rows
+              "players": rows,
+              "defense_position_allowed":
+                  defense_position_allowed
           }
-
           with open(
               "nfl-stats.json",
               "w",
