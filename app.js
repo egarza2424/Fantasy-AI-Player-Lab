@@ -578,9 +578,11 @@ function calculateMatchupScore(player) {
     return 50;
   }
 
-  const nextGame =
-    teamNextOpponent[player.team];
+  const teamCode =
+    player.team === "LAR" ? "LA" : player.team;
 
+  const nextGame =
+    teamNextOpponent[teamCode];
   if (
     !nextGame ||
     !nextGame.opponent
