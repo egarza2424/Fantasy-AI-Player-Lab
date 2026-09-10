@@ -281,12 +281,6 @@ function calculateProductionScore(player) {
   );
 }
 
-  const average = totalFantasyPoints / recentGames.length;
-  const score = (average / 25) * 100;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
 function calculateUsageScore(player) {
   const games = getPlayerWeeklyStats(player);
 
