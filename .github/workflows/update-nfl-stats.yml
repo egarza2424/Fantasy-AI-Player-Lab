@@ -406,98 +406,104 @@ jobs:
 
           if fantasypros_api_key:
               print("Trying FantasyPros ECR data...")
+              
+              fp_url = (
+                  "https://api.fantasypros.com/"
+                  "public/v2/json/nfl/2026/"
+                  "consensus-rankings"
+                  "?scoring=PPR"
+              )
 
-              positions = ["QB", "RB", "WR", "TE"]
+              request = urllib.request.Request(
+                  fp_url,
+                  headers={
+                      "x-api-key":
+                          fantasypros_api_key
+                  }
+              )
 
-              for position in positions:
-                  fp_url = (
-                      "https://api.fantasypros.com/"
-                      "public/v2/json/nfl/2026/"
-                      "consensus-rankings"
-                      f"?position={position}"
-                      "&scoring=PPR"
+              try:
+                  with urllib.request.urlopen(
+                      request
+                  ) as response:
+                      fp_data = json.loads(
+                          response.read().decode(
+                              "utf-8"
+                          )
+                      )
+
+                  fp_players = fp_data.get(
+                      "players",
+                      []
                   )
 
-                  request = urllib.request.Request(
-                      fp_url,
-                      headers={
-                          "x-api-key":
-                              fantasypros_api_key
-                      }
+                  print(
+                      f"FantasyPros returned "
+                      f"{len(fp_players)} players."
                   )
 
-                  try:
-                      with urllib.request.urlopen(
-                          request
-                      ) as response:
-                          fp_data = json.loads(
-                              response.read().decode(
-                                  "utf-8"
+                  for player in fp_players:
+                      name = player.get(
+                          "player_name"
+                      )
+
+                      if not name:
+                          continue
+
+                      position = player.get(
+                          "player_position_id"
+                      )
+
+                      if position not in {
+                          "QB",
+                          "RB",
+                          "WR",
+                          "TE"
+                      }:
+                          continue
+
+                      expert_rankings[name] = {
+                          "player_id":
+                              player.get(
+                                  "player_id"
+                              ),
+                          "team":
+                              player.get(
+                                  "player_team_id"
+                              ),
+                          "position":
+                              position,
+                          "rank_ecr":
+                              player.get(
+                                  "rank_ecr"
+                              ),
+                          "rank_min":
+                              player.get(
+                                  "rank_min"
+                              ),
+                          "rank_max":
+                              player.get(
+                                  "rank_max"
+                              ),
+                          "rank_ave":
+                              player.get(
+                                  "rank_ave"
+                              ),
+                          "rank_std":
+                              player.get(
+                                  "rank_std"
+                              ),
+                          "pos_rank":
+                              player.get(
+                                  "pos_rank"
                               )
-                          )
+                      }
 
-                      for player in fp_data.get(
-                          "players",
-                          []
-                      ):
-                          name = player.get(
-                              "player_name"
-                          )
-
-                          if not name:
-                              continue
-
-                          expert_rankings[name] = {
-                              "player_id":
-                                  player.get(
-                                      "player_id"
-                                  ),
-                              "team":
-                                  player.get(
-                                      "player_team_id"
-                                  ),
-                              "position":
-                                  player.get(
-                                      "player_position_id"
-                                  ),
-                              "rank_ecr":
-                                  player.get(
-                                      "rank_ecr"
-                                  ),
-                              "rank_min":
-                                  player.get(
-                                      "rank_min"
-                                  ),
-                              "rank_max":
-                                  player.get(
-                                      "rank_max"
-                                  ),
-                              "rank_ave":
-                                  player.get(
-                                      "rank_ave"
-                                  ),
-                              "rank_std":
-                                  player.get(
-                                      "rank_std"
-                                  ),
-                              "pos_rank":
-                                  player.get(
-                                      "pos_rank"
-                                  )
-                          }
-
-                      print(
-                          f"Loaded FantasyPros "
-                          f"{position} ECR data."
-                      )
-
-                  except Exception as error:
-                      print(
-                          f"FantasyPros {position} "
-                          f"ECR unavailable: {error}"
-                      )
-
-          else:
+              except Exception as error:
+                  print(
+                      "FantasyPros ECR unavailable: "
+                      f"{error}"
+                  )            else:
               print(
                   "FANTASYPROS_API_KEY secret "
                   "not available."
