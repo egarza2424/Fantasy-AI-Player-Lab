@@ -293,7 +293,7 @@ function calculateUsageScore(player) {
     )
   );
 }
-}
+
 function calculateOpportunityScore(player) {
   const games = getPlayerWeeklyStats(player);
 
