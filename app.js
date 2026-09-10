@@ -631,15 +631,6 @@ function calculateMatchupScore(player) {
   if (leagueHigh === leagueLow) {
     return 50;
   }
-  console.log("MATCHUP DEBUG", {
-    player: player.name,
-    team: player.team,
-    position: player.position,
-    opponent,
-    opponentPointsAllowed,
-    leagueLow,
-    leagueHigh
-  });
   
   const normalized =
     (
@@ -655,6 +646,220 @@ function calculateMatchupScore(player) {
     Math.min(
       80,
       Math.round(score)
+    )
+  );
+}
+function calculateModelConfidence(player) {
+  const games = getPlayerWeeklyStats(player);
+
+  if (games.length === 0) {
+    return 50;
+  }
+
+  const recentGames = [...games]
+    .sort(
+      (a, b) =>
+        Number(b.week || 0) -
+        Number(a.week || 0)
+    )
+    .slice(0, 4);
+
+  if (recentGames.length < 2) {
+    return 50;
+  }
+
+  function stabilityScore(values) {
+    const validValues = values.filter(
+      (value) => Number.isFinite(value)
+    );
+
+    if (validValues.length < 2) {
+      return 50;
+    }
+
+    const average =
+      validValues.reduce(
+        (total, value) => total + value,
+        0
+      ) / validValues.length;
+
+    if (average <= 0) {
+      return 50;
+    }
+
+    const variance =
+      validValues.reduce(
+        (total, value) =>
+          total +
+          Math.pow(value - average, 2),
+        0
+      ) / validValues.length;
+
+    const standardDeviation =
+      Math.sqrt(variance);
+
+    const coefficientOfVariation =
+      standardDeviation / average;
+
+    const score =
+      100 - coefficientOfVariation * 100;
+
+    return Math.max(
+      20,
+      Math.min(
+        100,
+        Math.round(score)
+      )
+    );
+  }
+
+  const fantasyPoints = recentGames.map(
+    (game) => {
+      const passingYards =
+        Number(game.passing_yards || 0);
+
+      const passingTDs =
+        Number(game.passing_tds || 0);
+
+      const interceptions =
+        Number(game.interceptions || 0);
+
+      const rushingYards =
+        Number(game.rushing_yards || 0);
+
+      const rushingTDs =
+        Number(game.rushing_tds || 0);
+
+      const receptions =
+        Number(game.receptions || 0);
+
+      const receivingYards =
+        Number(game.receiving_yards || 0);
+
+      const receivingTDs =
+        Number(game.receiving_tds || 0);
+
+      return (
+        passingYards / 25 +
+        passingTDs * 4 -
+        interceptions * 2 +
+        rushingYards / 10 +
+        rushingTDs * 6 +
+        receptions +
+        receivingYards / 10 +
+        receivingTDs * 6
+      );
+    }
+  );
+
+  const opportunityValues =
+    recentGames.map((game) => {
+      const carries =
+        Number(game.carries || 0);
+
+      const targets =
+        Number(game.targets || 0);
+
+      const passAttempts =
+        Number(game.attempts || 0);
+
+      if (player.position === "QB") {
+        return passAttempts + carries;
+      }
+
+      if (player.position === "RB") {
+        return carries + targets;
+      }
+
+      return targets + carries;
+    });
+
+  const usageValues =
+    recentGames.map((game) => {
+      const week = Number(game.week);
+      const team = game.team;
+
+      if (!team || !week) {
+        return 0;
+      }
+
+      const teamGameRows =
+        weeklyStats.filter(
+          (row) =>
+            row.team === team &&
+            Number(row.week) === week
+        );
+
+      if (player.position === "QB") {
+        return (
+          Number(game.attempts || 0) +
+          Number(game.carries || 0)
+        );
+      }
+
+      if (
+        player.position === "WR" ||
+        player.position === "TE"
+      ) {
+        const teamTargets =
+          teamGameRows.reduce(
+            (total, row) =>
+              total +
+              Number(row.targets || 0),
+            0
+          );
+
+        if (teamTargets <= 0) {
+          return 0;
+        }
+
+        return (
+          Number(game.targets || 0) /
+          teamTargets
+        );
+      }
+
+      const teamCarries =
+        teamGameRows.reduce(
+          (total, row) =>
+            total +
+            Number(row.carries || 0),
+          0
+        );
+
+      if (teamCarries <= 0) {
+        return 0;
+      }
+
+      return (
+        Number(game.carries || 0) /
+        teamCarries
+      );
+    });
+
+  const productionConsistency =
+    stabilityScore(fantasyPoints);
+
+  const opportunityStability =
+    stabilityScore(opportunityValues);
+
+  const usageStability =
+    stabilityScore(usageValues);
+
+  const availability =
+    100 - calculatePlayerRisk(player);
+
+  const confidence =
+    productionConsistency * 0.35 +
+    opportunityStability * 0.30 +
+    usageStability * 0.20 +
+    availability * 0.15;
+
+  return Math.max(
+    20,
+    Math.min(
+      100,
+      Math.round(confidence)
     )
   );
 }
@@ -930,6 +1135,9 @@ function getMetrics(player) {
   const redzone =
     calculateRedZoneScore(player);
 
+  const expert =
+    calculateModelConfidence(player);
+
   const risk =
     calculatePlayerRisk(player);
 
@@ -939,7 +1147,7 @@ function getMetrics(player) {
     usage,
     matchup,
     redzone,
-    expert: 50,
+    expert,
     risk
   };
 }
@@ -974,7 +1182,7 @@ function getTopSignals(player) {
   const metrics = getMetrics(player);
 
   const positiveSignals = [
-    ["Expert Confidence", metrics.expert],
+    ["Model Confidence", metrics.expert],
     ["Opportunity", metrics.opportunity],
     ["Recent Production", metrics.production],
     ["Usage", metrics.usage],
@@ -1072,7 +1280,7 @@ function renderPlayerCard(player, score, recommendation) {
         ${metricRow("Usage", metrics.usage)}
         ${metricRow("Matchup", metrics.matchup)}
         ${metricRow("Red-Zone Usage", metrics.redzone)}
-        ${metricRow("Expert Confidence", metrics.expert)}
+        ${metricRow("Model Confidence", metrics.expert)}
         ${metricRow("Risk Adjustment", riskAdjustment, true)}
       </div>
     </article>
