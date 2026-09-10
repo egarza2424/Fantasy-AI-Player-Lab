@@ -31,8 +31,11 @@ const riskProfiles = {
 };
 
 let players = [];
-let weeklyStats = [];
-
+let weeklyStats = {
+  passing: [],
+  rushing: [],
+  receiving: []
+};
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
@@ -45,48 +48,82 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-    const statsUrl =
-      "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv";
+    const currentSeason = 2026;
 
-    const response = await fetch(statsUrl);
-    if (!response.ok) {
-      throw new Error("Could not load NFL weekly statistics");
+    const [passingRes, rushingRes, receivingRes] = await Promise.all([
+      fetch(
+        `https://api.nfldata.org/v1/stats/passing?season=${currentSeason}`
+      ),
+      fetch(
+        `https://api.nfldata.org/v1/stats/rushing?season=${currentSeason}`
+      ),
+      fetch(
+        `https://api.nfldata.org/v1/stats/receiving?season=${currentSeason}`
+      )
+    ]);
+
+    if (
+      !passingRes.ok ||
+      !rushingRes.ok ||
+      !receivingRes.ok
+    ) {
+      throw new Error("Could not load NFL stats");
     }
 
-    const csvText = await response.text();
-    const parsed = Papa.parse(csvText, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true
-    });
+    const passing = await passingRes.json();
+    const rushing = await rushingRes.json();
+    const receiving = await receivingRes.json();
 
-    weeklyStats = parsed.data.filter(
-      (row) =>
-        row.player_display_name &&
-        ["QB", "RB", "WR", "TE"].includes(row.position)
-    );
+    weeklyStats = {
+      passing: Array.isArray(passing) ? passing : passing.data || [],
+      rushing: Array.isArray(rushing) ? rushing : rushing.data || [],
+      receiving: Array.isArray(receiving) ? receiving : receiving.data || []
+    };
 
-    console.log(`Loaded ${weeklyStats.length} weekly NFL stat records`);
+    console.log("Real NFL stats loaded:", weeklyStats);
+
   } catch (error) {
-    console.error("Weekly stats error:", error);
-    weeklyStats = [];
+    console.error("NFL stats error:", error);
+
+    weeklyStats = {
+      passing: [],
+      rushing: [],
+      receiving: []
+    };
   }
+}
+function normalizeName(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[.'’-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function getPlayerWeeklyStats(player) {
-  if (!player || weeklyStats.length === 0) return [];
+  if (!player) {
+    return [];
+  }
 
-  const normalizedPlayerName = player.name.toLowerCase().trim();
+  const playerName = normalizeName(player.name);
 
-  return weeklyStats.filter((row) => {
-    const statName = String(row.player_display_name || "")
-      .toLowerCase()
-      .trim();
+  const allStats = [
+    ...weeklyStats.passing,
+    ...weeklyStats.rushing,
+    ...weeklyStats.receiving
+  ];
 
-    return statName === normalizedPlayerName && row.team === player.team;
+  return allStats.filter((row) => {
+    const rowName =
+      normalizeName(
+        row.player_display_name ||
+        row.player_name ||
+        row.name
+      );
+
+    return rowName === playerName;
   });
 }
-
 function calculateProductionScore(player) {
   const games = getPlayerWeeklyStats(player);
   if (games.length === 0) return 50;
@@ -127,6 +164,60 @@ function calculateProductionScore(player) {
 }
 
 function calculateUsageScore(player) {
+  const games = getPlayerWeeklyStats(player);
+
+  if (games.length === 0) {
+    return 50;
+  }
+
+  let attempts = 0;
+  let carries = 0;
+  let targets = 0;
+
+  games.forEach((game) => {
+    attempts += Number(
+      game.attempts ||
+      game.passing_attempts ||
+      0
+    );
+
+    carries += Number(
+      game.carries ||
+      game.rushing_attempts ||
+      0
+    );
+
+    targets += Number(
+      game.targets || 0
+    );
+  });
+
+  let usage;
+
+  if (player.position === "QB") {
+    usage = attempts / Math.max(1, games.length);
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round((usage / 38) * 100)
+      )
+    );
+  }
+
+  usage =
+    (carries + targets) /
+    Math.max(1, games.length);
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round((usage / 22) * 100)
+    )
+  );
+}
   const games = getPlayerWeeklyStats(player);
   if (games.length === 0) return 50;
 
