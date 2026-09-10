@@ -44,7 +44,7 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-    const response = await fetch("./nfl-stats.json?v=5");
+    const response = await fetch("./nfl-stats.json?v=6");
 
     if (!response.ok) {
       throw new Error(
@@ -56,18 +56,12 @@ async function loadWeeklyStats() {
 
     weeklyStats = data.players || [];
 
-    alert(
-      `NFL stats loaded successfully.\n` +
-      `Season: ${data.season}\n` +
-      `Stat rows: ${weeklyStats.length}`
+    console.log(
+      `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
     );
-
   } catch (error) {
+    console.error("Local NFL stats error:", error);
     weeklyStats = [];
-
-    alert(
-      `NFL STATS FAILED TO LOAD:\n${error.message}`
-    );
   }
 }
 function normalizeName(name) {
@@ -97,12 +91,6 @@ function getPlayerWeeklyStats(player) {
     );
   });
 
-  console.log(
-    "Stats match:",
-    player.name,
-    matches.length,
-    matches.slice(0, 2)
-  );
 
   return matches;
 }
