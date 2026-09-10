@@ -299,7 +299,7 @@ jobs:
               f"Created defensive matchup data for "
               f"{len(defense_position_allowed)} teams."
           )
-                    output = {
+          output = {
               "season": season_used,
               "updated": datetime.now(
                   timezone.utc
