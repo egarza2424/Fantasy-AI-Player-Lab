@@ -320,7 +320,7 @@ async function loadPlayers() {
           `${defaultB.name} — ${defaultB.position} — ${defaultB.team}`;
       }
 
-      comparePlayers();
+
     }
   } catch (error) {
     console.error("NFL player loading error:", error);
