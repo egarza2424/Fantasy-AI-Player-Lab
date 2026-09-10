@@ -131,53 +131,168 @@ function calculateUsageScore(player) {
     return 50;
   }
 
-  let attempts = 0;
-  let carries = 0;
-  let targets = 0;
-
-  games.forEach((game) => {
-    attempts += Number(
-      game.attempts ||
-      game.passing_attempts ||
-      0
-    );
-
-    carries += Number(
-      game.carries ||
-      game.rushing_attempts ||
-      0
-    );
-
-    targets += Number(
-      game.targets || 0
-    );
-  });
-
-  let usage;
-
+  // QB usage:
+  // Pass attempts + rush attempts per game,
+  // compared with every other QB in the league.
   if (player.position === "QB") {
-    usage = attempts / Math.max(1, games.length);
+    const qbTotals = {};
+
+    weeklyStats.forEach((game) => {
+      if (game.position !== "QB") return;
+
+      const name = normalizeName(
+        game.player_display_name ||
+        game.player_name ||
+        game.name
+      );
+
+      if (!name) return;
+
+      if (!qbTotals[name]) {
+        qbTotals[name] = {
+          opportunities: 0,
+          games: 0
+        };
+      }
+
+      const passAttempts = Number(
+        game.attempts ||
+        game.passing_attempts ||
+        0
+      );
+
+      const rushAttempts = Number(
+        game.carries ||
+        game.rushing_attempts ||
+        0
+      );
+
+      qbTotals[name].opportunities +=
+        passAttempts + rushAttempts;
+
+      qbTotals[name].games += 1;
+    });
+
+    const qbAverages = Object.values(qbTotals)
+      .filter((qb) => qb.games > 0)
+      .map(
+        (qb) =>
+          qb.opportunities / qb.games
+      );
+
+    const leagueHigh =
+      qbAverages.length > 0
+        ? Math.max(...qbAverages)
+        : 1;
+
+    const playerName = normalizeName(player.name);
+    const playerData = qbTotals[playerName];
+
+    if (!playerData || playerData.games === 0) {
+      return 50;
+    }
+
+    const playerAverage =
+      playerData.opportunities /
+      playerData.games;
 
     return Math.max(
       0,
       Math.min(
         100,
-        Math.round((usage / 38) * 100)
+        Math.round(
+          (playerAverage / leagueHigh) * 100
+        )
       )
     );
   }
 
-  usage =
-    (carries + targets) /
-    Math.max(1, games.length);
+  let totalShare = 0;
+  let validGames = 0;
+
+  games.forEach((game) => {
+    const week = Number(game.week);
+    const team = game.team;
+
+    if (!team || !week) {
+      return;
+    }
+
+    // Find everyone from the same team
+    // in the same game.
+    const teamGameRows = weeklyStats.filter(
+      (row) =>
+        row.team === team &&
+        Number(row.week) === week
+    );
+
+    // WR and TE:
+    // Player targets / total team targets.
+    if (
+      player.position === "WR" ||
+      player.position === "TE"
+    ) {
+      const playerTargets =
+        Number(game.targets || 0);
+
+      const teamTargets = teamGameRows.reduce(
+        (total, row) =>
+          total + Number(row.targets || 0),
+        0
+      );
+
+      if (teamTargets > 0) {
+        totalShare +=
+          playerTargets / teamTargets;
+
+        validGames += 1;
+      }
+    }
+
+    // RB:
+    // Player rush attempts / total team rush attempts.
+    if (player.position === "RB") {
+      const playerCarries = Number(
+        game.carries ||
+        game.rushing_attempts ||
+        0
+      );
+
+      const teamCarries = teamGameRows.reduce(
+        (total, row) =>
+          total +
+          Number(
+            row.carries ||
+            row.rushing_attempts ||
+            0
+          ),
+        0
+      );
+
+      if (teamCarries > 0) {
+        totalShare +=
+          playerCarries / teamCarries;
+
+        validGames += 1;
+      }
+    }
+  });
+
+  if (validGames === 0) {
+    return 50;
+  }
+
+  const averageShare =
+    totalShare / validGames;
 
   return Math.max(
     0,
     Math.min(
       100,
-      Math.round((usage / 22) * 100)
+      Math.round(averageShare * 100)
     )
   );
+}
 }
 function calculateOpportunityScore(player) {
   const games = getPlayerWeeklyStats(player);
