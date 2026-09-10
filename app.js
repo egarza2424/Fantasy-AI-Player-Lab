@@ -435,7 +435,6 @@ function calculatePlayerRisk(player) {
 
   return Math.max(0, Math.min(100, Math.round(risk)));
 }
-}
 
 function getMetrics(player) {
   const production = calculateProductionScore(player);
