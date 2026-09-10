@@ -44,20 +44,30 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-   const response = await fetch("./nfl-stats.json?v=3");
+    const response = await fetch("./nfl-stats.json?v=4");
 
     if (!response.ok) {
-      throw new Error(`Could not load nfl-stats.json: ${response.status}`);
+      throw new Error(
+        `Could not load nfl-stats.json: ${response.status}`
+      );
     }
 
     const data = await response.json();
 
     weeklyStats = data.players || [];
 
-    console.log("Local NFL stats loaded:", weeklyStats);
+    alert(
+      `NFL stats loaded successfully.\n` +
+      `Season: ${data.season}\n` +
+      `Stat rows: ${weeklyStats.length}`
+    );
+
   } catch (error) {
-    console.error("Local NFL stats error:", error);
     weeklyStats = [];
+
+    alert(
+      `NFL STATS FAILED TO LOAD:\n${error.message}`
+    );
   }
 }
 function normalizeName(name) {
