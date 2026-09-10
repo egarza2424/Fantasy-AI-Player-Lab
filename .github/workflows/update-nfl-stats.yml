@@ -503,7 +503,9 @@ jobs:
                   print(
                       "FantasyPros ECR unavailable: "
                       f"{error}"
-                  )            else:
+                  )
+
+          else:
               print(
                   "FANTASYPROS_API_KEY secret "
                   "not available."
