@@ -218,31 +218,6 @@ function calculateUsageScore(player) {
     )
   );
 }
-  const games = getPlayerWeeklyStats(player);
-  if (games.length === 0) return 50;
-
-  const recentGames = [...games]
-    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
-    .slice(0, 4);
-
-  let totalUsage = 0;
-
-  recentGames.forEach((game) => {
-    const carries = Number(game.carries || 0);
-    const targets = Number(game.targets || 0);
-    const attempts = Number(game.attempts || 0);
-
-    totalUsage += player.position === "QB" ? attempts : carries + targets;
-  });
-
-  const averageUsage = totalUsage / recentGames.length;
-  const score =
-    player.position === "QB"
-      ? (averageUsage / 38) * 100
-      : (averageUsage / 22) * 100;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
 
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
