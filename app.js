@@ -901,24 +901,6 @@ function calculatePlayerRisk(player) {
 }
 
 function getMetrics(player) {
-  const production = calculateProductionScore(player);
-  const usage = calculateUsageScore(player);
-  const opportunity = calculateOpportunityScore(player);
-  const redzone = calculateRedZoneScore(player);
-  const risk = calculatePlayerRisk(player);
-
-  return {
-    opportunity,
-    production,
-    usage,
-    matchup: 50,
-    redzone,
-    expert: 50,
-    risk
-  };
-}
-
-function getMetrics(player) {
   const production =
     calculateProductionScore(player);
 
@@ -946,6 +928,21 @@ function getMetrics(player) {
     expert: 50,
     risk
   };
+}
+function calculateScore(player, profile) {
+  const metrics = getMetrics(player);
+  const weights = riskProfiles[profile] || BASE_WEIGHTS;
+
+  const score =
+    metrics.opportunity * weights.opportunity +
+    metrics.production * weights.production +
+    metrics.usage * weights.usage +
+    metrics.matchup * weights.matchup +
+    metrics.redzone * weights.redzone +
+    metrics.expert * weights.expert +
+    (100 - metrics.risk) * weights.risk;
+
+  return Number(score.toFixed(1));
 }
 function getRecommendation(score, advantage) {
   if (score >= 82 || advantage >= 8) {
