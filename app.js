@@ -629,7 +629,16 @@ function calculateMatchupScore(player) {
   if (leagueHigh === leagueLow) {
     return 50;
   }
-
+  console.log("MATCHUP DEBUG", {
+    player: player.name,
+    team: player.team,
+    position: player.position,
+    opponent,
+    opponentPointsAllowed,
+    leagueLow,
+    leagueHigh
+  });
+  
   const score =
     (
       (opponentPointsAllowed - leagueLow) /
