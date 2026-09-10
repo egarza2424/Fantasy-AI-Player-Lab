@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-
 jobs:
   update-stats:
     runs-on: ubuntu-latest
@@ -21,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
 
-          - name: Download and convert NFL stats
+      - name: Download and convert NFL stats
         run: |
           python <<'PY'
           import csv
