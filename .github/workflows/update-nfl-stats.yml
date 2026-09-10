@@ -10,7 +10,8 @@ permissions:
 jobs:
   update-stats:
     runs-on: ubuntu-latest
-
+    env:
+      FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,6 +28,7 @@ jobs:
           import gzip
           import io
           import json
+          import os
           import urllib.request
           from collections import defaultdict
           from datetime import datetime, timezone
@@ -392,6 +394,119 @@ jobs:
               f"Created next-opponent data for "
               f"{len(team_next_opponent)} teams."
           )
+          # -------------------------------------------------
+          # FANTASYPROS EXPERT CONSENSUS RANKINGS
+          # -------------------------------------------------
+
+          fantasypros_api_key = os.environ.get(
+              "FANTASYPROS_API_KEY"
+          )
+
+          expert_rankings = {}
+
+          if fantasypros_api_key:
+              print("Trying FantasyPros ECR data...")
+
+              positions = ["QB", "RB", "WR", "TE"]
+
+              for position in positions:
+                  fp_url = (
+                      "https://api.fantasypros.com/"
+                      "public/v2/json/nfl/2026/"
+                      "consensus-rankings"
+                      f"?position={position}"
+                      "&scoring=PPR"
+                  )
+
+                  request = urllib.request.Request(
+                      fp_url,
+                      headers={
+                          "x-api-key":
+                              fantasypros_api_key
+                      }
+                  )
+
+                  try:
+                      with urllib.request.urlopen(
+                          request
+                      ) as response:
+                          fp_data = json.loads(
+                              response.read().decode(
+                                  "utf-8"
+                              )
+                          )
+
+                      for player in fp_data.get(
+                          "players",
+                          []
+                      ):
+                          name = player.get(
+                              "player_name"
+                          )
+
+                          if not name:
+                              continue
+
+                          expert_rankings[name] = {
+                              "player_id":
+                                  player.get(
+                                      "player_id"
+                                  ),
+                              "team":
+                                  player.get(
+                                      "player_team_id"
+                                  ),
+                              "position":
+                                  player.get(
+                                      "player_position_id"
+                                  ),
+                              "rank_ecr":
+                                  player.get(
+                                      "rank_ecr"
+                                  ),
+                              "rank_min":
+                                  player.get(
+                                      "rank_min"
+                                  ),
+                              "rank_max":
+                                  player.get(
+                                      "rank_max"
+                                  ),
+                              "rank_ave":
+                                  player.get(
+                                      "rank_ave"
+                                  ),
+                              "rank_std":
+                                  player.get(
+                                      "rank_std"
+                                  ),
+                              "pos_rank":
+                                  player.get(
+                                      "pos_rank"
+                                  )
+                          }
+
+                      print(
+                          f"Loaded FantasyPros "
+                          f"{position} ECR data."
+                      )
+
+                  except Exception as error:
+                      print(
+                          f"FantasyPros {position} "
+                          f"ECR unavailable: {error}"
+                      )
+
+          else:
+              print(
+                  "FANTASYPROS_API_KEY secret "
+                  "not available."
+              )
+
+          print(
+              f"Created expert ranking data "
+              f"for {len(expert_rankings)} players."
+          )
           output = {
               "season": season_used,
               "updated": datetime.now(
@@ -402,7 +517,9 @@ jobs:
               "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
-                  team_next_opponent
+                  team_next_opponent,
+              "expert_rankings":
+                  expert_rankings
           }
           with open(
               "nfl-stats.json",
