@@ -697,7 +697,133 @@ footer a {
   background: #111827;
   border-radius: 999px;
 }
+/* =========================
+   METRIC EXPLANATIONS
+   ========================= */
 
+.metric-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-info-button {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d0d5dd;
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #667085;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.metric-info-button:hover {
+  background: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+.metric-explanation {
+  display: none;
+
+  margin-top: 6px;
+  padding: 14px;
+
+  background: #f8fafc;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.metric-explanation.active {
+  display: block;
+}
+
+.metric-explanation-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.metric-explanation-heading strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.metric-explanation-heading span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.metric-explanation p {
+  margin: 0;
+  color: #667085;
+}
+
+.confidence-breakdown {
+  margin-top: 12px;
+  padding-top: 12px;
+
+  border-top: 1px solid #e4e7ec;
+}
+
+.confidence-breakdown > strong {
+  display: block;
+  margin-bottom: 9px;
+
+  color: #111827;
+  font-size: 12px;
+}
+
+.confidence-breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  gap: 12px;
+  padding: 5px 0;
+
+  color: #667085;
+  font-size: 12px;
+}
+
+.confidence-breakdown > div span {
+  color: #111827;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .metric-explanation-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .confidence-breakdown > div {
+    align-items: flex-start;
+  }
+}
 .model-note {
   margin-top: 1.5rem;
   padding: 1rem 1.15rem;
