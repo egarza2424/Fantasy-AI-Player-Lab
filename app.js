@@ -37,11 +37,11 @@ const metricDescriptions = {
   },
 
   "Recent Production": {
-    weight: "20%",
-    description:
-      "Measures fantasy production using the player's four most recent games and PPR scoring, including passing, rushing and receiving production."
-  },
-
+  weight: "20%",
+  description:
+    "Measures average PPR fantasy production over the player's four most recent games compared with other players at the same position. The highest-scoring player at each position receives 100, with all other players scored proportionally."
+},
+  
   Usage: {
     weight: "15%",
     description:
@@ -155,25 +155,37 @@ function getPlayerWeeklyStats(player) {
 
 function calculateProductionScore(player) {
   const games = getPlayerWeeklyStats(player);
-  if (games.length === 0) return 50;
 
-  const recentGames = [...games]
-    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
-    .slice(0, 4);
+  if (games.length === 0) {
+    return 50;
+  }
 
-  let totalFantasyPoints = 0;
+  function getFantasyPoints(game) {
+    const passingYards =
+      Number(game.passing_yards || 0);
 
-  recentGames.forEach((game) => {
-    const passingYards = Number(game.passing_yards || 0);
-    const passingTDs = Number(game.passing_tds || 0);
-    const interceptions = Number(game.interceptions || 0);
-    const rushingYards = Number(game.rushing_yards || 0);
-    const rushingTDs = Number(game.rushing_tds || 0);
-    const receptions = Number(game.receptions || 0);
-    const receivingYards = Number(game.receiving_yards || 0);
-    const receivingTDs = Number(game.receiving_tds || 0);
+    const passingTDs =
+      Number(game.passing_tds || 0);
 
-    const fantasyPoints =
+    const interceptions =
+      Number(game.interceptions || 0);
+
+    const rushingYards =
+      Number(game.rushing_yards || 0);
+
+    const rushingTDs =
+      Number(game.rushing_tds || 0);
+
+    const receptions =
+      Number(game.receptions || 0);
+
+    const receivingYards =
+      Number(game.receiving_yards || 0);
+
+    const receivingTDs =
+      Number(game.receiving_tds || 0);
+
+    return (
       passingYards / 25 +
       passingTDs * 4 -
       interceptions * 2 +
@@ -181,10 +193,93 @@ function calculateProductionScore(player) {
       rushingTDs * 6 +
       receptions +
       receivingYards / 10 +
-      receivingTDs * 6;
+      receivingTDs * 6
+    );
+  }
 
-    totalFantasyPoints += fantasyPoints;
+  function getRecentAverage(playerGames) {
+    const recentGames =
+      [...playerGames]
+        .sort(
+          (a, b) =>
+            Number(b.week || 0) -
+            Number(a.week || 0)
+        )
+        .slice(0, 4);
+
+    if (recentGames.length === 0) {
+      return 0;
+    }
+
+    const total =
+      recentGames.reduce(
+        (sum, game) =>
+          sum + getFantasyPoints(game),
+        0
+      );
+
+    return total / recentGames.length;
+  }
+
+  const playerAverage =
+    getRecentAverage(games);
+
+  const positionPlayers = {};
+
+  weeklyStats.forEach((game) => {
+    if (game.position !== player.position) {
+      return;
+    }
+
+    const name = normalizeName(
+      game.player_display_name ||
+      game.player_name ||
+      game.name
+    );
+
+    if (!name) {
+      return;
+    }
+
+    if (!positionPlayers[name]) {
+      positionPlayers[name] = [];
+    }
+
+    positionPlayers[name].push(game);
   });
+
+  const positionAverages =
+    Object.values(positionPlayers)
+      .map((playerGames) =>
+        getRecentAverage(playerGames)
+      )
+      .filter((average) =>
+        Number.isFinite(average) &&
+        average > 0
+      );
+
+  if (positionAverages.length === 0) {
+    return 50;
+  }
+
+  const leagueHigh =
+    Math.max(...positionAverages);
+
+  if (leagueHigh <= 0) {
+    return 50;
+  }
+
+  const score =
+    (playerAverage / leagueHigh) * 100;
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(score)
+    )
+  );
+}
 
   const average = totalFantasyPoints / recentGames.length;
   const score = (average / 25) * 100;
