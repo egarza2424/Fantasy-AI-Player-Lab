@@ -795,8 +795,14 @@ function comparePlayers() {
 compareButton.addEventListener("click", comparePlayers);
 
 async function initializeApp() {
-  await loadWeeklyStats();
+  // Load players first so search works immediately
   await loadPlayers();
+
+  // Load weekly stats separately
+  await loadWeeklyStats();
+
+  // Refresh comparison once real stats are available
+  comparePlayers();
 }
 
 initializeApp();
