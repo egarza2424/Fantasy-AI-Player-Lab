@@ -423,7 +423,148 @@ function calculateOpportunityScore(player) {
     )
   );
 }
+function calculateRedZoneScore(player) {
+  const games = getPlayerWeeklyStats(player);
 
+  if (games.length === 0) {
+    return 50;
+  }
+
+  if (player.position === "QB") {
+    const qbTotals = {};
+
+    weeklyStats.forEach((game) => {
+      if (game.position !== "QB") {
+        return;
+      }
+
+      const name = normalizeName(
+        game.player_display_name ||
+        game.player_name ||
+        game.name
+      );
+
+      if (!name) {
+        return;
+      }
+
+      if (!qbTotals[name]) {
+        qbTotals[name] = {
+          redZoneOpportunities: 0,
+          games: 0
+        };
+      }
+
+      const rzPassAttempts = Number(
+        game.red_zone_pass_attempts || 0
+      );
+
+      const rzCarries = Number(
+        game.red_zone_carries || 0
+      );
+
+      qbTotals[name].redZoneOpportunities +=
+        rzPassAttempts + rzCarries;
+
+      qbTotals[name].games += 1;
+    });
+
+    const qbAverages = Object.values(qbTotals)
+      .filter((qb) => qb.games > 0)
+      .map(
+        (qb) =>
+          qb.redZoneOpportunities / qb.games
+      );
+
+    if (qbAverages.length === 0) {
+      return 50;
+    }
+
+    const leagueHigh = Math.max(...qbAverages);
+
+    if (leagueHigh <= 0) {
+      return 50;
+    }
+
+    const playerName = normalizeName(player.name);
+    const playerData = qbTotals[playerName];
+
+    if (!playerData || playerData.games === 0) {
+      return 50;
+    }
+
+    const playerAverage =
+      playerData.redZoneOpportunities /
+      playerData.games;
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          (playerAverage / leagueHigh) * 100
+        )
+      )
+    );
+  }
+
+  let playerRedZoneOpportunities = 0;
+  let teamRedZoneOpportunities = 0;
+
+  games.forEach((game) => {
+    const week = Number(game.week);
+    const team = game.team;
+
+    if (!team || !week) {
+      return;
+    }
+
+    const playerCarries = Number(
+      game.red_zone_carries || 0
+    );
+
+    const playerTargets = Number(
+      game.red_zone_targets || 0
+    );
+
+    playerRedZoneOpportunities +=
+      playerCarries + playerTargets;
+
+    const teamGameRows = weeklyStats.filter(
+      (row) =>
+        row.team === team &&
+        Number(row.week) === week
+    );
+
+    const teamGameRedZoneOpportunities =
+      teamGameRows.reduce(
+        (total, row) =>
+          total +
+          Number(row.red_zone_carries || 0) +
+          Number(row.red_zone_targets || 0),
+        0
+      );
+
+    teamRedZoneOpportunities +=
+      teamGameRedZoneOpportunities;
+  });
+
+  if (teamRedZoneOpportunities <= 0) {
+    return 50;
+  }
+
+  const share =
+    playerRedZoneOpportunities /
+    teamRedZoneOpportunities;
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(share * 100)
+    )
+  );
+}
 function setupPlayerSearch(input, resultsBox, selectElement) {
   if (!input || !resultsBox || !selectElement) return;
 
@@ -682,16 +823,17 @@ function calculatePlayerRisk(player) {
 
 function getMetrics(player) {
   const production = calculateProductionScore(player);
-const usage = calculateUsageScore(player);
-const opportunity = calculateOpportunityScore(player);
-const risk = calculatePlayerRisk(player);
-  
+  const usage = calculateUsageScore(player);
+  const opportunity = calculateOpportunityScore(player);
+  const redzone = calculateRedZoneScore(player);
+  const risk = calculatePlayerRisk(player);
+
   return {
     opportunity,
     production,
     usage,
     matchup: 50,
-    redzone: 50,
+    redzone,
     expert: 50,
     risk
   };
