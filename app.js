@@ -44,7 +44,7 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-   const response = await fetch("./nfl-stats.json?v=2");
+   const response = await fetch("./nfl-stats.json?v=3");
 
     if (!response.ok) {
       throw new Error(`Could not load nfl-stats.json: ${response.status}`);
