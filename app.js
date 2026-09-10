@@ -40,68 +40,72 @@ const compareButton = document.getElementById("compareBtn");
 const resultsContainer = document.getElementById("result");
 const playerASearch = document.getElementById("playerASearch");
 const playerBSearch = document.getElementById("playerBSearch");
-
 const playerAResults = document.getElementById("playerAResults");
 const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
-  function getPlayerWeeklyStats(player) {
-  if (!player || weeklyStats.length === 0) {
-    return [];
-  }
+  try {
+    const statsUrl =
+      "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv";
 
-  const normalizedPlayerName =
-    player.name.toLowerCase().trim();
+    const response = await fetch(statsUrl);
+    if (!response.ok) {
+      throw new Error("Could not load NFL weekly statistics");
+    }
 
-  return weeklyStats.filter(row => {
-    const statName =
-      String(row.player_display_name || "")
-        .toLowerCase()
-        .trim();
+    const csvText = await response.text();
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true
+    });
 
-    return (
-      statName === normalizedPlayerName &&
-      row.team === player.team
+    weeklyStats = parsed.data.filter(
+      (row) =>
+        row.player_display_name &&
+        ["QB", "RB", "WR", "TE"].includes(row.position)
     );
+
+    console.log(`Loaded ${weeklyStats.length} weekly NFL stat records`);
+  } catch (error) {
+    console.error("Weekly stats error:", error);
+    weeklyStats = [];
+  }
+}
+
+function getPlayerWeeklyStats(player) {
+  if (!player || weeklyStats.length === 0) return [];
+
+  const normalizedPlayerName = player.name.toLowerCase().trim();
+
+  return weeklyStats.filter((row) => {
+    const statName = String(row.player_display_name || "")
+      .toLowerCase()
+      .trim();
+
+    return statName === normalizedPlayerName && row.team === player.team;
   });
 }
-  function calculateProductionScore(player) {
+
+function calculateProductionScore(player) {
   const games = getPlayerWeeklyStats(player);
+  if (games.length === 0) return 50;
 
-  if (games.length === 0) {
-    return 50;
-  }
-
-  const recentGames = games
-    .sort((a, b) => b.week - a.week)
+  const recentGames = [...games]
+    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
     .slice(0, 4);
 
   let totalFantasyPoints = 0;
 
-  recentGames.forEach(game => {
-    const passingYards =
-      Number(game.passing_yards || 0);
-
-    const passingTDs =
-      Number(game.passing_tds || 0);
-
-    const interceptions =
-      Number(game.interceptions || 0);
-
-    const rushingYards =
-      Number(game.rushing_yards || 0);
-
-    const rushingTDs =
-      Number(game.rushing_tds || 0);
-
-    const receptions =
-      Number(game.receptions || 0);
-
-    const receivingYards =
-      Number(game.receiving_yards || 0);
-
-    const receivingTDs =
-      Number(game.receiving_tds || 0);
+  recentGames.forEach((game) => {
+    const passingYards = Number(game.passing_yards || 0);
+    const passingTDs = Number(game.passing_tds || 0);
+    const interceptions = Number(game.interceptions || 0);
+    const rushingYards = Number(game.rushing_yards || 0);
+    const rushingTDs = Number(game.rushing_tds || 0);
+    const receptions = Number(game.receptions || 0);
+    const receivingYards = Number(game.receiving_yards || 0);
+    const receivingTDs = Number(game.receiving_tds || 0);
 
     const fantasyPoints =
       passingYards / 25 +
@@ -116,124 +120,111 @@ async function loadWeeklyStats() {
     totalFantasyPoints += fantasyPoints;
   });
 
-  const average =
-    totalFantasyPoints / recentGames.length;
+  const average = totalFantasyPoints / recentGames.length;
+  const score = (average / 25) * 100;
 
-  /*
-    Convert fantasy output into 0–100 score.
-    25+ PPG ≈ elite
-  */
-
-  const score =
-    (average / 25) * 100;
-
-  return Math.max(
-    0,
-    Math.min(100, Math.round(score))
-  );
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
-  function calculateUsageScore(player) {
+
+function calculateUsageScore(player) {
   const games = getPlayerWeeklyStats(player);
+  if (games.length === 0) return 50;
 
-  if (games.length === 0) {
-    return 50;
-  }
-
-  const recentGames = games
-    .sort((a, b) => b.week - a.week)
+  const recentGames = [...games]
+    .sort((a, b) => Number(b.week || 0) - Number(a.week || 0))
     .slice(0, 4);
 
   let totalUsage = 0;
 
-  recentGames.forEach(game => {
-    const carries =
-      Number(game.carries || 0);
+  recentGames.forEach((game) => {
+    const carries = Number(game.carries || 0);
+    const targets = Number(game.targets || 0);
+    const attempts = Number(game.attempts || 0);
 
-    const targets =
-      Number(game.targets || 0);
-
-    const attempts =
-      Number(game.attempts || 0);
-
-    let usage = 0;
-
-    if (player.position === "QB") {
-      usage = attempts;
-    } else {
-      usage = carries + targets;
-    }
-
-    totalUsage += usage;
+    totalUsage += player.position === "QB" ? attempts : carries + targets;
   });
 
-  const averageUsage =
-    totalUsage / recentGames.length;
+  const averageUsage = totalUsage / recentGames.length;
+  const score =
+    player.position === "QB"
+      ? (averageUsage / 38) * 100
+      : (averageUsage / 22) * 100;
 
-  let score;
-
-  if (player.position === "QB") {
-    score =
-      (averageUsage / 38) * 100;
-  } else {
-    score =
-      (averageUsage / 22) * 100;
-  }
-
-  return Math.max(
-    0,
-    Math.min(100, Math.round(score))
-  );
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
-  try {
-    const statsUrl =
-      "https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_2026.csv";
 
-    const response = await fetch(statsUrl);
+function setupPlayerSearch(input, resultsBox, selectElement) {
+  if (!input || !resultsBox || !selectElement) return;
 
-    if (!response.ok) {
-      throw new Error("Could not load NFL weekly statistics");
+  input.addEventListener("input", () => {
+    const query = input.value.trim().toLowerCase();
+    resultsBox.innerHTML = "";
+
+    if (!query) {
+      resultsBox.classList.remove("active");
+      return;
     }
 
-    const csvText = await response.text();
+    const matches = players
+      .filter((player) =>
+        `${player.name} ${player.position} ${player.team}`
+          .toLowerCase()
+          .includes(query)
+      )
+      .slice(0, 8);
 
-    const parsed = Papa.parse(csvText, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true
+    if (matches.length === 0) {
+      resultsBox.innerHTML =
+        '<div class="player-search-empty">No players found</div>';
+      resultsBox.classList.add("active");
+      return;
+    }
+
+    matches.forEach((player) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "player-search-option";
+      option.innerHTML = `
+        <strong>${player.name}</strong>
+        <span>${player.position} • ${player.team}</span>
+      `;
+
+      option.addEventListener("click", () => {
+        selectElement.value = player.id;
+        input.value = `${player.name} — ${player.position} — ${player.team}`;
+        resultsBox.innerHTML = "";
+        resultsBox.classList.remove("active");
+        comparePlayers();
+      });
+
+      resultsBox.appendChild(option);
     });
 
-    weeklyStats = parsed.data.filter(row =>
-      row.player_display_name &&
-      ["QB", "RB", "WR", "TE"].includes(row.position)
-    );
+    resultsBox.classList.add("active");
+  });
 
-    console.log(
-      `Loaded ${weeklyStats.length} weekly NFL stat records`
-    );
-
-  } catch (error) {
-    console.error("Weekly stats error:", error);
-    weeklyStats = [];
-  }
+  input.addEventListener("focus", () => {
+    if (input.value.length > 0) {
+      input.dispatchEvent(new Event("input"));
+    }
+  });
 }
+
 async function loadPlayers() {
   try {
     const positions = ["QB", "RB", "WR", "TE"];
 
     const requests = positions.map((position) =>
-      fetch(
-        `https://api.sleeper.app/v1/players/nfl?position=${position}&active=true`
-      ).then((response) => {
-        if (!response.ok) {
-          throw new Error(`Could not load ${position} players`);
-        }
-
-        return response.json();
-      })
+      fetch(`https://api.sleeper.app/v1/players/nfl?position=${position}&active=true`)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Could not load ${position} players`);
+          }
+          return response.json();
+        })
     );
 
     const responses = await Promise.all(requests);
-
     const sleeperPlayers = responses.flatMap((playerMap) =>
       Object.values(playerMap)
     );
@@ -248,130 +239,37 @@ async function loadPlayers() {
         player.team &&
         ["QB", "RB", "WR", "TE"].includes(player.position)
       ) {
-uniquePlayers.set(player.player_id, {
-  id: player.player_id,
-  name: `${player.first_name} ${player.last_name}`,
-  position: player.position,
-  team: player.team,
-
-  status: player.status || "Unknown",
-  injuryStatus: player.injury_status || null,
-  injuryStartDate: player.injury_start_date || null,
-  practiceParticipation: player.practice_participation || null,
-
-  depthChartPosition: player.depth_chart_position ?? null,
-  depthChartOrder: player.depth_chart_order ?? null,
-
-  age: player.age ?? null,
-  yearsExp: player.years_exp ?? null,
-  number: player.number ?? null
-});
+        uniquePlayers.set(player.player_id, {
+          id: player.player_id,
+          name: `${player.first_name} ${player.last_name}`,
+          position: player.position,
+          team: player.team,
+          status: player.status || "Unknown",
+          injuryStatus: player.injury_status || null,
+          injuryStartDate: player.injury_start_date || null,
+          practiceParticipation: player.practice_participation || null,
+          depthChartPosition: player.depth_chart_position ?? null,
+          depthChartOrder: player.depth_chart_order ?? null,
+          age: player.age ?? null,
+          yearsExp: player.years_exp ?? null,
+          number: player.number ?? null
+        });
       }
     });
 
-    players = Array.from(uniquePlayers.values()).sort((a, b) => {
-      const positionOrder = {
-        QB: 1,
-        RB: 2,
-        WR: 3,
-        TE: 4
-      };
+    const positionOrder = { QB: 1, RB: 2, WR: 3, TE: 4 };
 
+    players = Array.from(uniquePlayers.values()).sort((a, b) => {
       if (a.position !== b.position) {
         return positionOrder[a.position] - positionOrder[b.position];
       }
-
       return a.name.localeCompare(b.name);
     });
 
-    populatePlayerSelectors();setupPlayerSearch(
-  playerASearch,
-  playerAResults,
-  playerASelect
-);
+    populatePlayerSelectors();
 
-setupPlayerSearch(
-  playerBSearch,
-  playerBResults,
-  playerBSelect
-);
-    function setupPlayerSearch(
-  input,
-  resultsBox,
-  selectElement
-) {
-  input.addEventListener("input", () => {
-    const query = input.value
-      .trim()
-      .toLowerCase();
-
-    resultsBox.innerHTML = "";
-
-    if (query.length < 1) {
-      resultsBox.classList.remove("active");
-      return;
-    }
-
-    const matches = players
-      .filter((player) => {
-        const searchable =
-          `${player.name} ${player.position} ${player.team}`
-            .toLowerCase();
-
-        return searchable.includes(query);
-      })
-      .slice(0, 8);
-
-    if (matches.length === 0) {
-      resultsBox.innerHTML = `
-        <div class="player-search-empty">
-          No players found
-        </div>
-      `;
-
-      resultsBox.classList.add("active");
-      return;
-    }
-
-    matches.forEach((player) => {
-      const option = document.createElement("button");
-
-      option.type = "button";
-      option.className = "player-search-option";
-
-      option.innerHTML = `
-        <strong>${player.name}</strong>
-        <span>
-          ${player.position} • ${player.team}
-        </span>
-      `;
-
-      option.addEventListener("click", () => {
-        selectElement.value = player.id;
-
-        input.value =
-          `${player.name} — ${player.position} — ${player.team}`;
-
-        resultsBox.innerHTML = "";
-        resultsBox.classList.remove("active");
-
-        comparePlayers();
-      });
-
-      resultsBox.appendChild(option);
-    });
-
-    resultsBox.classList.add("active");
-  });
-
-  input.addEventListener("focus", () => {
-    if (input.value.length > 0) {
-      input.dispatchEvent(
-        new Event("input")
-      );
-    }
-  });
-}
+    setupPlayerSearch(playerASearch, playerAResults, playerASelect);
+    setupPlayerSearch(playerBSearch, playerBResults, playerBSelect);
 
     if (players.length >= 2) {
       playerASelect.value =
@@ -381,18 +279,19 @@ setupPlayerSearch(
       playerBSelect.value =
         players.find((player) => player.name === "Christian Watson")?.id ||
         players[1].id;
+
       const defaultA = getPlayer(playerASelect.value);
-const defaultB = getPlayer(playerBSelect.value);
+      const defaultB = getPlayer(playerBSelect.value);
 
-if (defaultA) {
-  playerASearch.value =
-    `${defaultA.name} — ${defaultA.position} — ${defaultA.team}`;
-}
+      if (defaultA) {
+        playerASearch.value =
+          `${defaultA.name} — ${defaultA.position} — ${defaultA.team}`;
+      }
 
-if (defaultB) {
-  playerBSearch.value =
-    `${defaultB.name} — ${defaultB.position} — ${defaultB.team}`;
-}
+      if (defaultB) {
+        playerBSearch.value =
+          `${defaultB.name} — ${defaultB.position} — ${defaultB.team}`;
+      }
 
       comparePlayers();
     }
@@ -443,22 +342,12 @@ function calculatePlayerRisk(player) {
   const injury = (player.injuryStatus || "").toLowerCase();
   const practice = (player.practiceParticipation || "").toLowerCase();
 
-  // Injury designation
-  if (injury.includes("out")) {
-    risk += 80;
-  } else if (injury.includes("doubtful")) {
-    risk += 65;
-  } else if (injury.includes("questionable")) {
-    risk += 35;
-  } else if (injury.includes("probable")) {
-    risk += 10;
-  }
+  if (injury.includes("out")) risk += 80;
+  else if (injury.includes("doubtful")) risk += 65;
+  else if (injury.includes("questionable")) risk += 35;
+  else if (injury.includes("probable")) risk += 10;
 
-  // Practice participation
-  if (
-    practice.includes("did not participate") ||
-    practice.includes("dnp")
-  ) {
+  if (practice.includes("did not participate") || practice.includes("dnp")) {
     risk += 30;
   } else if (practice.includes("limited")) {
     risk += 15;
@@ -466,98 +355,28 @@ function calculatePlayerRisk(player) {
     risk -= 5;
   }
 
-  // Depth-chart uncertainty
   if (player.depthChartOrder) {
-    if (player.depthChartOrder >= 4) {
-      risk += 20;
-    } else if (player.depthChartOrder === 3) {
-      risk += 12;
-    } else if (player.depthChartOrder === 2) {
-      risk += 5;
-    }
+    if (player.depthChartOrder >= 4) risk += 20;
+    else if (player.depthChartOrder === 3) risk += 12;
+    else if (player.depthChartOrder === 2) risk += 5;
   }
 
-  // Clamp between 0 and 100
   return Math.max(0, Math.min(100, Math.round(risk)));
 }
+
 function getMetrics(player) {
-
-  const production =
-    calculateProductionScore(player);
-
-  const usage =
-    calculateUsageScore(player);
-
-  const risk =
-    calculatePlayerRisk(player);
+  const production = calculateProductionScore(player);
+  const usage = calculateUsageScore(player);
+  const risk = calculatePlayerRisk(player);
 
   return {
     opportunity: usage,
-
-    production: production,
-
-    usage: usage,
-
+    production,
+    usage,
     matchup: 50,
-
     redzone: 50,
-
     expert: 50,
-
-    risk: risk
-  };
-}
-  const knownMetrics = {
-    "Puka Nacua": {
-      opportunity: 94,
-      production: 91,
-      usage: 93,
-      matchup: 84,
-      redzone: 82,
-      expert: 95
-    },
-
-    "Christian Watson": {
-      opportunity: 78,
-      production: 76,
-      usage: 73,
-      matchup: 88,
-      redzone: 86,
-      expert: 79
-    },
-
-    "Parker Washington": {
-      opportunity: 71,
-      production: 69,
-      usage: 75,
-      matchup: 83,
-      redzone: 68,
-      expert: 72
-    },
-
-    "Jonathon Brooks": {
-      opportunity: 67,
-      production: 63,
-      usage: 61,
-      matchup: 79,
-      redzone: 74,
-      expert: 70
-    }
-  };
-
-  const baseMetrics =
-    knownMetrics[player.name] || {
-      opportunity: 50,
-      production: 50,
-      usage: 50,
-      matchup: 50,
-      redzone: 50,
-      expert: 50
-    };
-
-  return {
-    ...baseMetrics,
-    risk: calculatePlayerRisk(player)
+    risk
   };
 }
 
