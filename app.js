@@ -69,25 +69,18 @@ function normalizeName(name) {
 }
 
 function getPlayerWeeklyStats(player) {
-  if (!player) {
+  if (!player || !Array.isArray(weeklyStats)) {
     return [];
   }
 
   const playerName = normalizeName(player.name);
 
-  const allStats = [
-    ...weeklyStats.passing,
-    ...weeklyStats.rushing,
-    ...weeklyStats.receiving
-  ];
-
-  return allStats.filter((row) => {
-    const rowName =
-      normalizeName(
-        row.player_display_name ||
-        row.player_name ||
-        row.name
-      );
+  return weeklyStats.filter((row) => {
+    const rowName = normalizeName(
+      row.player_display_name ||
+      row.player_name ||
+      row.name
+    );
 
     return rowName === playerName;
   });
