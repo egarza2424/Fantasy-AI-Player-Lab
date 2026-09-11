@@ -319,7 +319,60 @@ jobs:
           print(
               "Historical records missing a play caller: "
               f"{coaching_records_missing}."
-          )          
+          )
+          # -------------------------------------------------
+          # DIAGNOSE MISSING COACHING MAPPINGS
+          # -------------------------------------------------
+
+          missing_mapping_counts = defaultdict(int)
+
+          for row in historical_rows:
+              if (
+                  row.get("offensive_play_caller") and
+                  row.get("defensive_play_caller")
+              ):
+                  continue
+
+              season = str(row.get("season") or "")
+              offense_team = row.get("team") or "UNKNOWN"
+              defense_team = (
+                  row.get("opponent_team") or "UNKNOWN"
+              )
+
+              if not row.get("offensive_play_caller"):
+                  key = (
+                      season,
+                      "OFFENSE",
+                      offense_team
+                  )
+
+                  missing_mapping_counts[key] += 1
+
+              if not row.get("defensive_play_caller"):
+                  key = (
+                      season,
+                      "DEFENSE",
+                      defense_team
+                  )
+
+                  missing_mapping_counts[key] += 1
+
+          print(
+              "Missing coaching mappings by "
+              "season/team:"
+          )
+
+          for (
+              season,
+              side,
+              team
+          ), count in sorted(
+              missing_mapping_counts.items()
+          ):
+              print(
+                  f"{season} {side} {team}: "
+                  f"{count}"
+              )
           pbp_url = (
               "https://github.com/nflverse/nflverse-data/"
               f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
