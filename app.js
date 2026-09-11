@@ -72,6 +72,12 @@ const metricDescriptions = {
       "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
   },
   
+  "Player vs Defensive Play Caller": {
+    weight: "Testing",
+    description:
+      "Measures how this individual player has historically performed in PPR scoring against defenses called by the upcoming opponent's current defensive play caller. Uses up to the four most recent applicable games. No direct history receives a neutral score of 50."
+},  
+  
   "Risk Adjustment": {
     weight: "5%",
     description:
@@ -854,6 +860,47 @@ function calculatePlayCallerMatchupScore(player) {
     )
   );
 }
+function calculatePlayerVsDefensiveCallerScore(player) {
+  if (!player || !player.name) {
+    return 50;
+  }
+
+  const playerName =
+    normalizeName(player.name);
+
+  const matchingEntry =
+    Object.values(
+      currentPlayerVsDefensiveCaller
+    ).find((signal) => {
+      const signalName =
+        normalizeName(
+          signal.player_name ||
+          signal.name ||
+          ""
+        );
+
+      return signalName === playerName;
+    });
+
+  if (!matchingEntry) {
+    return 50;
+  }
+
+  const score =
+    Number(matchingEntry.score);
+
+  if (!Number.isFinite(score)) {
+    return 50;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(score)
+    )
+  );
+}
 function calculateModelConfidence(player) {
   const games = getPlayerWeeklyStats(player);
 
@@ -1499,6 +1546,9 @@ function getMetrics(player) {
   const playCallerMatchup =
     calculatePlayCallerMatchupScore(player);
 
+  const playerVsDefensiveCaller =
+    calculatePlayerVsDefensiveCallerScore(player);
+
   const redzone =
     calculateRedZoneScore(player);
 
@@ -1514,6 +1564,7 @@ function getMetrics(player) {
     usage,
     matchup,
     playCallerMatchup,
+    playerVsDefensiveCaller,
     redzone,
     expert,
     risk
@@ -1740,6 +1791,10 @@ function renderPlayerCard(player, score, recommendation) {
         ${metricRow(
           "Play Caller Matchup",
           metrics.playCallerMatchup
+        )}
+        ${metricRow(
+          "Player vs Defensive Play Caller",
+          metrics.playerVsDefensiveCaller
         )}
         ${metricRow("Red-Zone Usage", metrics.redzone)}
         ${metricRow(
