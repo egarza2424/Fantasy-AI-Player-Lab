@@ -65,7 +65,13 @@ const metricDescriptions = {
     description:
       "Measures how dependable the player's projection appears based on recent production consistency, opportunity stability, usage stability and availability."
   },
-
+  
+  "Play Caller Matchup": {
+    weight: "Testing",
+    description:
+      "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
+  },
+  
   "Risk Adjustment": {
     weight: "5%",
     description:
@@ -1731,6 +1737,10 @@ function renderPlayerCard(player, score, recommendation) {
         ${metricRow("Recent Production", metrics.production)}
         ${metricRow("Usage", metrics.usage)}
         ${metricRow("Matchup", metrics.matchup)}
+        ${metricRow(
+          "Play Caller Matchup",
+          metrics.playCallerMatchup
+        )}
         ${metricRow("Red-Zone Usage", metrics.redzone)}
         ${metricRow(
           "Model Confidence",
