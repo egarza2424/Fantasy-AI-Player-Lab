@@ -114,33 +114,35 @@ const response = await fetch(
     currentPlayerVsDefensiveCaller =
       data.current_player_vs_defensive_caller || {};
 
-    console.log(
-      `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
-    );
+  console.log(
+  `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
+);
 
-    console.log(
-      "Defensive matchup teams:",
-      Object.keys(defensePositionAllowed).length
-    );
+console.log(
+  "Defensive matchup teams:",
+  Object.keys(defensePositionAllowed).length
+);
 
-    console.log(
-      "Next-opponent teams:",
-      Object.keys(teamNextOpponent).length
-    );
-  } catch (error) {
-    console.error("Local NFL stats error:", error);
-    weeklyStats = [];
-  }
+console.log(
+  "Next-opponent teams:",
+  Object.keys(teamNextOpponent).length
+);
+
+console.log(
+  "Current play-caller signal teams:",
+  Object.keys(currentPlayCallerSignals).length
+);
+
+console.log(
+  "Current player-vs-defensive-caller signals:",
+  Object.keys(currentPlayerVsDefensiveCaller).length
+);
+
+} catch (error) {
+  console.error("Local NFL stats error:", error);
+  weeklyStats = [];
 }
-    console.log(
-      "Current play-caller signal teams:",
-      Object.keys(currentPlayCallerSignals).length
-);
-
-    console.log(
-      "Current player-vs-defensive-caller signals:",
-      Object.keys(currentPlayerVsDefensiveCaller).length
-);
+}
 function normalizeName(name) {
   return String(name || "")
     .toLowerCase()
