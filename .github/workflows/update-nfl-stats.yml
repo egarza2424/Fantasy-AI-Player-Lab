@@ -1338,6 +1338,205 @@ jobs:
               f"{player_signal_counts['without_upcoming_matchup']}."
           )
           # -------------------------------------------------
+          # NORMALIZE PLAY-CALLER SIGNALS TO 0-100
+          # -------------------------------------------------
+
+          # Find the highest applicable historical PPR
+          # value at each position for the current week.
+          position_highs = {
+              "QB": {
+                  "play_caller": 0.0,
+                  "player_vs_caller": 0.0
+              },
+              "RB": {
+                  "play_caller": 0.0,
+                  "player_vs_caller": 0.0
+              },
+              "WR": {
+                  "play_caller": 0.0,
+                  "player_vs_caller": 0.0
+              },
+              "TE": {
+                  "play_caller": 0.0,
+                  "player_vs_caller": 0.0
+              }
+          }
+
+          # ---------------------------------------------
+          # PLAY-CALLER MATCHUP POSITION HIGHS
+          # ---------------------------------------------
+
+          for team_signal in (
+              current_play_caller_signals.values()
+          ):
+              for position, position_signal in (
+                  team_signal.get(
+                      "positions",
+                      {}
+                  ).items()
+              ):
+                  average_ppr = position_signal.get(
+                      "average_ppr"
+                  )
+
+                  if (
+                      position in position_highs and
+                      average_ppr is not None
+                  ):
+                      position_highs[
+                          position
+                      ]["play_caller"] = max(
+                          position_highs[
+                              position
+                          ]["play_caller"],
+                          float(average_ppr)
+                      )
+
+          # ---------------------------------------------
+          # PLAYER VS DEFENSIVE CALLER POSITION HIGHS
+          # ---------------------------------------------
+
+          for signal in (
+              current_player_vs_defensive_caller.values()
+          ):
+              position = signal.get("position")
+              average_ppr = signal.get(
+                  "average_ppr"
+              )
+
+              if (
+                  position in position_highs and
+                  average_ppr is not None
+              ):
+                  position_highs[
+                      position
+                  ]["player_vs_caller"] = max(
+                      position_highs[
+                          position
+                      ]["player_vs_caller"],
+                      float(average_ppr)
+                  )
+
+          # ---------------------------------------------
+          # SCORE CURRENT PLAY-CALLER MATCHUPS
+          # ---------------------------------------------
+
+          for team_signal in (
+              current_play_caller_signals.values()
+          ):
+              for position, position_signal in (
+                  team_signal.get(
+                      "positions",
+                      {}
+                  ).items()
+              ):
+                  average_ppr = position_signal.get(
+                      "average_ppr"
+                  )
+
+                  league_high = (
+                      position_highs.get(
+                          position,
+                          {}
+                      ).get(
+                          "play_caller",
+                          0
+                      )
+                  )
+
+                  if (
+                      average_ppr is None or
+                      league_high <= 0
+                  ):
+                      position_signal["score"] = 50
+                      position_signal[
+                          "score_source"
+                      ] = "neutral_no_history"
+
+                  else:
+                      score = round(
+                          (
+                              float(average_ppr) /
+                              league_high
+                          ) * 100
+                      )
+
+                      position_signal["score"] = max(
+                          0,
+                          min(100, score)
+                      )
+
+                      position_signal[
+                          "score_source"
+                      ] = "historical"
+
+          # ---------------------------------------------
+          # SCORE PLAYER VS DEFENSIVE CALLER
+          # ---------------------------------------------
+
+          for signal in (
+              current_player_vs_defensive_caller.values()
+          ):
+              position = signal.get("position")
+              average_ppr = signal.get(
+                  "average_ppr"
+              )
+
+              league_high = (
+                  position_highs.get(
+                      position,
+                      {}
+                  ).get(
+                      "player_vs_caller",
+                      0
+                  )
+              )
+
+              if (
+                  average_ppr is None or
+                  league_high <= 0
+              ):
+                  signal["score"] = 50
+                  signal[
+                      "score_source"
+                  ] = "neutral_no_history"
+
+              else:
+                  score = round(
+                      (
+                          float(average_ppr) /
+                          league_high
+                      ) * 100
+                  )
+
+                  signal["score"] = max(
+                      0,
+                      min(100, score)
+                  )
+
+                  signal[
+                      "score_source"
+                  ] = "historical"
+
+          print(
+              "Normalized play-caller signals "
+              "to 0-100 scores."
+          )
+
+          for position in [
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          ]:
+              print(
+                  f"{position} normalization highs: "
+                  "play-caller="
+                  f"{position_highs[position]['play_caller']:.2f}, "
+                  "player-vs-caller="
+                  f"{position_highs[position]['player_vs_caller']:.2f}"
+              )
+          # -------------------------------------------------
           # FANTASYPROS EXPERT CONSENSUS RANKINGS
           # -------------------------------------------------
 
