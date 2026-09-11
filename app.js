@@ -76,6 +76,8 @@ let players = [];
 let weeklyStats = [];
 let defensePositionAllowed = {};
 let teamNextOpponent = {};
+let currentPlayCallerSignals = {};
+let currentPlayerVsDefensiveCaller = {};
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
 const riskSelect = document.getElementById("riskTolerance");
@@ -88,7 +90,7 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-    const response = await fetch("./nfl-stats.json?v=6");
+    const response = await fetch("./nfl-stats.json?v=7");
 
     if (!response.ok) {
       throw new Error(
@@ -103,6 +105,11 @@ async function loadWeeklyStats() {
       data.defense_position_allowed || {};
     teamNextOpponent =
       data.team_next_opponent || {};
+    currentPlayCallerSignals =
+      data.current_play_caller_signals || {};
+
+    currentPlayerVsDefensiveCaller =
+      data.current_player_vs_defensive_caller || {};
 
     console.log(
       `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
@@ -122,6 +129,15 @@ async function loadWeeklyStats() {
     weeklyStats = [];
   }
 }
+    console.log(
+      "Current play-caller signal teams:",
+      Object.keys(currentPlayCallerSignals).length
+);
+
+    console.log(
+      "Current player-vs-defensive-caller signals:",
+      Object.keys(currentPlayerVsDefensiveCaller).length
+);
 function normalizeName(name) {
   return String(name || "")
     .toLowerCase()
