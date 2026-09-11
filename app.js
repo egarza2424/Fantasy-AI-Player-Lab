@@ -801,6 +801,53 @@ function calculateMatchupScore(player) {
     )
   );
 }
+function calculatePlayCallerMatchupScore(player) {
+  if (
+    !player ||
+    !player.team ||
+    !player.position
+  ) {
+    return 50;
+  }
+
+  const teamCode =
+    player.team === "LA"
+      ? "LAR"
+      : player.team;
+
+  const teamSignal =
+    currentPlayCallerSignals[teamCode];
+
+  if (
+    !teamSignal ||
+    !teamSignal.positions
+  ) {
+    return 50;
+  }
+
+  const positionSignal =
+    teamSignal.positions[player.position];
+
+  if (!positionSignal) {
+    return 50;
+  }
+
+  const score = Number(
+    positionSignal.score
+  );
+
+  if (!Number.isFinite(score)) {
+    return 50;
+  }
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(score)
+    )
+  );
+}
 function calculateModelConfidence(player) {
   const games = getPlayerWeeklyStats(player);
 
@@ -1443,6 +1490,9 @@ function getMetrics(player) {
   const matchup =
     calculateMatchupScore(player);
 
+  const playCallerMatchup =
+    calculatePlayCallerMatchupScore(player);
+
   const redzone =
     calculateRedZoneScore(player);
 
@@ -1457,6 +1507,7 @@ function getMetrics(player) {
     production,
     usage,
     matchup,
+    playCallerMatchup,
     redzone,
     expert,
     risk
