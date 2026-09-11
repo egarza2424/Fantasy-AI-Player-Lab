@@ -129,7 +129,136 @@
     "defensive_coordinator": "Daronte Jones"
   }
 },
-  "2025": {},
+  "2025": {
+  "ARI": {
+    "offensive_coordinator": "Drew Petzing",
+    "defensive_coordinator": "Nick Rallis"
+  },
+  "ATL": {
+    "offensive_coordinator": "Zac Robinson",
+    "defensive_coordinator": "Jeff Ulbrich"
+  },
+  "BAL": {
+    "offensive_coordinator": "Todd Monken",
+    "defensive_coordinator": "Zach Orr"
+  },
+  "BUF": {
+    "offensive_coordinator": "Joe Brady",
+    "defensive_coordinator": "Bobby Babich"
+  },
+  "CAR": {
+    "offensive_coordinator": "Brad Idzik",
+    "defensive_coordinator": "Ejiro Evero"
+  },
+  "CHI": {
+    "offensive_coordinator": "Declan Doyle",
+    "defensive_coordinator": "Dennis Allen"
+  },
+  "CIN": {
+    "offensive_coordinator": "Dan Pitcher",
+    "defensive_coordinator": "Al Golden"
+  },
+  "CLE": {
+    "offensive_coordinator": "Tommy Rees",
+    "defensive_coordinator": "Jim Schwartz"
+  },
+  "DAL": {
+    "offensive_coordinator": "Klayton Adams",
+    "defensive_coordinator": "Matt Eberflus"
+  },
+  "DEN": {
+    "offensive_coordinator": "Joe Lombardi",
+    "defensive_coordinator": "Vance Joseph"
+  },
+  "DET": {
+    "offensive_coordinator": "John Morton",
+    "defensive_coordinator": "Kelvin Sheppard"
+  },
+  "GB": {
+    "offensive_coordinator": "Adam Stenavich",
+    "defensive_coordinator": "Jeff Hafley"
+  },
+  "HOU": {
+    "offensive_coordinator": "Nick Caley",
+    "defensive_coordinator": "Matt Burke"
+  },
+  "IND": {
+    "offensive_coordinator": "Jim Bob Cooter",
+    "defensive_coordinator": "Lou Anarumo"
+  },
+  "JAX": {
+    "offensive_coordinator": "Grant Udinski",
+    "defensive_coordinator": "Anthony Campanile"
+  },
+  "KC": {
+    "offensive_coordinator": "Matt Nagy",
+    "defensive_coordinator": "Steve Spagnuolo"
+  },
+  "LAC": {
+    "offensive_coordinator": "Greg Roman",
+    "defensive_coordinator": "Jesse Minter"
+  },
+  "LAR": {
+    "offensive_coordinator": "Mike LaFleur",
+    "defensive_coordinator": "Chris Shula"
+  },
+  "LV": {
+    "offensive_coordinator": "Chip Kelly",
+    "defensive_coordinator": "Patrick Graham"
+  },
+  "MIA": {
+    "offensive_coordinator": "Frank Smith",
+    "defensive_coordinator": "Anthony Weaver"
+  },
+  "MIN": {
+    "offensive_coordinator": "Wes Phillips",
+    "defensive_coordinator": "Brian Flores"
+  },
+  "NE": {
+    "offensive_coordinator": "Josh McDaniels",
+    "defensive_coordinator": "Terrell Williams"
+  },
+  "NO": {
+    "offensive_coordinator": "Doug Nussmeier",
+    "defensive_coordinator": "Brandon Staley"
+  },
+  "NYG": {
+    "offensive_coordinator": "Mike Kafka",
+    "defensive_coordinator": "Shane Bowen"
+  },
+  "NYJ": {
+    "offensive_coordinator": "Tanner Engstrand",
+    "defensive_coordinator": "Steve Wilks"
+  },
+  "PHI": {
+    "offensive_coordinator": "Kevin Patullo",
+    "defensive_coordinator": "Vic Fangio"
+  },
+  "PIT": {
+    "offensive_coordinator": "Arthur Smith",
+    "defensive_coordinator": "Teryl Austin"
+  },
+  "SEA": {
+    "offensive_coordinator": "Klint Kubiak",
+    "defensive_coordinator": "Aden Durde"
+  },
+  "SF": {
+    "offensive_coordinator": "Klay Kubiak",
+    "defensive_coordinator": "Robert Saleh"
+  },
+  "TB": {
+    "offensive_coordinator": "Josh Grizzard",
+    "defensive_coordinator": "Larry Foote & Charlie Strong"
+  },
+  "TEN": {
+    "offensive_coordinator": "Nick Holz",
+    "defensive_coordinator": "Dennard Wilson"
+  },
+  "WAS": {
+    "offensive_coordinator": "Kliff Kingsbury",
+    "defensive_coordinator": "Joe Whitt Jr."
+  }
+},
   "2024": {},
   "2023": {},
   "2022": {}
