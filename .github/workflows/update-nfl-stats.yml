@@ -1159,6 +1159,185 @@ jobs:
               f"{signal_counts['play_caller_no_history']}."
           )
           # -------------------------------------------------
+          # 2026 PLAYER VS DEFENSIVE PLAY-CALLER SIGNALS
+          # -------------------------------------------------
+
+          current_player_vs_defensive_caller = {}
+
+          current_player_ids = {
+              row.get("player_id")
+              for row in rows
+              if row.get("player_id")
+          }
+
+          player_signal_counts = {
+              "players_checked": 0,
+              "with_history": 0,
+              "without_history": 0,
+              "without_upcoming_matchup": 0
+          }
+
+          for player_id in current_player_ids:
+              player_rows = [
+                  row
+                  for row in rows
+                  if row.get("player_id") == player_id
+              ]
+
+              if not player_rows:
+                  continue
+
+              latest_player_row = max(
+                  player_rows,
+                  key=lambda row: int(
+                      float(row.get("week") or 0)
+                  )
+              )
+
+              player_name = (
+                  latest_player_row.get(
+                      "player_display_name"
+                  ) or
+                  latest_player_row.get(
+                      "player_name"
+                  )
+              )
+
+              position = latest_player_row.get(
+                  "position"
+              )
+
+              team = latest_player_row.get("team")
+
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              player_signal_counts[
+                  "players_checked"
+              ] += 1
+
+              team_signal = (
+                  current_play_caller_signals.get(
+                      normalized_team
+                  )
+              )
+
+              if not team_signal:
+                  player_signal_counts[
+                      "without_upcoming_matchup"
+                  ] += 1
+
+                  continue
+
+              defensive_play_caller = (
+                  team_signal.get(
+                      "opponent_defensive_play_caller"
+                  )
+              )
+
+              if not defensive_play_caller:
+                  player_signal_counts[
+                      "without_upcoming_matchup"
+                  ] += 1
+
+                  continue
+
+              history_key = (
+                  f"{player_id}|"
+                  f"{defensive_play_caller}"
+              )
+
+              history = (
+                  player_vs_defensive_caller.get(
+                      history_key
+                  )
+              )
+
+              signal = {
+                  "player_name":
+                      player_name,
+                  "position":
+                      position,
+                  "team":
+                      normalized_team,
+                  "opponent":
+                      team_signal.get(
+                          "opponent"
+                      ),
+                  "defensive_play_caller":
+                      defensive_play_caller,
+                  "average_ppr": None,
+                  "sample_size": 0,
+                  "games": []
+              }
+
+              if history:
+                  signal["average_ppr"] = (
+                      history.get(
+                          "average_ppr"
+                      )
+                  )
+
+                  signal["sample_size"] = (
+                      history.get(
+                          "sample_size",
+                          0
+                      )
+                  )
+
+                  signal["games"] = (
+                      history.get(
+                          "games",
+                          []
+                      )
+                  )
+
+                  player_signal_counts[
+                      "with_history"
+                  ] += 1
+
+              else:
+                  player_signal_counts[
+                      "without_history"
+                  ] += 1
+
+              current_player_vs_defensive_caller[
+                  player_id
+              ] = signal
+
+          print(
+              "Created current player-vs-defensive-"
+              "play-caller signals for "
+              f"{len(current_player_vs_defensive_caller)} "
+              "players."
+          )
+
+          print(
+              "Current players checked: "
+              f"{player_signal_counts['players_checked']}."
+          )
+
+          print(
+              "Players with defensive play-caller "
+              "history: "
+              f"{player_signal_counts['with_history']}."
+          )
+
+          print(
+              "Players without defensive play-caller "
+              "history: "
+              f"{player_signal_counts['without_history']}."
+          )
+
+          print(
+              "Players without an upcoming play-caller "
+              "matchup: "
+              f"{player_signal_counts['without_upcoming_matchup']}."
+          )
+          # -------------------------------------------------
           # FANTASYPROS EXPERT CONSENSUS RANKINGS
           # -------------------------------------------------
 
@@ -1292,6 +1471,8 @@ jobs:
                   team_next_opponent,
               "current_play_caller_signals":
                   current_play_caller_signals,
+              "current_player_vs_defensive_caller":
+                  current_player_vs_defensive_caller,
               "play_caller_matchups":
                   play_caller_matchups,
               "player_vs_defensive_caller":
