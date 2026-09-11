@@ -157354,6 +157354,1424 @@
       "location": "home"
     }
   },
+  "current_play_caller_signals": {
+    "CHI": {
+      "opponent": "CAR",
+      "week": 1,
+      "offensive_coordinator": "Press Taylor",
+      "offensive_play_caller": "Ben Johnson",
+      "opponent_defensive_coordinator": "Ejiro Evero",
+      "opponent_defensive_play_caller": "Ejiro Evero",
+      "positions": {
+        "QB": {
+          "average_ppr": 27.24,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 5,
+              "ppr_points": 27.24
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 24.3,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 5,
+              "ppr_points": 24.3
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 33.9,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 5,
+              "ppr_points": 33.9
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 31.5,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 5,
+              "ppr_points": 31.5
+            }
+          ]
+        }
+      }
+    },
+    "CAR": {
+      "opponent": "CHI",
+      "week": 1,
+      "offensive_coordinator": "Brad Idzik",
+      "offensive_play_caller": "Brad Idzik",
+      "opponent_defensive_coordinator": "Dennis Allen",
+      "opponent_defensive_play_caller": "Dennis Allen",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "TB": {
+      "opponent": "CIN",
+      "week": 1,
+      "offensive_coordinator": "Zac Robinson",
+      "offensive_play_caller": "Zac Robinson",
+      "opponent_defensive_coordinator": "Al Golden",
+      "opponent_defensive_play_caller": "Al Golden",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "CIN": {
+      "opponent": "TB",
+      "week": 1,
+      "offensive_coordinator": "Dan Pitcher",
+      "offensive_play_caller": "Zac Taylor",
+      "opponent_defensive_coordinator": null,
+      "opponent_defensive_play_caller": "Todd Bowles",
+      "positions": {
+        "QB": {
+          "average_ppr": 24.8,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 15,
+              "ppr_points": 24.8
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 12.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 15,
+              "ppr_points": 12.4
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 13.8,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 15,
+              "ppr_points": 13.8
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 49.3,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 15,
+              "ppr_points": 49.3
+            }
+          ]
+        }
+      }
+    },
+    "NO": {
+      "opponent": "DET",
+      "week": 1,
+      "offensive_coordinator": "Doug Nussmeier",
+      "offensive_play_caller": "Kellen Moore",
+      "opponent_defensive_coordinator": "Kelvin Sheppard",
+      "opponent_defensive_play_caller": "Kelvin Sheppard",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "DET": {
+      "opponent": "NO",
+      "week": 1,
+      "offensive_coordinator": "Drew Petzing",
+      "offensive_play_caller": "Drew Petzing",
+      "opponent_defensive_coordinator": "Brandon Staley",
+      "opponent_defensive_play_caller": "Brandon Staley",
+      "positions": {
+        "QB": {
+          "average_ppr": 18.32,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 18.32
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 15.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 15.4
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 22.9,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 22.9
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 21.8,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 21.8
+            }
+          ]
+        }
+      }
+    },
+    "BUF": {
+      "opponent": "HOU",
+      "week": 1,
+      "offensive_coordinator": "Pete Carmichael Jr.",
+      "offensive_play_caller": "Joe Brady",
+      "opponent_defensive_coordinator": "Matt Burke",
+      "opponent_defensive_play_caller": "Matt Burke",
+      "positions": {
+        "QB": {
+          "average_ppr": 12.12,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 12.12
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 9.3,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 9.3
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 31.3,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 31.3
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 27.0,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 27.0
+            }
+          ]
+        }
+      }
+    },
+    "HOU": {
+      "opponent": "BUF",
+      "week": 1,
+      "offensive_coordinator": "Nick Caley",
+      "offensive_play_caller": "Nick Caley",
+      "opponent_defensive_coordinator": "Jim Leonhard",
+      "opponent_defensive_play_caller": "Jim Leonhard",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "BAL": {
+      "opponent": "IND",
+      "week": 1,
+      "offensive_coordinator": "Declan Doyle",
+      "offensive_play_caller": "Declan Doyle",
+      "opponent_defensive_coordinator": "Lou Anarumo",
+      "opponent_defensive_play_caller": "Lou Anarumo",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "IND": {
+      "opponent": "BAL",
+      "week": 1,
+      "offensive_coordinator": "Jim Bob Cooter",
+      "offensive_play_caller": "Shane Steichen",
+      "opponent_defensive_coordinator": "Anthony Weaver",
+      "opponent_defensive_play_caller": "Jesse Minter",
+      "positions": {
+        "QB": {
+          "average_ppr": 20.22,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 7,
+              "ppr_points": 20.22
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 18.5,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 7,
+              "ppr_points": 18.5
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 37.9,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 7,
+              "ppr_points": 37.9
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 36.7,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 7,
+              "ppr_points": 36.7
+            }
+          ]
+        }
+      }
+    },
+    "CLE": {
+      "opponent": "JAX",
+      "week": 1,
+      "offensive_coordinator": "Travis Switzer",
+      "offensive_play_caller": "Todd Monken",
+      "opponent_defensive_coordinator": "Anthony Campanile",
+      "opponent_defensive_play_caller": "Anthony Campanile",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "JAX": {
+      "opponent": "CLE",
+      "week": 1,
+      "offensive_coordinator": "Grant Udinski",
+      "offensive_play_caller": "Liam Coen",
+      "opponent_defensive_coordinator": "Mike Rutenberg",
+      "opponent_defensive_play_caller": "Mike Rutenberg",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "ATL": {
+      "opponent": "PIT",
+      "week": 1,
+      "offensive_coordinator": "Tommy Rees",
+      "offensive_play_caller": "Tommy Rees",
+      "opponent_defensive_coordinator": "Patrick Graham",
+      "opponent_defensive_play_caller": "Patrick Graham",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "PIT": {
+      "opponent": "ATL",
+      "week": 1,
+      "offensive_coordinator": "Brian Angelichio",
+      "offensive_play_caller": "Mike McCarthy",
+      "opponent_defensive_coordinator": "Jeff Ulbrich",
+      "opponent_defensive_play_caller": "Jeff Ulbrich",
+      "positions": {
+        "QB": {
+          "average_ppr": 19.6,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 2,
+              "ppr_points": 19.6
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 17.2,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 2,
+              "ppr_points": 17.2
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 29.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 2,
+              "ppr_points": 29.4
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 33.9,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2023,
+              "week": 2,
+              "ppr_points": 33.9
+            }
+          ]
+        }
+      }
+    },
+    "NYJ": {
+      "opponent": "TEN",
+      "week": 1,
+      "offensive_coordinator": "Frank Reich",
+      "offensive_play_caller": "Frank Reich",
+      "opponent_defensive_coordinator": "Gus Bradley",
+      "opponent_defensive_play_caller": "Robert Saleh",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "TEN": {
+      "opponent": "NYJ",
+      "week": 1,
+      "offensive_coordinator": "Brian Daboll",
+      "offensive_play_caller": "Brian Daboll",
+      "opponent_defensive_coordinator": "Brian Duker",
+      "opponent_defensive_play_caller": "Aaron Glenn",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "ARI": {
+      "opponent": "LAC",
+      "week": 1,
+      "offensive_coordinator": "Nathaniel Hackett",
+      "offensive_play_caller": "Mike LaFleur",
+      "opponent_defensive_coordinator": "Chris O'Leary",
+      "opponent_defensive_play_caller": "Chris O'Leary",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "LAC": {
+      "opponent": "ARI",
+      "week": 1,
+      "offensive_coordinator": "Mike McDaniel",
+      "offensive_play_caller": "Mike McDaniel",
+      "opponent_defensive_coordinator": "Nick Rallis",
+      "opponent_defensive_play_caller": "Nick Rallis",
+      "positions": {
+        "QB": {
+          "average_ppr": 14.66,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 8,
+              "ppr_points": 14.66
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 10.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 8,
+              "ppr_points": 10.1
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 44.5,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 8,
+              "ppr_points": 44.5
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 23.3,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 8,
+              "ppr_points": 23.3
+            }
+          ]
+        }
+      }
+    },
+    "MIA": {
+      "opponent": "LV",
+      "week": 1,
+      "offensive_coordinator": "Bobby Slowik",
+      "offensive_play_caller": "Bobby Slowik",
+      "opponent_defensive_coordinator": "Rob Leonard",
+      "opponent_defensive_play_caller": "Rob Leonard",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "LV": {
+      "opponent": "MIA",
+      "week": 1,
+      "offensive_coordinator": "Andrew Janocko",
+      "offensive_play_caller": "Klint Kubiak",
+      "opponent_defensive_coordinator": "Sean Duggan",
+      "opponent_defensive_play_caller": "Jeff Hafley",
+      "positions": {
+        "QB": {
+          "average_ppr": 8.92,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 16,
+              "ppr_points": 8.92
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 10.0,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 16,
+              "ppr_points": 10.0
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 14.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 16,
+              "ppr_points": 14.1
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 10.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 16,
+              "ppr_points": 10.1
+            }
+          ]
+        }
+      }
+    },
+    "GB": {
+      "opponent": "MIN",
+      "week": 1,
+      "offensive_coordinator": "Adam Stenavich",
+      "offensive_play_caller": "Matt LaFleur",
+      "opponent_defensive_coordinator": "Brian Flores",
+      "opponent_defensive_play_caller": "Brian Flores",
+      "positions": {
+        "QB": {
+          "average_ppr": 13.86,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 18,
+              "ppr_points": 3.66
+            },
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 7.64
+            },
+            {
+              "season": 2024,
+              "week": 17,
+              "ppr_points": 12.0
+            },
+            {
+              "season": 2024,
+              "week": 4,
+              "ppr_points": 32.16
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 9.47,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 18,
+              "ppr_points": 2.7
+            },
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 4.9
+            },
+            {
+              "season": 2024,
+              "week": 17,
+              "ppr_points": 8.7
+            },
+            {
+              "season": 2024,
+              "week": 4,
+              "ppr_points": 21.6
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 19.57,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 18,
+              "ppr_points": 11.9
+            },
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 30.1
+            },
+            {
+              "season": 2024,
+              "week": 17,
+              "ppr_points": 21.8
+            },
+            {
+              "season": 2024,
+              "week": 4,
+              "ppr_points": 14.5
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 31.57,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 18,
+              "ppr_points": 5.3
+            },
+            {
+              "season": 2025,
+              "week": 12,
+              "ppr_points": 19.4
+            },
+            {
+              "season": 2024,
+              "week": 17,
+              "ppr_points": 34.8
+            },
+            {
+              "season": 2024,
+              "week": 4,
+              "ppr_points": 66.8
+            }
+          ]
+        }
+      }
+    },
+    "MIN": {
+      "opponent": "GB",
+      "week": 1,
+      "offensive_coordinator": "Wes Phillips",
+      "offensive_play_caller": "Kevin O'Connell",
+      "opponent_defensive_coordinator": "Jonathan Gannon",
+      "opponent_defensive_play_caller": "Jonathan Gannon",
+      "positions": {
+        "QB": {
+          "average_ppr": 14.84,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 2,
+              "ppr_points": 14.84
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 19.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 2,
+              "ppr_points": 19.4
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 12.0,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 2,
+              "ppr_points": 12.0
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 27.9,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2022,
+              "week": 2,
+              "ppr_points": 27.9
+            }
+          ]
+        }
+      }
+    },
+    "WAS": {
+      "opponent": "PHI",
+      "week": 1,
+      "offensive_coordinator": "David Blough",
+      "offensive_play_caller": "David Blough",
+      "opponent_defensive_coordinator": "Vic Fangio",
+      "opponent_defensive_play_caller": "Vic Fangio",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "PHI": {
+      "opponent": "WAS",
+      "week": 1,
+      "offensive_coordinator": "Sean Mannion",
+      "offensive_play_caller": "Sean Mannion",
+      "opponent_defensive_coordinator": "Daronte Jones",
+      "opponent_defensive_play_caller": "Daronte Jones",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "DAL": {
+      "opponent": "NYG",
+      "week": 1,
+      "offensive_coordinator": "Klayton Adams",
+      "offensive_play_caller": "Brian Schottenheimer",
+      "opponent_defensive_coordinator": "Dennard Wilson",
+      "opponent_defensive_play_caller": "Dennard Wilson",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "NYG": {
+      "opponent": "DAL",
+      "week": 1,
+      "offensive_coordinator": "Matt Nagy",
+      "offensive_play_caller": "Matt Nagy",
+      "opponent_defensive_coordinator": "Christian Parker",
+      "opponent_defensive_play_caller": "Christian Parker",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "DEN": {
+      "opponent": "KC",
+      "week": 1,
+      "offensive_coordinator": "Davis Webb",
+      "offensive_play_caller": "Davis Webb",
+      "opponent_defensive_coordinator": "Steve Spagnuolo",
+      "opponent_defensive_play_caller": "Steve Spagnuolo",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "KC": {
+      "opponent": "DEN",
+      "week": 1,
+      "offensive_coordinator": "Eric Bieniemy",
+      "offensive_play_caller": "Andy Reid",
+      "opponent_defensive_coordinator": "Vance Joseph",
+      "opponent_defensive_play_caller": "Vance Joseph",
+      "positions": {
+        "QB": {
+          "average_ppr": 11.01,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 17,
+              "ppr_points": 7.74
+            },
+            {
+              "season": 2025,
+              "week": 11,
+              "ppr_points": 15.34
+            },
+            {
+              "season": 2024,
+              "week": 18,
+              "ppr_points": 4.42
+            },
+            {
+              "season": 2024,
+              "week": 10,
+              "ppr_points": 16.54
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 17.23,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 17,
+              "ppr_points": 9.8
+            },
+            {
+              "season": 2025,
+              "week": 11,
+              "ppr_points": 28.1
+            },
+            {
+              "season": 2024,
+              "week": 18,
+              "ppr_points": 5.2
+            },
+            {
+              "season": 2024,
+              "week": 10,
+              "ppr_points": 25.8
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 15.65,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 17,
+              "ppr_points": 16.5
+            },
+            {
+              "season": 2025,
+              "week": 11,
+              "ppr_points": 16.0
+            },
+            {
+              "season": 2024,
+              "week": 18,
+              "ppr_points": 7.1
+            },
+            {
+              "season": 2024,
+              "week": 10,
+              "ppr_points": 23.0
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 15.52,
+          "sample_size": 4,
+          "games": [
+            {
+              "season": 2025,
+              "week": 17,
+              "ppr_points": 6.4
+            },
+            {
+              "season": 2025,
+              "week": 11,
+              "ppr_points": 30.4
+            },
+            {
+              "season": 2024,
+              "week": 18,
+              "ppr_points": 9.7
+            },
+            {
+              "season": 2024,
+              "week": 10,
+              "ppr_points": 15.6
+            }
+          ]
+        }
+      }
+    },
+    "NE": {
+      "opponent": "PIT",
+      "week": 2,
+      "offensive_coordinator": "Josh McDaniels",
+      "offensive_play_caller": "Josh McDaniels",
+      "opponent_defensive_coordinator": "Patrick Graham",
+      "opponent_defensive_play_caller": "Patrick Graham",
+      "positions": {
+        "QB": {
+          "average_ppr": 17.78,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 17.78
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 12.6,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 12.6
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 16.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 16.1
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 39.7,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 1,
+              "ppr_points": 39.7
+            }
+          ]
+        }
+      }
+    },
+    "SEA": {
+      "opponent": "ARI",
+      "week": 2,
+      "offensive_coordinator": "Brian Fleury",
+      "offensive_play_caller": "Brian Fleury",
+      "opponent_defensive_coordinator": "Nick Rallis",
+      "opponent_defensive_play_caller": "Nick Rallis",
+      "positions": {
+        "QB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "TE": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "RB": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        },
+        "WR": {
+          "average_ppr": null,
+          "sample_size": 0,
+          "games": []
+        }
+      }
+    },
+    "SF": {
+      "opponent": "MIA",
+      "week": 2,
+      "offensive_coordinator": "Klay Kubiak",
+      "offensive_play_caller": "Kyle Shanahan",
+      "opponent_defensive_coordinator": "Sean Duggan",
+      "opponent_defensive_play_caller": "Jeff Hafley",
+      "positions": {
+        "QB": {
+          "average_ppr": 12.46,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 12,
+              "ppr_points": 12.46
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 20.2,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 12,
+              "ppr_points": 20.2
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 12.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 12,
+              "ppr_points": 12.1
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 12.1,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2024,
+              "week": 12,
+              "ppr_points": 12.1
+            }
+          ]
+        }
+      }
+    },
+    "LAR": {
+      "opponent": "NYG",
+      "week": 2,
+      "offensive_coordinator": "Nate Scheelhaase",
+      "offensive_play_caller": "Sean McVay",
+      "opponent_defensive_coordinator": "Dennard Wilson",
+      "opponent_defensive_play_caller": "Dennard Wilson",
+      "positions": {
+        "QB": {
+          "average_ppr": 19.32,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 2,
+              "ppr_points": 19.32
+            }
+          ]
+        },
+        "TE": {
+          "average_ppr": 15.5,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 2,
+              "ppr_points": 15.5
+            }
+          ]
+        },
+        "RB": {
+          "average_ppr": 20.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 2,
+              "ppr_points": 20.4
+            }
+          ]
+        },
+        "WR": {
+          "average_ppr": 56.4,
+          "sample_size": 1,
+          "games": [
+            {
+              "season": 2025,
+              "week": 2,
+              "ppr_points": 56.4
+            }
+          ]
+        }
+      }
+    }
+  },
   "play_caller_matchups": {
     "Byron Leftwich|Dan Quinn|QB": {
       "average_ppr": 12.38,
