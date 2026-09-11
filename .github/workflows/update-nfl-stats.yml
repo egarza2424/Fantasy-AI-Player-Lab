@@ -251,7 +251,75 @@ jobs:
               f"{len(historical_rows)} total historical "
               "player-week records for 2022-2025."
           )
-          
+          # -------------------------------------------------
+          # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
+          # -------------------------------------------------
+
+          coaching_records_matched = 0
+          coaching_records_missing = 0
+
+          for row in historical_rows:
+              season = str(row.get("season") or "")
+              offense_team = row.get("team")
+              defense_team = row.get("opponent_team")
+
+              season_coaches = coaching_data.get(
+                  season,
+                  {}
+              )
+
+              offense_coaches = season_coaches.get(
+                  offense_team,
+                  {}
+              )
+
+              defense_coaches = season_coaches.get(
+                  defense_team,
+                  {}
+              )
+
+              row["offensive_coordinator"] = (
+                  offense_coaches.get(
+                      "offensive_coordinator"
+                  )
+              )
+
+              row["offensive_play_caller"] = (
+                  offense_coaches.get(
+                      "offensive_play_caller"
+                  )
+              )
+
+              row["defensive_coordinator"] = (
+                  defense_coaches.get(
+                      "defensive_coordinator"
+                  )
+              )
+
+              row["defensive_play_caller"] = (
+                  defense_coaches.get(
+                      "defensive_play_caller"
+                  )
+              )
+
+              if (
+                  row["offensive_play_caller"] and
+                  row["defensive_play_caller"]
+              ):
+                  coaching_records_matched += 1
+              else:
+                  coaching_records_missing += 1
+
+          print(
+              "Attached coaching data to "
+              f"{coaching_records_matched} "
+              "historical player-week records."
+          )
+
+          print(
+              "Historical records missing a play caller: "
+              f"{coaching_records_missing}."
+          )          
           pbp_url = (
               "https://github.com/nflverse/nflverse-data/"
               f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
