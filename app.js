@@ -90,7 +90,10 @@ const playerBResults = document.getElementById("playerBResults");
 
 async function loadWeeklyStats() {
   try {
-    const response = await fetch("./nfl-stats.json?v=7");
+const response = await fetch(
+  "./nfl-stats.json?v=11",
+  { cache: "no-store" }
+);
 
     if (!response.ok) {
       throw new Error(
