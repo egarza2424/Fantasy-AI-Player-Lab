@@ -34,7 +34,53 @@ jobs:
           from datetime import datetime, timezone
 
           seasons = [2025]
+          # -------------------------------------------------
+          # COACHING / PLAY-CALLER DATA
+          # -------------------------------------------------
 
+          with open(
+              "coordinators.json",
+              "r",
+              encoding="utf-8"
+          ) as file:
+              coaching_data = json.load(file)
+
+          expected_seasons = {
+              "2022",
+              "2023",
+              "2024",
+              "2025",
+              "2026"
+          }
+
+          missing_seasons = (
+              expected_seasons -
+              set(coaching_data.keys())
+          )
+
+          if missing_seasons:
+              raise RuntimeError(
+                  "Missing coaching seasons: "
+                  f"{sorted(missing_seasons)}"
+              )
+
+          expected_teams = 32
+
+          for season in sorted(expected_seasons):
+              team_count = len(
+                  coaching_data.get(season, {})
+              )
+
+              if team_count != expected_teams:
+                  raise RuntimeError(
+                      f"{season} coaching data has "
+                      f"{team_count} teams instead of 32."
+                  )
+
+          print(
+              "Loaded coaching/play-caller data "
+              f"for {len(coaching_data)} seasons."
+          )
           selected_fields = [
               "player_id",
               "player_name",
