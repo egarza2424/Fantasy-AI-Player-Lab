@@ -3,162 +3,194 @@
   "ARI": {
     "offensive_coordinator": "Nathaniel Hackett",
     "offensive_play_caller": "Mike LaFleur",
-    "defensive_coordinator": "Nick Rallis"
+    "defensive_coordinator": "Nick Rallis",
+    "defensive_play_caller": "Nick Rallis"
   },
   "ATL": {
     "offensive_coordinator": "Tommy Rees",
     "offensive_play_caller": "Tommy Rees",
-    "defensive_coordinator": "Jeff Ulbrich"
+    "defensive_coordinator": "Jeff Ulbrich",
+    "defensive_play_caller": "Jeff Ulbrich"
   },
   "BAL": {
     "offensive_coordinator": "Declan Doyle",
     "offensive_play_caller": "Declan Doyle",
-    "defensive_coordinator": "Anthony Weaver"
+    "defensive_coordinator": "Anthony Weaver",
+    "defensive_play_caller": "Jesse Minter"
   },
   "BUF": {
     "offensive_coordinator": "Pete Carmichael Jr.",
     "offensive_play_caller": "Joe Brady",
-    "defensive_coordinator": "Jim Leonhard"
+    "defensive_coordinator": "Jim Leonhard",
+    "defensive_play_caller": "Jim Leonhard"
   },
   "CAR": {
     "offensive_coordinator": "Brad Idzik",
     "offensive_play_caller": "Brad Idzik",
-    "defensive_coordinator": "Ejiro Evero"
+    "defensive_coordinator": "Ejiro Evero",
+    "defensive_play_caller": "Ejiro Evero"
   },
   "CHI": {
     "offensive_coordinator": "Press Taylor",
     "offensive_play_caller": "Ben Johnson",
-    "defensive_coordinator": "Dennis Allen"
+    "defensive_coordinator": "Dennis Allen",
+    "defensive_play_caller": "Dennis Allen"
   },
   "CIN": {
     "offensive_coordinator": "Dan Pitcher",
     "offensive_play_caller": "Zac Taylor",
-    "defensive_coordinator": "Al Golden"
+    "defensive_coordinator": "Al Golden",
+    "defensive_play_caller": "Al Golden"
   },
   "CLE": {
     "offensive_coordinator": "Travis Switzer",
     "offensive_play_caller": "Todd Monken",
-    "defensive_coordinator": "Mike Rutenberg"
+    "defensive_coordinator": "Mike Rutenberg",
+    "defensive_play_caller": "Mike Rutenberg"
   },
   "DAL": {
     "offensive_coordinator": "Klayton Adams",
     "offensive_play_caller": "Brian Schottenheimer",
-    "defensive_coordinator": "Christian Parker"
+    "defensive_coordinator": "Christian Parker",
+    "defensive_play_caller": "Christian Parker"
   },
   "DEN": {
     "offensive_coordinator": "Davis Webb",
     "offensive_play_caller": "Davis Webb",
-    "defensive_coordinator": "Vance Joseph"
+    "defensive_coordinator": "Vance Joseph",
+    "defensive_play_caller": "Vance Joseph"
   },
   "DET": {
     "offensive_coordinator": "Drew Petzing",
     "offensive_play_caller": "Drew Petzing",
-    "defensive_coordinator": "Kelvin Sheppard"
+    "defensive_coordinator": "Kelvin Sheppard",
+    "defensive_play_caller": "Kelvin Sheppard"
   },
   "GB": {
     "offensive_coordinator": "Adam Stenavich",
     "offensive_play_caller": "Matt LaFleur",
-    "defensive_coordinator": "Jonathan Gannon"
+    "defensive_coordinator": "Jonathan Gannon",
+    "defensive_play_caller": "Jonathan Gannon"
   },
   "HOU": {
     "offensive_coordinator": "Nick Caley",
     "offensive_play_caller": "Nick Caley",
-    "defensive_coordinator": "Matt Burke"
+    "defensive_coordinator": "Matt Burke",
+    "defensive_play_caller": "Matt Burke"
   },
   "IND": {
     "offensive_coordinator": "Jim Bob Cooter",
     "offensive_play_caller": "Shane Steichen",
-    "defensive_coordinator": "Lou Anarumo"
+    "defensive_coordinator": "Lou Anarumo",
+    "defensive_play_caller": "Lou Anarumo"
   },
   "JAX": {
     "offensive_coordinator": "Grant Udinski",
     "offensive_play_caller": "Liam Coen",
-    "defensive_coordinator": "Anthony Campanile"
+    "defensive_coordinator": "Anthony Campanile",
+    "defensive_play_caller": "Anthony Campanile"
   },
   "KC": {
     "offensive_coordinator": "Eric Bieniemy",
     "offensive_play_caller": "Andy Reid",
-    "defensive_coordinator": "Steve Spagnuolo"
+    "defensive_coordinator": "Steve Spagnuolo",
+    "defensive_play_caller": "Steve Spagnuolo"
   },
   "LAC": {
     "offensive_coordinator": "Mike McDaniel",
     "offensive_play_caller": "Mike McDaniel",
-    "defensive_coordinator": "Chris O'Leary"
+    "defensive_coordinator": "Chris O'Leary",
+    "defensive_play_caller": "Chris O'Leary"
   },
   "LAR": {
     "offensive_coordinator": "Nate Scheelhaase",
     "offensive_play_caller": "Sean McVay",
-    "defensive_coordinator": "Chris Shula"
+    "defensive_coordinator": "Chris Shula",
+    "defensive_play_caller": "Chris Shula"
   },
   "LV": {
     "offensive_coordinator": "Andrew Janocko",
     "offensive_play_caller": "Klint Kubiak",
-    "defensive_coordinator": "Rob Leonard"
+    "defensive_coordinator": "Rob Leonard",
+    "defensive_play_caller": "Rob Leonard"
   },
   "MIA": {
     "offensive_coordinator": "Bobby Slowik",
     "offensive_play_caller": "Bobby Slowik",
-    "defensive_coordinator": "Sean Duggan"
+    "defensive_coordinator": "Sean Duggan",
+    "defensive_play_caller": "Jeff Hafley"
   },
   "MIN": {
     "offensive_coordinator": "Wes Phillips",
     "offensive_play_caller": "Kevin O'Connell",
-    "defensive_coordinator": "Brian Flores"
+    "defensive_coordinator": "Brian Flores",
+    "defensive_play_caller": "Brian Flores"
   },
   "NE": {
     "offensive_coordinator": "Josh McDaniels",
     "offensive_play_caller": "Josh McDaniels",
-    "defensive_coordinator": "Zak Kuhr"
+    "defensive_coordinator": "Zak Kuhr",
+    "defensive_play_caller": "Zak Kuhr"
   },
   "NO": {
     "offensive_coordinator": "Doug Nussmeier",
     "offensive_play_caller": "Kellen Moore",
-    "defensive_coordinator": "Brandon Staley"
+    "defensive_coordinator": "Brandon Staley",
+    "defensive_play_caller": "Brandon Staley"
   },
   "NYG": {
     "offensive_coordinator": "Matt Nagy",
     "offensive_play_caller": "Matt Nagy",
-    "defensive_coordinator": "Dennard Wilson"
+    "defensive_coordinator": "Dennard Wilson",
+    "defensive_play_caller": "Dennard Wilson"
   },
   "NYJ": {
     "offensive_coordinator": "Frank Reich",
     "offensive_play_caller": "Frank Reich",
-    "defensive_coordinator": "Brian Duker"
+    "defensive_coordinator": "Brian Duker",
+    "defensive_play_caller": "Aaron Glenn"
   },
   "PHI": {
     "offensive_coordinator": "Sean Mannion",
     "offensive_play_caller": "Sean Mannion",
-    "defensive_coordinator": "Vic Fangio"
+    "defensive_coordinator": "Vic Fangio",
+    "defensive_play_caller": "Vic Fangio"
   },
   "PIT": {
     "offensive_coordinator": "Brian Angelichio",
     "offensive_play_caller": "Mike McCarthy",
-    "defensive_coordinator": "Patrick Graham"
+    "defensive_coordinator": "Patrick Graham",
+    "defensive_play_caller": "Patrick Graham"
   },
   "SEA": {
     "offensive_coordinator": "Brian Fleury",
     "offensive_play_caller": "Brian Fleury",
-    "defensive_coordinator": "Aden Durde"
+    "defensive_coordinator": "Aden Durde",
+    "defensive_play_caller": "Mike Macdonald"
   },
   "SF": {
     "offensive_coordinator": "Klay Kubiak",
     "offensive_play_caller": "Kyle Shanahan",
-    "defensive_coordinator": "Raheem Morris"
+    "defensive_coordinator": "Raheem Morris",
+    "defensive_play_caller": "Raheem Morris"
   },
   "TB": {
     "offensive_coordinator": "Zac Robinson",
     "offensive_play_caller": "Zac Robinson",
-    "defensive_coordinator": "Todd Bowles"
+    "defensive_coordinator": null,
+    "defensive_play_caller": "Todd Bowles"
   },
   "TEN": {
     "offensive_coordinator": "Brian Daboll",
     "offensive_play_caller": "Brian Daboll",
-    "defensive_coordinator": "Gus Bradley"
+    "defensive_coordinator": "Gus Bradley",
+    "defensive_play_caller": "Robert Saleh"
   },
   "WAS": {
     "offensive_coordinator": "David Blough",
     "offensive_play_caller": "David Blough",
-    "defensive_coordinator": "Daronte Jones"
+    "defensive_coordinator": "Daronte Jones",
+    "defensive_play_caller": "Daronte Jones"
   }
 },
  "2025": {
