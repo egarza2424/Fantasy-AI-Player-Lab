@@ -989,6 +989,176 @@ jobs:
               f"{len(team_next_opponent)} teams."
           )
           # -------------------------------------------------
+          # 2026 PLAY-CALLER MATCHUP SIGNALS
+          # -------------------------------------------------
+
+          current_coaching = coaching_data.get(
+              "2026",
+              {}
+          )
+
+          current_play_caller_signals = {}
+
+          signal_counts = {
+              "teams_with_matchup": 0,
+              "play_caller_history": 0,
+              "play_caller_no_history": 0
+          }
+
+          for team, matchup in (
+              team_next_opponent.items()
+          ):
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              opponent = matchup.get(
+                  "opponent"
+              )
+
+              normalized_opponent = (
+                  "LAR"
+                  if opponent == "LA"
+                  else opponent
+              )
+
+              offense_staff = (
+                  current_coaching.get(
+                      normalized_team,
+                      {}
+                  )
+              )
+
+              defense_staff = (
+                  current_coaching.get(
+                      normalized_opponent,
+                      {}
+                  )
+              )
+
+              offensive_play_caller = (
+                  offense_staff.get(
+                      "offensive_play_caller"
+                  )
+              )
+
+              defensive_play_caller = (
+                  defense_staff.get(
+                      "defensive_play_caller"
+                  )
+              )
+
+              team_signal = {
+                  "opponent":
+                      normalized_opponent,
+                  "week":
+                      matchup.get("week"),
+                  "offensive_coordinator":
+                      offense_staff.get(
+                          "offensive_coordinator"
+                      ),
+                  "offensive_play_caller":
+                      offensive_play_caller,
+                  "opponent_defensive_coordinator":
+                      defense_staff.get(
+                          "defensive_coordinator"
+                      ),
+                  "opponent_defensive_play_caller":
+                      defensive_play_caller,
+                  "positions": {}
+              }
+
+              if (
+                  offensive_play_caller and
+                  defensive_play_caller
+              ):
+                  signal_counts[
+                      "teams_with_matchup"
+                  ] += 1
+
+              for position in {
+                  "QB",
+                  "RB",
+                  "WR",
+                  "TE"
+              }:
+                  history_key = "|".join([
+                      offensive_play_caller or "",
+                      defensive_play_caller or "",
+                      position
+                  ])
+
+                  history = (
+                      play_caller_matchups.get(
+                          history_key
+                      )
+                  )
+
+                  if history:
+                      team_signal[
+                          "positions"
+                      ][position] = {
+                          "average_ppr":
+                              history.get(
+                                  "average_ppr"
+                              ),
+                          "sample_size":
+                              history.get(
+                                  "sample_size"
+                              ),
+                          "games":
+                              history.get(
+                                  "games",
+                                  []
+                              )
+                      }
+
+                      signal_counts[
+                          "play_caller_history"
+                      ] += 1
+
+                  else:
+                      team_signal[
+                          "positions"
+                      ][position] = {
+                          "average_ppr": None,
+                          "sample_size": 0,
+                          "games": []
+                      }
+
+                      signal_counts[
+                          "play_caller_no_history"
+                      ] += 1
+
+              current_play_caller_signals[
+                  normalized_team
+              ] = team_signal
+
+          print(
+              "Created current play-caller signals "
+              f"for {len(current_play_caller_signals)} "
+              "teams."
+          )
+
+          print(
+              "2026 teams with both play callers: "
+              f"{signal_counts['teams_with_matchup']}."
+          )
+
+          print(
+              "Position matchups with historical "
+              "play-caller data: "
+              f"{signal_counts['play_caller_history']}."
+          )
+
+          print(
+              "Position matchups without historical "
+              "play-caller data: "
+              f"{signal_counts['play_caller_no_history']}."
+          )
+          # -------------------------------------------------
           # FANTASYPROS EXPERT CONSENSUS RANKINGS
           # -------------------------------------------------
 
@@ -1120,6 +1290,8 @@ jobs:
                   defense_position_allowed,
               "team_next_opponent":
                   team_next_opponent,
+              "current_play_caller_signals":
+                  current_play_caller_signals,
               "play_caller_matchups":
                   play_caller_matchups,
               "player_vs_defensive_caller":
