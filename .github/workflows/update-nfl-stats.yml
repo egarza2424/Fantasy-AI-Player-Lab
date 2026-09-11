@@ -160,7 +160,98 @@ jobs:
               raise RuntimeError(
                   "No NFL player stats could be downloaded."
               )
+          # -------------------------------------------------
+          # HISTORICAL PLAYER-WEEK DATA
+          # 2022-2025 for coaching matchup calculations
+          # -------------------------------------------------
 
+          historical_rows = []
+
+          historical_seasons = [
+              2022,
+              2023,
+              2024
+          ]
+
+          for historical_season in historical_seasons:
+              historical_url = (
+                  "https://github.com/nflverse/"
+                  "nflverse-data/releases/download/"
+                  "stats_player/"
+                  f"stats_player_week_{historical_season}.csv"
+              )
+
+              print(
+                  "Trying historical player stats: "
+                  f"{historical_url}"
+              )
+
+              try:
+                  with urllib.request.urlopen(
+                      historical_url
+                  ) as response:
+                      historical_content = (
+                          response.read().decode("utf-8")
+                      )
+
+                  historical_reader = csv.DictReader(
+                      io.StringIO(historical_content)
+                  )
+
+                  season_record_count = 0
+
+                  for row in historical_reader:
+                      if row.get("position") not in {
+                          "QB",
+                          "RB",
+                          "WR",
+                          "TE"
+                      }:
+                          continue
+
+                      if row.get("season_type") not in {
+                          "REG",
+                          ""
+                      }:
+                          continue
+
+                      clean_row = {
+                          field: row.get(field, "")
+                          for field in selected_fields
+                      }
+
+                      historical_rows.append(
+                          clean_row
+                      )
+
+                      season_record_count += 1
+
+                  print(
+                      f"Loaded {season_record_count} "
+                      "historical player-week records "
+                      f"for {historical_season}."
+                  )
+
+              except Exception as error:
+                  raise RuntimeError(
+                      "Historical player stats unavailable "
+                      f"for {historical_season}: {error}"
+                  )
+
+          # 2025 is already loaded above as the current
+          # player-week dataset, so reuse it instead of
+          # downloading the same file a second time.
+          historical_rows.extend(
+              dict(row)
+              for row in rows
+          )
+
+          print(
+              "Loaded "
+              f"{len(historical_rows)} total historical "
+              "player-week records for 2022-2025."
+          )
+          
           pbp_url = (
               "https://github.com/nflverse/nflverse-data/"
               f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
