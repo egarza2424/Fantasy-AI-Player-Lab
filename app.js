@@ -901,6 +901,102 @@ function calculatePlayerVsDefensiveCallerScore(player) {
     )
   );
 }
+function getPlayCallerMatchupDetails(player) {
+  if (
+    !player ||
+    !player.team ||
+    !player.position
+  ) {
+    return null;
+  }
+
+  const teamCode =
+    player.team === "LA"
+      ? "LAR"
+      : player.team;
+
+  const teamSignal =
+    currentPlayCallerSignals[teamCode];
+
+  if (
+    !teamSignal ||
+    !teamSignal.positions
+  ) {
+    return null;
+  }
+
+  const positionSignal =
+    teamSignal.positions[player.position];
+
+  if (!positionSignal) {
+    return null;
+  }
+
+  return {
+    offensivePlayCaller:
+      teamSignal.offensive_play_caller ||
+      "Unknown",
+
+    defensivePlayCaller:
+      teamSignal.opponent_defensive_play_caller ||
+      "Unknown",
+
+    opponent:
+      teamSignal.opponent ||
+      "Unknown",
+
+    averagePpr:
+      positionSignal.average_ppr,
+
+    sampleSize:
+      Number(positionSignal.sample_size || 0)
+  };
+}
+
+
+function getPlayerVsDefensiveCallerDetails(player) {
+  if (!player || !player.name) {
+    return null;
+  }
+
+  const playerName =
+    normalizeName(player.name);
+
+  const matchingEntry =
+    Object.values(
+      currentPlayerVsDefensiveCaller
+    ).find((signal) => {
+      const signalName =
+        normalizeName(
+          signal.player_name ||
+          signal.name ||
+          ""
+        );
+
+      return signalName === playerName;
+    });
+
+  if (!matchingEntry) {
+    return null;
+  }
+
+  return {
+    defensivePlayCaller:
+      matchingEntry.defensive_play_caller ||
+      "Unknown",
+
+    opponent:
+      matchingEntry.opponent ||
+      "Unknown",
+
+    averagePpr:
+      matchingEntry.average_ppr,
+
+    sampleSize:
+      Number(matchingEntry.sample_size || 0)
+  };
+}
+
 function calculateModelConfidence(player) {
   const games = getPlayerWeeklyStats(player);
 
@@ -1619,7 +1715,8 @@ function metricRow(
   label,
   value,
   isRisk = false,
-  breakdown = null
+  breakdown = null,
+  signalDetails = null
 ) {
   const info =
     metricDescriptions[label];
@@ -1673,7 +1770,66 @@ function metricRow(
         </div>
       `
       : "";
+const signalDetailsHtml =
+  signalDetails
+    ? `
+      <div class="confidence-breakdown">
 
+        ${
+          signalDetails.offensivePlayCaller
+            ? `
+              <div>
+                Offensive Play Caller
+                <span>
+                  ${signalDetails.offensivePlayCaller}
+                </span>
+              </div>
+            `
+            : ""
+        }
+
+        <div>
+          Defensive Play Caller
+          <span>
+            ${signalDetails.defensivePlayCaller}
+          </span>
+        </div>
+
+        <div>
+          Upcoming Opponent
+          <span>
+            ${signalDetails.opponent}
+          </span>
+        </div>
+
+        <div>
+          Historical PPR Average
+          <span>
+            ${
+              signalDetails.averagePpr !== null &&
+              signalDetails.averagePpr !== undefined
+                ? Number(
+                    signalDetails.averagePpr
+                  ).toFixed(1)
+                : "No history"
+            }
+          </span>
+        </div>
+
+        <div>
+          Historical Sample
+          <span>
+            ${
+              signalDetails.sampleSize === 1
+                ? "1 game"
+                : `${signalDetails.sampleSize} games`
+            }
+          </span>
+        </div>
+
+      </div>
+    `
+    : "";
   return `
     <div class="metric-row">
       <div class="metric-label-row">
@@ -1714,6 +1870,8 @@ function metricRow(
         <p>${description}</p>
 
         ${breakdownHtml}
+        
+        ${signalDetailsHtml}
       </div>
     </div>
   `;
@@ -1723,8 +1881,12 @@ function renderPlayerCard(player, score, recommendation) {
   const metrics = getMetrics(player);
   const topSignals = getTopSignals(player);
   const riskAdjustment = 100 - metrics.risk;
-    const confidenceBreakdown =
-    getModelConfidenceBreakdown(player);
+  const confidenceBreakdown =
+  getModelConfidenceBreakdown(player);
+  const playCallerDetails =
+  getPlayCallerMatchupDetails(player);
+  const playerVsCallerDetails =
+  getPlayerVsDefensiveCallerDetails(player);
 
   return `
     <article class="player-result-card">
@@ -1790,11 +1952,17 @@ function renderPlayerCard(player, score, recommendation) {
         ${metricRow("Matchup", metrics.matchup)}
         ${metricRow(
           "Play Caller Matchup",
-          metrics.playCallerMatchup
+          metrics.playCallerMatchup,
+          false,
+          null,
+          playCallerDetails
         )}
         ${metricRow(
           "Player vs Defensive Play Caller",
-          metrics.playerVsDefensiveCaller
+          metrics.playerVsDefensiveCaller,
+          false,
+          null,
+          playerVsCallerDetails
         )}
         ${metricRow("Red-Zone Usage", metrics.redzone)}
         ${metricRow(
