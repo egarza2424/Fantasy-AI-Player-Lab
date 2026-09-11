@@ -262,6 +262,11 @@ jobs:
               season = str(row.get("season") or "")
               offense_team = row.get("team")
               defense_team = row.get("opponent_team")
+              if offense_team == "LA":
+                  offense_team = "LAR"
+
+              if defense_team == "LA":
+                  defense_team = "LAR"
 
               season_coaches = coaching_data.get(
                   season,
