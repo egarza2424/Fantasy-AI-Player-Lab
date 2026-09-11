@@ -1,6 +1,6 @@
 {
   "season": 2025,
-  "updated": "2026-09-10",
+  "updated": "2026-09-11",
   "source": "nflverse",
   "players": [
     {
@@ -157161,18 +157161,6 @@
     }
   },
   "team_next_opponent": {
-    "SF": {
-      "opponent": "LA",
-      "week": 1,
-      "gameday": "2026-09-10",
-      "location": "away"
-    },
-    "LA": {
-      "opponent": "SF",
-      "week": 1,
-      "gameday": "2026-09-10",
-      "location": "home"
-    },
     "CHI": {
       "opponent": "CAR",
       "week": 1,
@@ -157352,6 +157340,18 @@
       "week": 2,
       "gameday": "2026-09-20",
       "location": "away"
+    },
+    "SF": {
+      "opponent": "MIA",
+      "week": 2,
+      "gameday": "2026-09-20",
+      "location": "home"
+    },
+    "LA": {
+      "opponent": "NYG",
+      "week": 2,
+      "gameday": "2026-09-21",
+      "location": "home"
     }
   },
   "expert_rankings": {}
