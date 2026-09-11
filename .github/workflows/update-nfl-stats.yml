@@ -378,6 +378,170 @@ jobs:
                   f"{season} {side} {team}: "
                   f"{count}"
               )
+          # -------------------------------------------------
+          # HISTORICAL PLAY-CALLER MATCHUP PPR
+          # -------------------------------------------------
+
+          play_caller_game_totals = defaultdict(float)
+
+          for row in historical_rows:
+              offensive_play_caller = row.get(
+                  "offensive_play_caller"
+              )
+
+              defensive_play_caller = row.get(
+                  "defensive_play_caller"
+              )
+
+              position = row.get("position")
+              season = str(row.get("season") or "")
+              week = str(row.get("week") or "")
+
+              if (
+                  not offensive_play_caller or
+                  not defensive_play_caller or
+                  position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  } or
+                  not season or
+                  not week
+              ):
+                  continue
+
+              passing_yards = float(
+                  row.get("passing_yards") or 0
+              )
+
+              passing_tds = float(
+                  row.get("passing_tds") or 0
+              )
+
+              interceptions = float(
+                  row.get("interceptions") or 0
+              )
+
+              rushing_yards = float(
+                  row.get("rushing_yards") or 0
+              )
+
+              rushing_tds = float(
+                  row.get("rushing_tds") or 0
+              )
+
+              receptions = float(
+                  row.get("receptions") or 0
+              )
+
+              receiving_yards = float(
+                  row.get("receiving_yards") or 0
+              )
+
+              receiving_tds = float(
+                  row.get("receiving_tds") or 0
+              )
+
+              fantasy_points = (
+                  passing_yards / 25 +
+                  passing_tds * 4 -
+                  interceptions * 2 +
+                  rushing_yards / 10 +
+                  rushing_tds * 6 +
+                  receptions +
+                  receiving_yards / 10 +
+                  receiving_tds * 6
+              )
+
+              game_key = (
+                  offensive_play_caller,
+                  defensive_play_caller,
+                  position,
+                  season,
+                  week
+              )
+
+              play_caller_game_totals[
+                  game_key
+              ] += fantasy_points
+
+          play_caller_matchup_history = defaultdict(
+              list
+          )
+
+          for (
+              offensive_play_caller,
+              defensive_play_caller,
+              position,
+              season,
+              week
+          ), fantasy_points in (
+              play_caller_game_totals.items()
+          ):
+              matchup_key = (
+                  offensive_play_caller,
+                  defensive_play_caller,
+                  position
+              )
+
+              play_caller_matchup_history[
+                  matchup_key
+              ].append({
+                  "season": int(season),
+                  "week": int(float(week)),
+                  "ppr_points": round(
+                      fantasy_points,
+                      2
+                  )
+              })
+
+          for matchup_games in (
+              play_caller_matchup_history.values()
+          ):
+              matchup_games.sort(
+                  key=lambda game: (
+                      game["season"],
+                      game["week"]
+                  ),
+                  reverse=True
+              )
+
+          play_caller_matchups = {}
+
+          for matchup_key, matchup_games in (
+              play_caller_matchup_history.items()
+          ):
+              recent_games = matchup_games[:4]
+
+              average_ppr = sum(
+                  game["ppr_points"]
+                  for game in recent_games
+              ) / len(recent_games)
+
+              key_string = "|".join(
+                  matchup_key
+              )
+
+              play_caller_matchups[
+                  key_string
+              ] = {
+                  "average_ppr": round(
+                      average_ppr,
+                      2
+                  ),
+                  "sample_size": len(
+                      recent_games
+                  ),
+                  "games": recent_games
+              }
+
+          print(
+              "Created "
+              f"{len(play_caller_matchups)} "
+              "historical play-caller matchup "
+              "profiles."
+          )
           pbp_url = (
               "https://github.com/nflverse/nflverse-data/"
               f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
@@ -789,6 +953,8 @@ jobs:
                   defense_position_allowed,
               "team_next_opponent":
                   team_next_opponent,
+              "play_caller_matchups":
+                  play_caller_matchups,
               "expert_rankings":
                   expert_rankings
           }
