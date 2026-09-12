@@ -1733,7 +1733,6 @@ function calculateScore(player, profile) {
   return Number(score.toFixed(1));
 }
 const rankingCache = {};
-const rankingCache = {};
 
 function getPositionRankings(position, profile) {
   const cacheKey = `${profile}-${position}`;
