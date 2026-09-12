@@ -1,13 +1,13 @@
 const BASE_WEIGHTS = {
-  opportunity: 0.15,
-  production: 0.15,
-  usage: 0.12,
-  playCallerMatchup: 0.12,
-  playerVsDefensiveCaller: 0.12,
-  redzone: 0.12,
-  matchup: 0.08,
-  expert: 0.08,
-  risk: 0.06
+  opportunity: 0.18,
+  production: 0.22,
+  usage: 0.15,
+  playCallerMatchup: 0.07,
+  playerVsDefensiveCaller: 0.07,
+  redzone: 0.10,
+  matchup: 0.10,
+  expert: 0.06,
+  risk: 0.05
 };
 
 const riskProfiles = {
@@ -39,55 +39,55 @@ const riskProfiles = {
 };
 const metricDescriptions = {
   Opportunity: {
-    weight: "15%",
+    weight: "18%",
     description:
       "Measures how often a player has the chance to produce compared with others at the same position. QB: pass attempts + carries. RB: carries + targets. WR/TE: targets + carries."
   },
 
   "Recent Production": {
-  weight: "15%",
+  weight: "22%",
   description:
     "Measures average PPR fantasy production over the player's four most recent games compared with other players at the same position. The highest-scoring player at each position receives 100, with all other players scored proportionally."
 },
   
   Usage: {
-    weight: "12%",
+    weight: "15%",
     description:
       "Measures how heavily a player is involved in the offense. WR/TE uses team target share, RB uses team rushing-attempt share, and QB uses passing + rushing attempts."
   },
 
   Matchup: {
-    weight: "8%",
+    weight: "10%",
     description:
       "Evaluates the player's next opponent using PPR fantasy points that defense allowed to the player's position last season. Easier matchups receive higher scores."
   },
 
   "Red-Zone Usage": {
-    weight: "12%",
+    weight: "10%",
     description:
       "Measures involvement inside the opponent's 20-yard line. QB uses red-zone pass attempts + carries. RB/WR/TE use their share of team red-zone carries + targets."
   },
 
   "Model Confidence": {
-    weight: "8%",
+    weight: "6%",
     description:
       "Measures how dependable the player's projection appears based on recent production consistency, opportunity stability, usage stability and availability."
   },
   
   "Play Caller Matchup": {
-    weight: "12%",
+    weight: "7%",
     description:
       "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
   },
   
   "Player vs Defensive Play Caller": {
-    weight: "12%",
+    weight: "7%",
     description:
       "Measures how this individual player has historically performed in PPR scoring against defenses called by the upcoming opponent's current defensive play caller. Uses up to the four most recent applicable games. No direct history receives a neutral score of 50."
 },  
   
   "Risk Adjustment": {
-    weight: "6%",
+    weight: "5%",
     description:
       "Measures player reliability using injury status, practice participation, roster status, depth-chart role, experience and age. A higher score means lower risk."
   }
