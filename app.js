@@ -2039,13 +2039,9 @@ const signalDetailsHtml =
         <div class="metric-explanation-heading">
           <strong>${label}</strong>
       <span>
-        ${
-          weight === "Testing"
-            ? "Testing — not yet included in score"
-            : `${weight} of Balanced score`
-        }
+        ${weight} of Balanced score
       </span>
-        </div>
+    </div>
 
         <p>${description}</p>
 
