@@ -1790,17 +1790,7 @@ function getPositionRankings(position, profile) {
     );
 
   rankingCache[cacheKey] = rankings;
-
-  console.log(
-  `${position} rankings`,
-  rankings.map((entry, index) => ({
-    rank: index + 1,
-    player: entry.player.name,
-    team: entry.player.team,
-    score: entry.score
-  }))
-);
-  
+ 
   return rankings;
 }
 
