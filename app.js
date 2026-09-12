@@ -198,7 +198,7 @@ function calculateProductionScore(player) {
   const games = getPlayerWeeklyStats(player);
 
   if (games.length === 0) {
-    return 50;
+    return 20;
   }
 
   function getFantasyPoints(game) {
@@ -326,7 +326,7 @@ function calculateUsageScore(player) {
   const games = getPlayerWeeklyStats(player);
 
   if (games.length === 0) {
-    return 50;
+    return 20;
   }
 
   // QB usage:
@@ -496,7 +496,7 @@ function calculateOpportunityScore(player) {
   const games = getPlayerWeeklyStats(player);
 
   if (games.length === 0) {
-    return 50;
+    return 20;
   }
 
   const position = player.position;
