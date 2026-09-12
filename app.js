@@ -1459,7 +1459,6 @@ function setupPlayerSearch(input, resultsBox, selectElement) {
         input.value = `${player.name} — ${player.position} — ${player.team}`;
         resultsBox.innerHTML = "";
         resultsBox.classList.remove("active");
-        comparePlayers();
       });
 
       resultsBox.appendChild(option);
@@ -1733,6 +1732,7 @@ function calculateScore(player, profile) {
 
   return Number(score.toFixed(1));
 }
+const rankingCache = {};
 function getPositionRankings(position, profile) {
   return players
     .filter((player) => player.position === position)
@@ -2135,11 +2135,6 @@ const recommendationB =
     positionRankB
   );
 
-  const recommendationB = getRecommendation(
-    scoreB,
-    scoreB - scoreA
-  );
-
   const profileName =
     profile.charAt(0).toUpperCase() + profile.slice(1);
 
@@ -2222,8 +2217,8 @@ async function initializeApp() {
   // Load weekly stats separately
   await loadWeeklyStats();
 
-  // Refresh comparison once real stats are available
-  comparePlayers();
+  // Do not auto-run the full positional ranking calculation.
+  // Wait until the user chooses players.
 }
 
 initializeApp();
