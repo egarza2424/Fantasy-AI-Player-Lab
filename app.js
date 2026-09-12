@@ -2099,7 +2099,7 @@ function renderPlayerCard(
       </div>
     </article>
   `;
-}
+} 
 
 function comparePlayers() {
   const playerA = getPlayer(playerASelect.value);
