@@ -1865,15 +1865,20 @@ function getRecommendation(player, positionRank) {
 function getTopSignals(player) {
   const metrics = getMetrics(player);
 
-  const positiveSignals = [
-    ["Model Confidence", metrics.expert],
-    ["Opportunity", metrics.opportunity],
-    ["Recent Production", metrics.production],
-    ["Usage", metrics.usage],
-    ["Matchup", metrics.matchup],
-    ["Red-Zone Usage", metrics.redzone],
-    ["Risk Adjustment", 100 - metrics.risk]
-  ];
+ const positiveSignals = [
+  ["Recent Production", metrics.production],
+  ["Opportunity", metrics.opportunity],
+  ["Usage", metrics.usage],
+  ["Red-Zone Usage", metrics.redzone],
+  ["Matchup", metrics.matchup],
+  ["Play Caller Matchup", metrics.playCallerMatchup],
+  [
+    "Player vs Defensive Play Caller",
+    metrics.playerVsDefensiveCaller
+  ],
+  ["Model Confidence", metrics.expert],
+  ["Risk Adjustment", 100 - metrics.risk]
+];
 
   return positiveSignals
     .sort((a, b) => b[1] - a[1])
