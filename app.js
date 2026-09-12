@@ -1,85 +1,93 @@
 const BASE_WEIGHTS = {
-  opportunity: 0.25,
-  production: 0.20,
-  usage: 0.15,
-  matchup: 0.15,
-  redzone: 0.10,
-  expert: 0.10,
-  risk: 0.05
+  opportunity: 0.15,
+  production: 0.15,
+  usage: 0.12,
+  playCallerMatchup: 0.12,
+  playerVsDefensiveCaller: 0.12,
+  redzone: 0.12,
+  matchup: 0.08,
+  expert: 0.08,
+  risk: 0.06
 };
 
 const riskProfiles = {
   conservative: {
-    opportunity: 0.23,
-    production: 0.20,
-    usage: 0.15,
-    matchup: 0.12,
-    redzone: 0.08,
+    opportunity: 0.15,
+    production: 0.13,
+    usage: 0.12,
+    playCallerMatchup: 0.10,
+    playerVsDefensiveCaller: 0.10,
+    redzone: 0.10,
+    matchup: 0.08,
     expert: 0.10,
     risk: 0.12
   },
+
   balanced: BASE_WEIGHTS,
+
   aggressive: {
-    opportunity: 0.28,
-    production: 0.22,
-    usage: 0.15,
-    matchup: 0.15,
-    redzone: 0.10,
-    expert: 0.08,
-    risk: 0.02
+    opportunity: 0.17,
+    production: 0.17,
+    usage: 0.12,
+    playCallerMatchup: 0.13,
+    playerVsDefensiveCaller: 0.13,
+    redzone: 0.12,
+    matchup: 0.08,
+    expert: 0.05,
+    risk: 0.03
   }
 };
 const metricDescriptions = {
   Opportunity: {
-    weight: "25%",
+    weight: "15%",
     description:
       "Measures how often a player has the chance to produce compared with others at the same position. QB: pass attempts + carries. RB: carries + targets. WR/TE: targets + carries."
   },
 
   "Recent Production": {
-  weight: "20%",
+  weight: "15%",
   description:
     "Measures average PPR fantasy production over the player's four most recent games compared with other players at the same position. The highest-scoring player at each position receives 100, with all other players scored proportionally."
 },
   
   Usage: {
-    weight: "15%",
+    weight: "12%",
     description:
       "Measures how heavily a player is involved in the offense. WR/TE uses team target share, RB uses team rushing-attempt share, and QB uses passing + rushing attempts."
   },
 
   Matchup: {
-    weight: "15%",
+    weight: "8%",
     description:
       "Evaluates the player's next opponent using PPR fantasy points that defense allowed to the player's position last season. Easier matchups receive higher scores."
   },
 
   "Red-Zone Usage": {
-    weight: "10%",
+    weight: "12%",
     description:
       "Measures involvement inside the opponent's 20-yard line. QB uses red-zone pass attempts + carries. RB/WR/TE use their share of team red-zone carries + targets."
   },
 
   "Model Confidence": {
-    weight: "10%",
+    weight: "8%",
     description:
       "Measures how dependable the player's projection appears based on recent production consistency, opportunity stability, usage stability and availability."
   },
   
   "Play Caller Matchup": {
-    weight: "Not yet weighted",
+    weight: "12%",
     description:
       "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
   },
   
   "Player vs Defensive Play Caller": {
-    weight: "Not yet weighted",
+    weight: "12%",
     description:
       "Measures how this individual player has historically performed in PPR scoring against defenses called by the upcoming opponent's current defensive play caller. Uses up to the four most recent applicable games. No direct history receives a neutral score of 50."
 },  
   
   "Risk Adjustment": {
-    weight: "5%",
+    weight: "6%",
     description:
       "Measures player reliability using injury status, practice participation, roster status, depth-chart role, experience and age. A higher score means lower risk."
   }
@@ -1711,13 +1719,17 @@ function calculateScore(player, profile) {
   const weights = riskProfiles[profile] || BASE_WEIGHTS;
 
   const score =
-    metrics.opportunity * weights.opportunity +
-    metrics.production * weights.production +
-    metrics.usage * weights.usage +
-    metrics.matchup * weights.matchup +
-    metrics.redzone * weights.redzone +
-    metrics.expert * weights.expert +
-    (100 - metrics.risk) * weights.risk;
+  metrics.opportunity * weights.opportunity +
+  metrics.production * weights.production +
+  metrics.usage * weights.usage +
+  metrics.playCallerMatchup *
+    weights.playCallerMatchup +
+  metrics.playerVsDefensiveCaller *
+    weights.playerVsDefensiveCaller +
+  metrics.redzone * weights.redzone +
+  metrics.matchup * weights.matchup +
+  metrics.expert * weights.expert +
+  (100 - metrics.risk) * weights.risk;
 
   return Number(score.toFixed(1));
 }
