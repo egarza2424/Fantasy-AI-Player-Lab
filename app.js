@@ -1733,14 +1733,67 @@ function calculateScore(player, profile) {
   return Number(score.toFixed(1));
 }
 const rankingCache = {};
+const rankingCache = {};
+
 function getPositionRankings(position, profile) {
-  return players
-    .filter((player) => player.position === position)
+  const cacheKey = `${profile}-${position}`;
+
+  if (rankingCache[cacheKey]) {
+    return rankingCache[cacheKey];
+  }
+
+  const relevantPlayers = players.filter((player) => {
+    if (player.position !== position) {
+      return false;
+    }
+
+    const hasStats =
+      getPlayerWeeklyStats(player).length > 0;
+
+    const depthOrder =
+      Number(player.depthChartOrder || 0);
+
+    if (position === "QB") {
+      return depthOrder === 1 || hasStats;
+    }
+
+    if (position === "RB") {
+      return (
+        (depthOrder >= 1 && depthOrder <= 3) ||
+        hasStats
+      );
+    }
+
+    if (position === "WR") {
+      return (
+        (depthOrder >= 1 && depthOrder <= 3) ||
+        hasStats
+      );
+    }
+
+    if (position === "TE") {
+      return (
+        (depthOrder >= 1 && depthOrder <= 2) ||
+        hasStats
+      );
+    }
+
+    return false;
+  });
+
+  const rankings = relevantPlayers
     .map((player) => ({
       player,
       score: calculateScore(player, profile)
     }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) =>
+      b.score - a.score ||
+      a.player.name.localeCompare(b.player.name)
+    );
+
+  rankingCache[cacheKey] = rankings;
+
+  return rankings;
 }
 
 function getPlayerPositionRank(player, profile) {
