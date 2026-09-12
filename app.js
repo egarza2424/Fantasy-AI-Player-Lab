@@ -2265,11 +2265,12 @@ const recommendationB =
     </div>
 
     <div class="model-note">
-      <strong>Model note:</strong>
-      This MVP currently uses illustrative player metrics.
-      The next product iteration will connect real NFL statistics,
-      weekly matchup data, injuries, and expert consensus.
-    </div>
+  <strong>Model note:</strong>
+  This MVP combines historical NFL performance, usage, red-zone involvement,
+  upcoming matchup context, player availability, and model-derived confidence.
+  Play-caller matchup history adds coaching-context signals to the comparison model.
+  Expert consensus remains a planned future data-source enhancement.
+</div>
   </section>
 `;
 }
