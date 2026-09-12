@@ -97,10 +97,10 @@ h3 {
 }
 
 .hero {
-  padding: 72px 0 52px;
+  padding: 58px 0 34px;
 
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(340px, .8fr);
+  grid-template-columns: minmax(0, 1.9fr) minmax(340px, .8fr);
 
   gap: 54px;
 
@@ -120,7 +120,7 @@ h3 {
   max-width: 850px;
   margin-bottom: 26px;
 
-  font-size: clamp(2.8rem, 5.5vw, 5rem);
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
   line-height: .98;
 
   letter-spacing: -.055em;
@@ -144,7 +144,7 @@ h3 {
   align-items: stretch;
   flex-wrap: wrap;
 
-  margin-top: 38px;
+  margin-top: 30px;
 }
 
 .hero-feature {
