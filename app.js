@@ -1764,11 +1764,11 @@ function getPositionRankings(position, profile) {
     }
 
     if (position === "WR") {
-      return (
-        (depthOrder >= 1 && depthOrder <= 3) ||
-        hasStats
-      );
-    }
+  return (
+    depthOrder >= 1 &&
+    depthOrder <= 3
+  );
+}
 
     if (position === "TE") {
       return (
