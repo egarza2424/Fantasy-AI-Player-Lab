@@ -67,13 +67,13 @@ const metricDescriptions = {
   },
   
   "Play Caller Matchup": {
-    weight: "Testing",
+    weight: "Not yet weighted",
     description:
       "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
   },
   
   "Player vs Defensive Play Caller": {
-    weight: "Testing",
+    weight: "Not yet weighted",
     description:
       "Measures how this individual player has historically performed in PPR scoring against defenses called by the upcoming opponent's current defensive play caller. Uses up to the four most recent applicable games. No direct history receives a neutral score of 50."
 },  
@@ -844,21 +844,41 @@ function calculatePlayCallerMatchupScore(player) {
     return 50;
   }
 
-  const score = Number(
-    positionSignal.score
-  );
+const rawScore = Number(
+  positionSignal.score
+);
 
-  if (!Number.isFinite(score)) {
-    return 50;
-  }
+if (!Number.isFinite(rawScore)) {
+  return 50;
+}
 
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(score)
-    )
-  );
+const sampleSize =
+  Number(positionSignal.sample_size || 0);
+
+let sampleConfidence = 0;
+
+if (sampleSize >= 4) {
+  sampleConfidence = 1;
+} else if (sampleSize === 3) {
+  sampleConfidence = 0.8;
+} else if (sampleSize === 2) {
+  sampleConfidence = 0.6;
+} else if (sampleSize === 1) {
+  sampleConfidence = 0.4;
+}
+
+const adjustedScore =
+  50 +
+  (rawScore - 50) *
+  sampleConfidence;
+
+return Math.max(
+  0,
+  Math.min(
+    100,
+    Math.round(adjustedScore)
+  )
+);
 }
 function calculatePlayerVsDefensiveCallerScore(player) {
   if (!player || !player.name) {
@@ -886,20 +906,40 @@ function calculatePlayerVsDefensiveCallerScore(player) {
     return 50;
   }
 
-  const score =
-    Number(matchingEntry.score);
+  const rawScore =
+  Number(matchingEntry.score);
 
-  if (!Number.isFinite(score)) {
-    return 50;
-  }
+if (!Number.isFinite(rawScore)) {
+  return 50;
+}
 
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(score)
-    )
-  );
+const sampleSize =
+  Number(matchingEntry.sample_size || 0);
+
+let sampleConfidence = 0;
+
+if (sampleSize >= 4) {
+  sampleConfidence = 1;
+} else if (sampleSize === 3) {
+  sampleConfidence = 0.8;
+} else if (sampleSize === 2) {
+  sampleConfidence = 0.6;
+} else if (sampleSize === 1) {
+  sampleConfidence = 0.4;
+}
+
+const adjustedScore =
+  50 +
+  (rawScore - 50) *
+  sampleConfidence;
+
+return Math.max(
+  0,
+  Math.min(
+    100,
+    Math.round(adjustedScore)
+  )
+);
 }
 function getPlayCallerMatchupDetails(player) {
   if (
@@ -1864,7 +1904,13 @@ const signalDetailsHtml =
       <div class="metric-explanation">
         <div class="metric-explanation-heading">
           <strong>${label}</strong>
-          <span>${weight} of Balanced score</span>
+      <span>
+        ${
+          weight === "Testing"
+            ? "Testing — not yet included in score"
+            : `${weight} of Balanced score`
+        }
+      </span>
         </div>
 
         <p>${description}</p>
