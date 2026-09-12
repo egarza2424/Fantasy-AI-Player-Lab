@@ -1733,18 +1733,74 @@ function calculateScore(player, profile) {
 
   return Number(score.toFixed(1));
 }
-function getRecommendation(score, advantage) {
-  if (score >= 82 || advantage >= 8) {
-    return "START";
+function getPositionRankings(position, profile) {
+  return players
+    .filter((player) => player.position === position)
+    .map((player) => ({
+      player,
+      score: calculateScore(player, profile)
+    }))
+    .sort((a, b) => b.score - a.score);
+}
+
+function getPlayerPositionRank(player, profile) {
+  if (!player || !player.position) {
+    return null;
   }
 
-  if (score >= 72 || advantage >= 2) {
-    return "FLEX";
+  const rankings =
+    getPositionRankings(player.position, profile);
+
+  const index = rankings.findIndex(
+    (entry) => entry.player.id === player.id
+  );
+
+  return index >= 0 ? index + 1 : null;
+}
+
+function getRecommendation(player, positionRank) {
+  if (!player || !positionRank) {
+    return "SIT";
+  }
+
+  if (player.position === "QB") {
+    return positionRank <= 12
+      ? "START"
+      : "SIT";
+  }
+
+  if (player.position === "RB") {
+    if (positionRank <= 24) {
+      return "START";
+    }
+
+    if (positionRank <= 36) {
+      return "FLEX";
+    }
+
+    return "SIT";
+  }
+
+  if (player.position === "WR") {
+    if (positionRank <= 24) {
+      return "START";
+    }
+
+    if (positionRank <= 36) {
+      return "FLEX";
+    }
+
+    return "SIT";
+  }
+
+  if (player.position === "TE") {
+    return positionRank <= 12
+      ? "START"
+      : "SIT";
   }
 
   return "SIT";
 }
-
 function getTopSignals(player) {
   const metrics = getMetrics(player);
 
@@ -1935,7 +1991,12 @@ const signalDetailsHtml =
   `;
 }
 
-function renderPlayerCard(player, score, recommendation) {
+function renderPlayerCard(
+  player,
+  score,
+  recommendation,
+  positionRank
+) {
   const metrics = getMetrics(player);
   const topSignals = getTopSignals(player);
   const riskAdjustment = 100 - metrics.risk;
@@ -1951,8 +2012,13 @@ function renderPlayerCard(player, score, recommendation) {
       <div class="player-result-top">
         <div>
           <h3 class="player-name">${player.name}</h3>
-          <p class="player-meta">
+ <p class="player-meta">
   ${player.position} • ${player.team}
+  ${
+    positionRank
+      ? ` • ${player.position}${positionRank}`
+      : ""
+  }
 </p>
 
 <div class="player-status">
@@ -2045,12 +2111,28 @@ function comparePlayers() {
 
   const profile = riskSelect.value;
 
-  const scoreA = calculateScore(playerA, profile);
-  const scoreB = calculateScore(playerB, profile);
+const scoreA =
+  calculateScore(playerA, profile);
 
-  const recommendationA = getRecommendation(
-    scoreA,
-    scoreA - scoreB
+const scoreB =
+  calculateScore(playerB, profile);
+
+const positionRankA =
+  getPlayerPositionRank(playerA, profile);
+
+const positionRankB =
+  getPlayerPositionRank(playerB, profile);
+
+const recommendationA =
+  getRecommendation(
+    playerA,
+    positionRankA
+  );
+
+const recommendationB =
+  getRecommendation(
+    playerB,
+    positionRankB
   );
 
   const recommendationB = getRecommendation(
@@ -2073,13 +2155,15 @@ function comparePlayers() {
       ${renderPlayerCard(
         playerA,
         scoreA,
-        recommendationA
+        recommendationA,
+        positionRankA
       )}
 
       ${renderPlayerCard(
         playerB,
         scoreB,
-        recommendationB
+        recommendationB,
+        positionRankB
       )}
     </div>
 
