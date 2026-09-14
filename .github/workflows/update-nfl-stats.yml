@@ -1718,8 +1718,15 @@ jobs:
               "expert_rankings":
                   expert_rankings
           }
+                    if target_week is not None:
+              output_filename = (
+                  f"nfl-stats-week{target_week}-snapshot.json"
+              )
+          else:
+              output_filename = "nfl-stats.json"
+
           with open(
-              "nfl-stats.json",
+              output_filename,
               "w",
               encoding="utf-8"
           ) as file:
@@ -1730,18 +1737,24 @@ jobs:
               )
 
           print(
-              f"Created nfl-stats.json with "
+              f"Created {output_filename} with "
               f"{len(rows)} records "
               f"from the {season_used} season."
           )
           PY
           
-      - name: Commit updated stats
+           - name: Commit updated stats
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add nfl-stats.json
+          if [ -n "$TARGET_WEEK" ]; then
+            OUTPUT_FILE="nfl-stats-week${TARGET_WEEK}-snapshot.json"
+          else
+            OUTPUT_FILE="nfl-stats.json"
+          fi
+
+          git add "$OUTPUT_FILE"
 
           if git diff --cached --quiet; then
             echo "No stats changes to commit."
