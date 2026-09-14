@@ -111,10 +111,9 @@ const playerBResults = document.getElementById("playerBResults");
 async function loadWeeklyStats() {
   try {
 const response = await fetch(
-  "./nfl-stats.json?v=11",
+  "./nfl-stats-week1-snapshot.json?v=1",
   { cache: "no-store" }
 );
-
     if (!response.ok) {
       throw new Error(
         `Could not load nfl-stats.json: ${response.status}`
@@ -2324,7 +2323,7 @@ function exportPreWeek1Snapshot() {
   const link = document.createElement("a");
   link.href = url;
   link.download =
-    "2026-week1-preseason-model-snapshot.csv";
+    "2026-week1-reconstructed-model-snapshot.csv";
 
   document.body.appendChild(link);
   link.click();
@@ -2333,7 +2332,7 @@ function exportPreWeek1Snapshot() {
   URL.revokeObjectURL(url);
 
   console.log(
-    `Pre-Week 1 snapshot exported: ${snapshot.length} players`
+    `Week 1 reconstructed snapshot exported: ${snapshot.length} players`
   );
 }
 compareButton.addEventListener("click", comparePlayers);
