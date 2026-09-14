@@ -215,23 +215,45 @@ Head-to-head comparison and positional recommendation are treated as separate de
 
 ### Model Validation
 
+- Generate explicit target-week model snapshots
 - Store pregame model scores
 - Store pregame positional rankings
+- Preserve opponent and play-caller context
+- Preserve model version and scoring weights
 - Compare predictions with actual weekly PPR results
 - Measure positional ranking error
 - Measure START/FLEX/SIT accuracy
+- Measure model-score correlation with actual production
 - Identify largest hits and misses
 - Evaluate individual signal performance
+- Prevent postgame data from altering frozen prospective snapshots
 
-## 2026 Week 1 Validation
+## 2026 Week 1 Reconstruction and Validation
 
-The current scoring model is intentionally frozen before 2026 Week 1 results are incorporated.
+During Week 1 validation, a temporal-data issue was identified in the original snapshot process.
 
-After Week 1 is complete, actual results will be compared against the frozen pregame model.
+The live product determines each team's next opponent dynamically. After some Week 1 games had been completed, teams that had already played advanced to Week 2 matchup context while teams that had not yet played remained on Week 1.
 
-The purpose is to evaluate the model on unseen outcomes rather than adjusting the model after knowing the results.
+Because this created a mixed-week snapshot, the original export is not treated as a valid Week 1 pregame prediction set.
 
-Week 1 validation should measure:
+The data pipeline was updated to support an explicit target week. This allows schedule, opponent and play-caller context to be locked to a specific NFL week.
+
+A reconstructed Week 1 benchmark was generated using the frozen Model V1 methodology with consistent Week 1 matchup context.
+
+The reconstructed benchmark includes:
+
+- Player model score
+- Predicted positional rank
+- START/FLEX/SIT recommendation
+- Week 1 opponent
+- Offensive play caller
+- Defensive play caller
+- Play Caller Matchup score and historical sample
+- Player vs. Defensive Play Caller score and historical sample
+
+Because the benchmark was reconstructed after Week 1 began, it is classified as a **retrospective validation benchmark**, not a prospective pregame prediction set.
+
+Week 1 validation will measure:
 
 - Predicted positional rank vs. actual positional finish
 - START/FLEX/SIT accuracy
@@ -242,7 +264,15 @@ Week 1 validation should measure:
 - Largest prediction misses
 - Signal-level predictive performance
 
-Results should inform future iterations without retroactively altering the original Week 1 predictions.
+Model V1 should remain unchanged until this evaluation is complete so the results can be used to diagnose strengths and weaknesses without retroactively optimizing the benchmark.
+
+## 2026 Week 2 Prospective Validation
+
+Week 2 will serve as the model's first true prospective out-of-sample validation.
+
+Before any Week 2 games are played, the target-week pipeline will be used to generate and preserve a Week 2 model snapshot.
+
+That snapshot will remain unchanged after games begin and will later be compared with actual Week 2 PPR outcomes using the same validation metrics established for Week 1.
 
 ## P2 — Future
 
