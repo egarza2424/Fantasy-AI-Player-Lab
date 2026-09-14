@@ -2266,19 +2266,66 @@ function exportPreWeek1Snapshot() {
   const snapshot = [];
 
   positions.forEach((position) => {
-    const rankings = getPositionRankings(position, profile);
+    const rankings =
+      getPositionRankings(position, profile);
 
     rankings.forEach((entry, index) => {
       const player = entry.player;
       const positionRank = index + 1;
+
       const recommendation =
-        getRecommendation(player, positionRank);
+        getRecommendation(
+          player,
+          positionRank
+        );
+
+      const playCallerDetails =
+        getPlayCallerMatchupDetails(player);
+
+      const playerVsCallerDetails =
+        getPlayerVsDefensiveCallerDetails(player);
+
+      const metrics =
+        getMetrics(player);
 
       snapshot.push({
         player_id: player.id,
         player_name: player.name,
         position: player.position,
         team: player.team,
+
+        opponent:
+          playCallerDetails?.opponent ||
+          playerVsCallerDetails?.opponent ||
+          "Unknown",
+
+        offensive_play_caller:
+          playCallerDetails?.offensivePlayCaller ||
+          "Unknown",
+
+        defensive_play_caller:
+          playCallerDetails?.defensivePlayCaller ||
+          playerVsCallerDetails?.defensivePlayCaller ||
+          "Unknown",
+
+        play_caller_matchup_score:
+          metrics.playCallerMatchup,
+
+        play_caller_historical_ppr:
+          playCallerDetails?.averagePpr ?? "",
+
+        play_caller_sample_size:
+          playCallerDetails?.sampleSize ?? 0,
+
+        player_vs_defensive_caller_score:
+          metrics.playerVsDefensiveCaller,
+
+        player_vs_defensive_caller_ppr:
+          playerVsCallerDetails?.averagePpr ?? "",
+
+        player_vs_defensive_caller_sample_size:
+          playerVsCallerDetails?.sampleSize ?? 0,
+
         model_score: entry.score,
         position_rank: positionRank,
         recommendation: recommendation
@@ -2291,17 +2338,38 @@ function exportPreWeek1Snapshot() {
     "player_name",
     "position",
     "team",
+    "opponent",
+    "offensive_play_caller",
+    "defensive_play_caller",
+    "play_caller_matchup_score",
+    "play_caller_historical_ppr",
+    "play_caller_sample_size",
+    "player_vs_defensive_caller_score",
+    "player_vs_defensive_caller_ppr",
+    "player_vs_defensive_caller_sample_size",
     "model_score",
     "position_rank",
     "recommendation"
   ];
 
+  const escapeCsv = (value) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+
   const rows = snapshot.map((player) =>
     [
       player.player_id,
-      `"${String(player.player_name).replace(/"/g, '""')}"`,
+      escapeCsv(player.player_name),
       player.position,
       player.team,
+      player.opponent,
+      escapeCsv(player.offensive_play_caller),
+      escapeCsv(player.defensive_play_caller),
+      player.play_caller_matchup_score,
+      player.play_caller_historical_ppr,
+      player.play_caller_sample_size,
+      player.player_vs_defensive_caller_score,
+      player.player_vs_defensive_caller_ppr,
+      player.player_vs_defensive_caller_sample_size,
       player.model_score,
       player.position_rank,
       player.recommendation
@@ -2318,10 +2386,14 @@ function exportPreWeek1Snapshot() {
     { type: "text/csv;charset=utf-8;" }
   );
 
-  const url = URL.createObjectURL(blob);
+  const url =
+    URL.createObjectURL(blob);
 
-  const link = document.createElement("a");
+  const link =
+    document.createElement("a");
+
   link.href = url;
+
   link.download =
     "2026-week1-reconstructed-model-snapshot.csv";
 
