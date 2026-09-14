@@ -149,11 +149,17 @@ Head-to-head comparison and START/FLEX/SIT guidance answer different user questi
 
 The project has evolved through repeated testing of real player outputs, API limitations, data-quality issues and model behavior.
 
-## Model Validation — Next Milestone
+## Model Validation
 
-The current model is being intentionally **frozen before 2026 Week 1 results are incorporated**.
+Model V1 is now frozen for evaluation.
 
-Once Week 1 is complete, the pregame model will be evaluated against actual PPR outcomes.
+During the initial Week 1 validation process, a temporal-data issue was identified in the snapshot workflow. Because the live product automatically advances each team to its next opponent, the original snapshot contained a mixture of Week 1 and Week 2 matchup context after some Week 1 games had already been completed.
+
+The data pipeline was updated to support explicit target-week snapshots, allowing schedule and play-caller context to be locked to a specific NFL week.
+
+A reconstructed 2026 Week 1 benchmark was then generated using the frozen Model V1 methodology and consistent Week 1 matchup context. Because this benchmark was reconstructed after Week 1 had begun, it is treated as a **retrospective validation benchmark**, not a prospective pregame prediction set.
+
+Once Week 1 is complete, the reconstructed benchmark will be evaluated against actual PPR outcomes.
 
 Planned analysis includes:
 
@@ -165,10 +171,11 @@ Planned analysis includes:
 - Performance by position
 - Performance of individual model signals
 
-The objective is to test the model against outcomes it has not already seen rather than retroactively tuning the model to fit Week 1 results.
+No Model V1 weights will be changed before the Week 1 evaluation is completed.
 
-Those findings will guide the next scoring iteration.
+**Week 2 will serve as the first true prospective out-of-sample validation**, with the model snapshot frozen before Week 2 games are played.
 
+Those results will guide future scoring iterations.
 ## Product Roadmap
 
 ### League Integration
