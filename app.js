@@ -2260,7 +2260,82 @@ const recommendationB =
   </section>
 `;
 }
+function exportPreWeek1Snapshot() {
+  const profile = "balanced";
+  const positions = ["QB", "RB", "WR", "TE"];
 
+  const snapshot = [];
+
+  positions.forEach((position) => {
+    const rankings = getPositionRankings(position, profile);
+
+    rankings.forEach((entry, index) => {
+      const player = entry.player;
+      const positionRank = index + 1;
+      const recommendation =
+        getRecommendation(player, positionRank);
+
+      snapshot.push({
+        player_id: player.id,
+        player_name: player.name,
+        position: player.position,
+        team: player.team,
+        model_score: entry.score,
+        position_rank: positionRank,
+        recommendation: recommendation
+      });
+    });
+  });
+
+  const header = [
+    "player_id",
+    "player_name",
+    "position",
+    "team",
+    "model_score",
+    "position_rank",
+    "recommendation"
+  ];
+
+  const rows = snapshot.map((player) =>
+    [
+      player.player_id,
+      `"${String(player.player_name).replace(/"/g, '""')}"`,
+      player.position,
+      player.team,
+      player.model_score,
+      player.position_rank,
+      player.recommendation
+    ].join(",")
+  );
+
+  const csv = [
+    header.join(","),
+    ...rows
+  ].join("\n");
+
+  const blob = new Blob(
+    [csv],
+    { type: "text/csv;charset=utf-8;" }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download =
+    "2026-week1-preseason-model-snapshot.csv";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+
+  console.log(
+    `Pre-Week 1 snapshot exported: ${snapshot.length} players`
+  );
+}
 compareButton.addEventListener("click", comparePlayers);
 
 async function initializeApp() {
