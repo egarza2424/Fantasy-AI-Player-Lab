@@ -1254,7 +1254,7 @@ jobs:
 
               team_signal = (
                   current_play_caller_signals.get(
-                      normalized_team
+                      team
                   )
               )
 
