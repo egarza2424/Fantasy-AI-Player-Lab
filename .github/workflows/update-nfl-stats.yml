@@ -2,9 +2,13 @@ name: Update NFL Stats
 
 on:
   workflow_dispatch:
+    inputs:
+      target_week:
+        description: "Optional 2026 week to lock matchup data to"
+        required: false
+        default: ""
   schedule:
     - cron: "0 12 * * *"
-
 permissions:
   contents: write
 jobs:
@@ -12,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FANTASYPROS_API_KEY: ${{ secrets.FANTASYPROS_API_KEY }}
+      TARGET_WEEK: ${{ github.event.inputs.target_week || '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,7 +36,28 @@ jobs:
           import os
           import urllib.request
           from collections import defaultdict
-          from datetime import datetime, timezone
+          from datetime import datetime, timezone          
+          target_week_raw = os.environ.get(
+              "TARGET_WEEK",
+              ""
+          ).strip()
+
+          target_week = (
+              int(target_week_raw)
+              if target_week_raw
+              else None
+          )
+
+          if target_week is not None:
+              print(
+                  f"Matchup schedule locked to "
+                  f"2026 Week {target_week}."
+              )
+          else:
+              print(
+                  "Matchup schedule using live "
+                  "next-opponent mode."
+              )
 
           seasons = [2025]
           # -------------------------------------------------
@@ -939,8 +965,16 @@ jobs:
               except ValueError:
                   continue
 
-              if game_date < today:
-                  continue
+              game_week = int(
+                  game.get("week") or 0
+              )
+
+              if target_week is not None:
+                  if game_week != target_week:
+                      continue
+              else:
+                  if game_date < today:
+                      continue
 
               away_team = game.get("away_team")
               home_team = game.get("home_team")
@@ -950,11 +984,10 @@ jobs:
 
               upcoming_games.append({
                   "date": game_date,
-                  "week": int(game.get("week") or 0),
+                  "week": game_week,
                   "away_team": away_team,
                   "home_team": home_team
               })
-
           upcoming_games.sort(
               key=lambda game: (
                   game["date"],
@@ -1659,6 +1692,12 @@ jobs:
           )
           output = {
               "season": season_used,
+              "target_week": target_week,
+              "schedule_mode": (
+                  "fixed_week"
+                  if target_week is not None
+                  else "next_opponent"
+              ),
               "updated": datetime.now(
                   timezone.utc
               ).strftime("%Y-%m-%d"),
