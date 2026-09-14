@@ -1166,7 +1166,7 @@ jobs:
                       ] += 1
 
               current_play_caller_signals[
-                  normalized_team
+                  team
               ] = team_signal
 
           print(
