@@ -1085,7 +1085,7 @@ jobs:
 
               team_signal = {
                   "opponent":
-                      normalized_opponent,
+                     opponent,
                   "week":
                       matchup.get("week"),
                   "offensive_coordinator":
@@ -1295,7 +1295,7 @@ jobs:
                   "position":
                       position,
                   "team":
-                      normalized_team,
+                      team,
                   "opponent":
                       team_signal.get(
                           "opponent"
