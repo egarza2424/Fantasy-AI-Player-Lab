@@ -117,7 +117,7 @@ const statsFile = snapshotWeek
 async function loadWeeklyStats() {
   try {
 const response = await fetch(
-  "./nfl-stats.json?v=13",
+  `${statsFile}?v=13`,
   { cache: "no-store" }
 );
     if (!response.ok) {
