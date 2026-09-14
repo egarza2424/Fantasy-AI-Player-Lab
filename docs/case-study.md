@@ -8,118 +8,279 @@ The problem is not simply information retrieval.
 
 The problem is **decision compression**:
 
-> How do I turn many signals into one lineup decision I can understand and defend?
+> How do I turn many competing signals into one lineup decision I can understand and defend?
 
-## Target user
+## Target User
 
 A fantasy football manager making a weekly:
 
-* Start/sit decision
-* Flex decision
-* Player comparison
-* Risk/reward decision
+- Start/sit decision
+- Flex decision
+- Player comparison
+- Risk/reward decision
 
-## Product hypothesis
+## Product Hypothesis
 
-If the product exposes the reasoning behind a recommendation, users will be more likely to trust the recommendation, understand the tradeoffs and return for future decisions.
+If a fantasy decision-support product exposes the reasoning behind its recommendation, users will be more likely to trust the recommendation, understand the tradeoffs and return for future decisions.
 
 ## MVP
 
-The MVP intentionally solves one narrow problem:
+The MVP intentionally focuses on one core problem:
 
-**Compare Player A vs. Player B.**
+**I'm deciding between two fantasy football players. Who should I start, and why?**
 
 The user can:
 
-1. Select two players.
-2. Choose a risk profile.
-3. Compare weighted signals.
-4. Review the model score.
-5. See a recommendation.
-6. Read the decision trace.
+1. Search active NFL players.
+2. Select two players to compare.
+3. Choose a Conservative, Balanced or Aggressive risk profile.
+4. Compare nine weighted signals.
+5. Review each player's 0–100 model score.
+6. See positional START/FLEX/SIT guidance.
+7. Review the strongest signals behind the recommendation.
+8. Inspect how individual metrics were calculated.
 
-## Why these signals?
+The goal is not simply to output a ranking. The goal is to make the decision process understandable.
 
-The model uses seven conceptual inputs:
+## The Nine-Signal Model
 
-* Opportunity
-* Recent production
-* Usage
-* Matchup
-* Red-zone usage
-* Expert confidence
-* Risk
+The current Balanced model combines nine signals:
 
-The weights are intentionally visible so the product can be debated and iterated rather than treated as an unquestionable black box.
+| Signal | Weight |
+| --- | ---: |
+| Opportunity | 18% |
+| Recent Production | 22% |
+| Usage | 15% |
+| Matchup | 10% |
+| Red-Zone Usage | 10% |
+| Play Caller Matchup | 7% |
+| Player vs. Defensive Play Caller | 7% |
+| Model Confidence | 6% |
+| Risk Adjustment | 5% |
 
-## Key product tradeoff
+The weights are intentionally visible so the model can be evaluated, challenged and improved rather than treated as an unquestionable black box.
+
+## Data and Feature Design
+
+The prototype uses real NFL data to create structured fantasy-football signals.
+
+### Opportunity
+
+Opportunity measures how frequently a player has access to fantasy-relevant opportunities.
+
+- QB: pass attempts + rush attempts per game
+- RB: carries + targets per game
+- WR/TE: targets + carries per game
+
+Players are normalized against others at the same position.
+
+### Recent Production
+
+Recent Production measures PPR fantasy output across the player's most recent four games.
+
+Players are compared with others at the same position, with the highest recent average establishing the top score.
+
+### Usage
+
+Usage attempts to capture a player's role within his own offense rather than simply counting raw statistics.
+
+- WR/TE: share of team targets
+- RB: share of team rushing attempts
+- QB: passing + rushing involvement relative to other quarterbacks
+
+### Red-Zone Usage
+
+Red-Zone Usage measures access to higher-value scoring opportunities.
+
+The calculation changes by position to better represent how quarterbacks, running backs, wide receivers and tight ends generate fantasy value near the goal line.
+
+### Matchup
+
+The model identifies the player's upcoming opponent and evaluates how many PPR fantasy points that defense allowed to the player's position.
+
+Matchup scores are normalized so difficult defenses reduce the score while favorable defenses increase it.
+
+## Coaching Context
+
+One of the more differentiated iterations of the project was adding coaching and play-calling history.
+
+### Play Caller Matchup
+
+This signal evaluates historical fantasy production associated with the current offensive play caller against the upcoming opponent's defensive play caller.
+
+Rather than treating every matchup as purely team-vs-team, the model introduces coaching context into the comparison.
+
+### Player vs. Defensive Play Caller
+
+This signal evaluates an individual player's historical PPR production against the upcoming opponent's current defensive play caller.
+
+This creates a second layer of matchup context beyond traditional defense-versus-position statistics.
+
+## Handling Small Samples
+
+Historical coaching matchups can produce very small samples.
+
+Rather than treating a one-game result as equally reliable as a four-game sample, the model regresses small samples toward a neutral score of 50.
+
+The adjustment is:
+
+**Adjusted Score = 50 + (Raw Score - 50) × Sample Confidence**
+
+Sample confidence:
+
+- 0 games → neutral score of 50
+- 1 game → 40% confidence
+- 2 games → 60% confidence
+- 3 games → 80% confidence
+- 4+ games → 100% confidence
+
+For example, a raw score of 100 based on only one historical game becomes 70 rather than remaining 100.
+
+This prevents a small historical sample from dominating a recommendation.
+
+## Model Confidence
+
+Model Confidence is separate from outside expert opinion.
+
+It evaluates the stability and reliability of the model's underlying player information using:
+
+- 35% Recent Production Consistency
+- 30% Opportunity Stability
+- 20% Usage Stability
+- 15% Availability
+
+This allows the model to distinguish between a strong projection supported by stable inputs and one built on more volatile information.
+
+## Risk Adjustment
+
+Risk incorporates current player context including:
+
+- Injury designation
+- Practice participation
+- Roster status
+- Depth-chart position
+- NFL experience
+- Age
+
+Users can select Conservative, Balanced or Aggressive profiles so the recommendation can respond to different levels of risk tolerance.
+
+## Positional Decision Logic
+
+The model separates the head-to-head comparison from positional lineup guidance.
+
+START/FLEX/SIT is based on the player's model rank within his position:
+
+- QB: ranks 1–12 START; 13+ SIT
+- RB: ranks 1–24 START; 25–36 FLEX; 37+ SIT
+- WR: ranks 1–24 START; 25–36 FLEX; 37+ SIT
+- TE: ranks 1–12 START; 13+ SIT
+
+This prevents the recommendation from depending only on whether Player A happened to score higher than Player B.
+
+## Product Iteration
+
+The current model was not produced in one pass.
+
+Development exposed several issues that required product and modeling decisions, including:
+
+- Browser/API limitations
+- Sparse or incomplete seasonal datasets
+- Missing-data bias
+- Fantasy-relevant ranking-pool selection
+- Coaching-team abbreviation mismatches
+- Small historical samples
+- Search performance
+- Explainability of model outputs
+
+Each issue created an opportunity to improve the system rather than hide the limitation.
+
+For example, missing core performance data originally behaved too neutrally and could artificially support players without meaningful production. Core missing-data defaults were recalibrated to penalize insufficient performance information while genuinely unknown matchup information remains neutral.
+
+## Key Product Tradeoff
 
 A highly complex model can appear sophisticated while becoming difficult for users to understand.
 
-For the MVP, explainability wins over model complexity.
+For this MVP, **explainability wins over unnecessary complexity**.
 
-The goal is to prove the interaction and decision workflow first.
+Users should be able to see what influenced the recommendation, how much each signal matters and where uncertainty exists.
 
-## Success metrics
+## Model Freeze and Week 1 Validation
 
-If this became a production feature, I would evaluate:
+Before incorporating 2026 Week 1 results, the current scoring model is being intentionally frozen.
 
-### Primary
+This creates an out-of-sample test: the model's recommendations exist **before** the outcomes are known.
 
-* Comparison completion rate
-* Recommendation engagement
-* Repeat comparison rate
-* User-reported decision confidence
+After Week 1 is complete, actual fantasy results will be compared with the frozen pregame model.
 
-### Quality
+Planned evaluation includes:
 
-* Recommendation accuracy
-* Calibration by position
-* Performance by scoring format
-* Error rate on high-confidence recommendations
+- Predicted positional rank vs. actual positional finish
+- START/FLEX/SIT accuracy
+- Model score vs. actual PPR production
+- Average ranking error
+- Largest model hits
+- Largest model misses
+- Performance by position
+- Performance of individual signals
 
-### Product
+The purpose is not to retroactively tune the model until Week 1 looks successful. The purpose is to identify where the model was right, where it failed and what should change before future weeks.
 
-* Weekly active users
-* Return rate
-* Time to decision
-* Feature adoption
-* Conversion/retention if connected to a subscription product
+## Success Metrics
 
-## Experiment ideas
+If this became a production feature, I would evaluate both product behavior and model performance.
+
+### Product Metrics
+
+- Comparison completion rate
+- Recommendation engagement
+- Repeat comparison rate
+- Time to decision
+- Weekly active users
+- User-reported decision confidence
+
+### Model Metrics
+
+- Positional ranking accuracy
+- START/FLEX/SIT accuracy
+- Correlation between model score and fantasy production
+- Average ranking error
+- Performance by position
+- Error rate on high-confidence recommendations
+
+## Experiment Ideas
 
 ### Experiment A — Explainability
 
-A/B test:
+Compare:
 
-* Recommendation only
-* Recommendation + top three reasons
+- Recommendation only
+- Recommendation + top reasons and metric explanations
 
-**Hypothesis:** explanations improve trust and repeat use.
+**Hypothesis:** explanations improve trust and repeat usage.
 
 ### Experiment B — Personalization
 
 Compare:
 
-* One universal score
-* Risk-adjusted score
+- Universal scoring profile
+- Risk-adjusted scoring profiles
 
 **Hypothesis:** personalization improves perceived usefulness.
 
-### Experiment C — Comparison workflow
+### Experiment C — Comparison Workflow
 
 Compare:
 
-* Search-first experience
-* "Who should I start?" guided workflow
+- Search-first player comparison
+- Guided "Who should I start?" workflow
 
-**Hypothesis:** reducing the number of choices decreases decision friction.
+**Hypothesis:** reducing decision friction increases comparison completion.
 
-## Future AI architecture
+## Future AI Architecture
 
 The AI layer should not be responsible for inventing the underlying facts.
 
-A safer production architecture would be:
+A production architecture could follow:
 
 ```text
 Licensed / authorized data
@@ -135,19 +296,21 @@ LLM explanation layer
 User-facing explanation
 ```
 
-The model should explain grounded signals rather than manufacture statistics.
+The AI should explain grounded signals rather than manufacture statistics.
 
-## What I would build next
+## Product Roadmap
 
-1. Connect reliable player/stat data.
-2. Add scoring-format awareness.
-3. Add injury/news context.
-4. Add expert consensus.
-5. Instrument product analytics.
-6. Build historical backtesting.
-7. Add AI explanations grounded in structured outputs.
-8. Run experiments on explanation depth and personalization.
+The next major product opportunities are:
+
+1. **League integration** — connect scoring settings, rosters and lineup context.
+2. **Expert consensus** — incorporate external rankings as an additional explainable signal.
+3. **AI explanations** — generate natural-language reasoning grounded in structured model outputs.
+4. **Model validation** — evaluate weekly predictions against actual outcomes and create a continuous learning loop.
 
 ## Reflection
 
-This project demonstrates a product mindset: identify a real user decision, narrow the MVP, make the logic visible, design for measurement, and create a path from prototype to production.
+Fantasy AI Player Lab started as a simple player-comparison concept and evolved into a working decision-support MVP using real NFL data, nine weighted signals, positional ranking, risk personalization and coaching-context analysis.
+
+The project demonstrates the product process I wanted to explore: identify a real user problem, narrow the initial scope, build the smallest useful experience, test the underlying assumptions, identify weaknesses, improve the data and model, make uncertainty visible and measure performance against real outcomes.
+
+The next milestone is not adding complexity for its own sake. It is determining whether the model actually helps users make better fantasy football decisions.
