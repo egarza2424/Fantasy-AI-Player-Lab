@@ -964,8 +964,8 @@ function getPlayCallerMatchupDetails(player) {
   }
 
   const teamCode =
-    player.team === "LA"
-      ? "LAR"
+    player.team === "LAR"
+      ? "LA"
       : player.team;
 
   const teamSignal =
@@ -2298,7 +2298,7 @@ function exportModelSnapshot() {
         player_id: player.id,
         player_name: player.name,
         position: player.position,
-        team: player.team,
+        team: player.team === "LAR" ? "LA" : player.team,
 
         opponent:
           playCallerDetails?.opponent ||
