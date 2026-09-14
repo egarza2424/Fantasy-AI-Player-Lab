@@ -111,7 +111,7 @@ const playerBResults = document.getElementById("playerBResults");
 async function loadWeeklyStats() {
   try {
 const response = await fetch(
-  "./nfl-stats-week1-snapshot.json?v=1",
+  "./nfl-stats.json?v=12",
   { cache: "no-store" }
 );
     if (!response.ok) {
