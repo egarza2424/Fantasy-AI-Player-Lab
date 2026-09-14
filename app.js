@@ -836,12 +836,12 @@ function calculatePlayCallerMatchupScore(player) {
   }
 
   const teamCode =
-    player.team === "LA"
-      ? "LAR"
+    player.team === "LAR"
+      ? "LA"
       : player.team;
 
-  const teamSignal =
-    currentPlayCallerSignals[teamCode];
+const teamSignal =
+  currentPlayCallerSignals[teamCode];
 
   if (
     !teamSignal ||
