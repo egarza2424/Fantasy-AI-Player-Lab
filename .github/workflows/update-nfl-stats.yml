@@ -1718,7 +1718,7 @@ jobs:
               "expert_rankings":
                   expert_rankings
           }
-                    if target_week is not None:
+          if target_week is not None:
               output_filename = (
                   f"nfl-stats-week{target_week}-snapshot.json"
               )
@@ -1743,7 +1743,7 @@ jobs:
           )
           PY
           
-           - name: Commit updated stats
+      - name: Commit updated stats
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
