@@ -260,7 +260,10 @@ Fantasy-AI-Player-Lab/
 ├── coordinators.json
 ├── index.html
 ├── nfl-stats.json
+├── nfl-stats-week1-snapshot.json
+├── 2026-week1-reconstructed-model-snapshot.csv
 ├── players.json
+├── pre-week1-model-snapshot.md
 ├── styles.css
 ├── README.md
 ├── LICENSE
