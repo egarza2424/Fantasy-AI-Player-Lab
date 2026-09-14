@@ -204,13 +204,25 @@ For this MVP, **explainability wins over unnecessary complexity**.
 
 Users should be able to see what influenced the recommendation, how much each signal matters and where uncertainty exists.
 
-## Model Freeze and Week 1 Validation
+## Week 1 Reconstruction and Validation
 
-Before incorporating 2026 Week 1 results, the current scoring model is being intentionally frozen.
+During the Week 1 validation process, I identified an important temporal-data issue in the original snapshot workflow.
 
-This creates an out-of-sample test: the model's recommendations exist **before** the outcomes are known.
+The live product was designed to use each team's next opponent. That behavior is correct for a weekly decision-support tool, but it created a problem when attempting to reconstruct a historical Week 1 benchmark after some Week 1 games had already been played. Teams that had completed their first game had already advanced to Week 2 matchup context, while teams that had not yet played were still showing Week 1.
 
-After Week 1 is complete, actual fantasy results will be compared with the frozen pregame model.
+Rather than treating that mixed-week output as a valid pregame benchmark, I updated the data pipeline to support an explicit target week.
+
+The revised workflow can lock schedule and coaching-context data to a specific week, allowing the model to generate a consistent Week 1 reconstruction using:
+
+- 2025 historical player performance and usage
+- 2026 Week 1 opponents
+- 2026 offensive and defensive play callers
+- Historical play-caller matchup data
+- The frozen Model V1 scoring methodology
+
+The reconstructed Week 1 file is therefore treated as a **retrospective benchmark**, not as a true pregame prediction set.
+
+After Week 1 is complete, actual fantasy results will be compared with this reconstructed benchmark.
 
 Planned evaluation includes:
 
@@ -223,8 +235,9 @@ Planned evaluation includes:
 - Performance by position
 - Performance of individual signals
 
-The purpose is not to retroactively tune the model until Week 1 looks successful. The purpose is to identify where the model was right, where it failed and what should change before future weeks.
+The purpose is not to tune the model until Week 1 looks successful. The purpose is to identify where Model V1 was strong, where it failed and which assumptions should be tested next.
 
+Week 2 will serve as the first true prospective out-of-sample validation because its model snapshot can be frozen before any Week 2 games are played.
 ## Success Metrics
 
 If this became a production feature, I would evaluate both product behavior and model performance.
