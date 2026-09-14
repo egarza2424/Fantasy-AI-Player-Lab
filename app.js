@@ -107,16 +107,22 @@ const playerASearch = document.getElementById("playerASearch");
 const playerBSearch = document.getElementById("playerBSearch");
 const playerAResults = document.getElementById("playerAResults");
 const playerBResults = document.getElementById("playerBResults");
+const urlParams = new URLSearchParams(window.location.search);
+const snapshotWeek = urlParams.get("snapshotWeek");
+
+const statsFile = snapshotWeek
+  ? `./nfl-stats-week${snapshotWeek}-snapshot.json`
+  : "./nfl-stats.json";
 
 async function loadWeeklyStats() {
   try {
 const response = await fetch(
-  "./nfl-stats.json?v=12",
+  "./nfl-stats.json?v=13",
   { cache: "no-store" }
 );
     if (!response.ok) {
       throw new Error(
-        `Could not load nfl-stats.json: ${response.status}`
+        `Could not load ${statsFile}: ${response.status}`
       );
     }
 
@@ -2259,7 +2265,7 @@ const recommendationB =
   </section>
 `;
 }
-function exportPreWeek1Snapshot() {
+function exportModelSnapshot() {
   const profile = "balanced";
   const positions = ["QB", "RB", "WR", "TE"];
 
@@ -2394,8 +2400,12 @@ function exportPreWeek1Snapshot() {
 
   link.href = url;
 
+  const exportWeek = snapshotWeek || "live";
+
   link.download =
-    "2026-week1-reconstructed-model-snapshot.csv";
+    snapshotWeek
+      ? `2026-week${exportWeek}-model-snapshot.csv`
+      : "2026-live-model-snapshot.csv";
 
   document.body.appendChild(link);
   link.click();
@@ -2404,7 +2414,9 @@ function exportPreWeek1Snapshot() {
   URL.revokeObjectURL(url);
 
   console.log(
-    `Week 1 reconstructed snapshot exported: ${snapshot.length} players`
+    snapshotWeek
+      ? `Week ${snapshotWeek} model snapshot exported: ${snapshot.length} players`
+      : `Live model snapshot exported: ${snapshot.length} players`
   );
 }
 compareButton.addEventListener("click", comparePlayers);
