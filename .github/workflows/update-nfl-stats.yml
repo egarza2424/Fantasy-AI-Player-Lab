@@ -835,6 +835,7 @@ jobs:
                   ] += 1
 
           matched = 0
+          historical_matched = 0
 
           for row in rows:
               player_id = row.get("player_id")
@@ -848,9 +849,27 @@ jobs:
                   row.update(rz)
                   matched += 1
 
+          for row in completed_2026_rows:
+              player_id = row.get("player_id")
+              week = str(row.get("week"))
+
+              key = (player_id, week)
+
+              rz = red_zone_stats.get(key)
+
+              if rz:
+                  row.update(rz)
+                  historical_matched += 1
+
           print(
               f"Matched red-zone stats to "
-              f"{matched} player-week rows."
+              f"{matched} current player-week rows."
+          )
+
+          print(
+              f"Matched red-zone stats to "
+              f"{historical_matched} completed 2026 "
+              "historical player-week rows."
           )
           # -------------------------------------------------
           # MATCHUP DATA
