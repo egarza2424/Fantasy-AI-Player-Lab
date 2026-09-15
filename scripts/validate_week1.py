@@ -32,6 +32,23 @@ with urllib.request.urlopen(request) as response:
 stats_rows = list(csv.DictReader(io.StringIO(stats_text)))
 
 print(f"Downloaded {len(stats_rows)} player-week stat rows.")
+available_seasons = sorted(
+    {
+        str(row.get("season", ""))
+        for row in stats_rows
+        if row.get("season")
+    }
+)
+
+print(f"Available nflverse seasons: {available_seasons}")
+
+season_2026_rows = [
+    row
+    for row in stats_rows
+    if str(row.get("season", "")) == "2026"
+]
+
+print(f"2026 rows available: {len(season_2026_rows)}")
 
 week1_rows = [
     row
