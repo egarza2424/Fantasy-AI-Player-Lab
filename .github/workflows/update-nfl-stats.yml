@@ -884,7 +884,9 @@ jobs:
               }
           )
 
-          for row in rows:
+          for row in historical_rows:
+              if str(row.get("season") or "") != "2025":
+                  continue
               defense = row.get("opponent_team")
               position = row.get("position")
               week = str(row.get("week") or "")
