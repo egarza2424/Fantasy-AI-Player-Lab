@@ -244,14 +244,16 @@ function calculateProductionScore(player) {
   }
 
   function getRecentAverage(playerGames) {
-    const recentGames =
-      [...playerGames]
-        .sort(
-          (a, b) =>
-            Number(b.week || 0) -
+  const recentGames =
+    [...playerGames]
+      .sort(
+        (a, b) =>
+          Number(b.season || 0) -
+            Number(a.season || 0) ||
+          Number(b.week || 0) -
             Number(a.week || 0)
-        )
-        .slice(0, 4);
+      )
+      .slice(0, 4);
 
     if (recentGames.length === 0) {
       return 0;
@@ -1058,13 +1060,14 @@ function calculateModelConfidence(player) {
   }
 
   const recentGames = [...games]
-    .sort(
-      (a, b) =>
-        Number(b.week || 0) -
+  .sort(
+    (a, b) =>
+      Number(b.season || 0) -
+        Number(a.season || 0) ||
+      Number(b.week || 0) -
         Number(a.week || 0)
-    )
-    .slice(0, 4);
-
+  )
+  .slice(0, 4);
   if (recentGames.length < 2) {
     return 50;
   }
@@ -1272,12 +1275,14 @@ function getModelConfidenceBreakdown(player) {
   }
 
   const recentGames = [...games]
-    .sort(
-      (a, b) =>
-        Number(b.week || 0) -
+  .sort(
+    (a, b) =>
+      Number(b.season || 0) -
+        Number(a.season || 0) ||
+      Number(b.week || 0) -
         Number(a.week || 0)
-    )
-    .slice(0, 4);
+  )
+  .slice(0, 4);
 
   function stabilityScore(values) {
     const validValues = values.filter(
