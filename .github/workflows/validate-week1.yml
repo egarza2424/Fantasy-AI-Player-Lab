@@ -470,7 +470,7 @@ jobs:
                   f'{row["actual_ppr"]} PPR | '
                   f'Difference {row["rank_difference"]:+d}'
               )
-                        PY
+PY
 
       - name: Commit Week 1 validation
         run: |
