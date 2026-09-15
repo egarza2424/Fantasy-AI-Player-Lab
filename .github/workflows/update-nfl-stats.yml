@@ -290,19 +290,20 @@ jobs:
                       f"for {historical_season}: {error}"
                   )
 
-          # 2025 is already loaded above as the current
-          # player-week dataset, so reuse it instead of
-          # downloading the same file a second time.
+          # Add only completed 2026 weeks to the historical
+          # dataset used by rolling model signals.
           historical_rows.extend(
               dict(row)
-              for row in rows
+              for row in completed_2026_rows
           )
 
           print(
               "Loaded "
               f"{len(historical_rows)} total historical "
-              "player-week records for 2022-2025."
+              "player-week records for 2022-2026 "
+              "(completed weeks only)."
           )
+          
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
