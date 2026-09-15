@@ -1708,7 +1708,10 @@ jobs:
                                   "utf-8"
                               )
                           )
-
+                      print(
+                          "FantasyPros response fields: "
+                          f"{list(fp_data.keys())}"
+                      )
                       fp_players = fp_data.get(
                           "players",
                           []
