@@ -186,44 +186,44 @@ jobs:
               raise RuntimeError(
                   "No NFL player stats could be downloaded."
               )
-              # -------------------------------------------------
-        # COMPLETED 2026 PLAYER-WEEK DATA
-        # Use completed 2026 weeks as rolling model history.
-        # Never include the target prediction week itself.
-        # -------------------------------------------------
+          # -------------------------------------------------
+          # COMPLETED 2026 PLAYER-WEEK DATA
+          # Use completed 2026 weeks as rolling model history.
+          # Never include the target prediction week itself.
+          # -------------------------------------------------
 
-        completed_2026_rows = []
+          completed_2026_rows = []
 
-        if season_used == 2026:
-            for row in rows:
-                try:
-            row_week = int(float(row.get("week") or 0))
-        except (TypeError, ValueError):
-            continue
+          if season_used == 2026:
+              for row in rows:
+                  try:
+                      row_week = int(float(row.get("week") or 0))
+                  except (TypeError, ValueError):
+                      continue
 
-        if target_week is not None:
-            if row_week >= target_week:
-                continue
+                  if target_week is not None:
+                      if row_week >= target_week:
+                          continue
 
-        completed_2026_rows.append(dict(row))
+                  completed_2026_rows.append(dict(row))
 
-            print(
-                f"Added {len(completed_2026_rows)} completed "
-                "2026 player-week records to rolling history."
-    )
+          print(
+              f"Added {len(completed_2026_rows)} completed "
+              "2026 player-week records to rolling history."
+          )
           # -------------------------------------------------
           # HISTORICAL PLAYER-WEEK DATA
           # 2022-2025 for coaching matchup calculations
           # -------------------------------------------------
 
-          historical_rows = []
+                    historical_rows = []
 
-         historical_seasons = [
-            2022,
-            2023,
-            2024,
-            2025
-]
+                    historical_seasons = [
+                        2022,
+                         2023,
+                         2024,
+                         2025
+                    ]
 
           for historical_season in historical_seasons:
               historical_url = (
