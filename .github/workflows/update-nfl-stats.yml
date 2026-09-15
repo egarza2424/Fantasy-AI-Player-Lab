@@ -762,9 +762,13 @@ jobs:
               "player-vs-defensive-play-caller "
               "profiles."
           )
+          red_zone_season = season_used
+
+          if completed_2026_rows:
+              red_zone_season = 2026
           pbp_url = (
               "https://github.com/nflverse/nflverse-data/"
-              f"releases/download/pbp/play_by_play_{season_used}.csv.gz"
+              f"releases/download/pbp/play_by_play_{red_zone_season}.csv.gz"
           )
 
           print(f"Trying play-by-play: {pbp_url}")
