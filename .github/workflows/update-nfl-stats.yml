@@ -1670,18 +1670,18 @@ jobs:
           if fantasypros_api_key:
               print("Trying FantasyPros ECR data...")
               
-              fp_url = (
+              fantasypros_url = (
                   "https://api.fantasypros.com/"
                   "public/v2/json/nfl/2026/"
                   "consensus-rankings"
-                  "?scoring=PPR"
+                  "?position=ALL&scoring=PPR"
               )
 
               request = urllib.request.Request(
-                  fp_url,
+                  fantasypros_url,
                   headers={
-                      "x-api-key":
-                          fantasypros_api_key
+                      "x-api-key": fantasypros_api_key,
+                      "User-Agent": "FantasyAIPlayerLab/1.0"
                   }
               )
 
