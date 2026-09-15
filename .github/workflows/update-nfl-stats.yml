@@ -195,17 +195,42 @@ jobs:
           completed_2026_rows = []
 
           if season_used == 2026:
+              available_2026_weeks = []
+
               for row in rows:
                   try:
-                      row_week = int(float(row.get("week") or 0))
+                      row_week = int(
+                          float(row.get("week") or 0)
+                      )
                   except (TypeError, ValueError):
                       continue
 
-                  if target_week is not None:
-                      if row_week >= target_week:
-                          continue
+                  if row_week > 0:
+                      available_2026_weeks.append(row_week)
 
-                  completed_2026_rows.append(dict(row))
+              if target_week is not None:
+                  history_cutoff_week = target_week
+              elif available_2026_weeks:
+                  history_cutoff_week = max(
+                      available_2026_weeks
+                  ) + 1
+              else:
+                  history_cutoff_week = 1
+
+              for row in rows:
+                  try:
+                      row_week = int(
+                          float(row.get("week") or 0)
+                      )
+                  except (TypeError, ValueError):
+                      continue
+
+                  if row_week >= history_cutoff_week:
+                      continue
+
+                  completed_2026_rows.append(
+                      dict(row)
+                  )
 
           print(
               f"Added {len(completed_2026_rows)} completed "
@@ -216,14 +241,14 @@ jobs:
           # 2022-2025 for coaching matchup calculations
           # -------------------------------------------------
 
-                    historical_rows = []
+          historical_rows = []
 
-                    historical_seasons = [
-                        2022,
-                         2023,
-                         2024,
-                         2025
-                    ]
+          historical_seasons = [
+              2022,
+              2023,
+              2024,
+              2025
+          ]
 
           for historical_season in historical_seasons:
               historical_url = (
@@ -849,7 +874,10 @@ jobs:
                   row.update(rz)
                   matched += 1
 
-          for row in completed_2026_rows:
+          for row in historical_rows:
+              if str(row.get("season") or "") != "2026":
+                  continue
+
               player_id = row.get("player_id")
               week = str(row.get("week"))
 
@@ -860,7 +888,6 @@ jobs:
               if rz:
                   row.update(rz)
                   historical_matched += 1
-
           print(
               f"Matched red-zone stats to "
               f"{matched} current player-week rows."
@@ -873,8 +900,9 @@ jobs:
           )
           # -------------------------------------------------
           # MATCHUP DATA
-          # Calculate 2025 fantasy points allowed per game
-          # by each defense to QB, RB, WR and TE.
+          # Calculate rolling 2025-2026 fantasy points
+          # allowed per game by each defense to
+          # QB, RB, WR and TE.
           # -------------------------------------------------
 
           defense_position_totals = defaultdict(
@@ -885,11 +913,23 @@ jobs:
           )
 
           for row in historical_rows:
-              if str(row.get("season") or "") != "2025":
+              row_season = str(
+                  row.get("season") or ""
+              )
+
+              if row_season not in {
+                  "2025",
+                  "2026"
+              }:
                   continue
+
               defense = row.get("opponent_team")
               position = row.get("position")
               week = str(row.get("week") or "")
+
+              game_id = (
+                  f"{row_season}-{week}"
+              )
 
               if (
                   not defense or
@@ -949,7 +989,7 @@ jobs:
 
               defense_position_totals[key][
                   "games"
-              ].add(week)
+              ].add(game_id)
 
           defense_position_allowed = {}
 
@@ -993,8 +1033,6 @@ jobs:
               io.StringIO(schedule_content)
           )
 
-          today = datetime.now(timezone.utc).date()
-
           upcoming_games = []
 
           for game in schedule_reader:
@@ -1025,7 +1063,21 @@ jobs:
                   if game_week != target_week:
                       continue
               else:
-                  if game_date < today:
+                  away_score = game.get("away_score")
+                  home_score = game.get("home_score")
+
+                  game_completed = (
+                      away_score not in {
+                          None,
+                          ""
+                      } and
+                      home_score not in {
+                          None,
+                          ""
+                      }
+                  )
+
+                  if game_completed:
                       continue
 
               away_team = game.get("away_team")
@@ -1098,7 +1150,7 @@ jobs:
                   if team == "LA"
                   else team
               )
-
+              
               opponent = matchup.get(
                   "opponent"
               )
@@ -1294,12 +1346,6 @@ jobs:
 
               team = latest_player_row.get("team")
 
-              normalized_team = (
-                  "LAR"
-                  if team == "LA"
-                  else team
-              )
-
               player_signal_counts[
                   "players_checked"
               ] += 1
@@ -1426,29 +1472,27 @@ jobs:
           # NORMALIZE PLAY-CALLER SIGNALS TO 0-100
           # -------------------------------------------------
 
-          # Find the highest applicable historical PPR
-          # value at each position for the current week.
-          position_highs = {
+          position_values = {
               "QB": {
-                  "play_caller": 0.0,
-                  "player_vs_caller": 0.0
+                  "play_caller": [],
+                  "player_vs_caller": []
               },
               "RB": {
-                  "play_caller": 0.0,
-                  "player_vs_caller": 0.0
+                  "play_caller": [],
+                  "player_vs_caller": []
               },
               "WR": {
-                  "play_caller": 0.0,
-                  "player_vs_caller": 0.0
+                  "play_caller": [],
+                  "player_vs_caller": []
               },
               "TE": {
-                  "play_caller": 0.0,
-                  "player_vs_caller": 0.0
+                  "play_caller": [],
+                  "player_vs_caller": []
               }
           }
 
           # ---------------------------------------------
-          # PLAY-CALLER MATCHUP POSITION HIGHS
+          # COLLECT PLAY-CALLER MATCHUP VALUES
           # ---------------------------------------------
 
           for team_signal in (
@@ -1465,20 +1509,17 @@ jobs:
                   )
 
                   if (
-                      position in position_highs and
+                      position in position_values and
                       average_ppr is not None
                   ):
-                      position_highs[
+                      position_values[
                           position
-                      ]["play_caller"] = max(
-                          position_highs[
-                              position
-                          ]["play_caller"],
+                      ]["play_caller"].append(
                           float(average_ppr)
                       )
 
           # ---------------------------------------------
-          # PLAYER VS DEFENSIVE CALLER POSITION HIGHS
+          # COLLECT PLAYER VS DEFENSIVE CALLER VALUES
           # ---------------------------------------------
 
           for signal in (
@@ -1490,17 +1531,45 @@ jobs:
               )
 
               if (
-                  position in position_highs and
+                  position in position_values and
                   average_ppr is not None
               ):
-                  position_highs[
+                  position_values[
                       position
-                  ]["player_vs_caller"] = max(
-                      position_highs[
-                          position
-                      ]["player_vs_caller"],
+                  ]["player_vs_caller"].append(
                       float(average_ppr)
                   )
+
+          def normalize_matchup_score(
+              value,
+              values
+          ):
+              if value is None or not values:
+                  return 50
+
+              minimum = min(values)
+              maximum = max(values)
+
+              if maximum <= minimum:
+                  return 50
+
+              normalized = (
+                  (
+                      float(value) - minimum
+                  ) /
+                  (
+                      maximum - minimum
+                  )
+              )
+
+              score = round(
+                  25 + normalized * 75
+              )
+
+              return max(
+                  0,
+                  min(100, score)
+              )
 
           # ---------------------------------------------
           # SCORE CURRENT PLAY-CALLER MATCHUPS
@@ -1519,36 +1588,26 @@ jobs:
                       "average_ppr"
                   )
 
-                  league_high = (
-                      position_highs.get(
-                          position,
-                          {}
-                      ).get(
-                          "play_caller",
-                          0
-                      )
+                  values = position_values.get(
+                      position,
+                      {}
+                  ).get(
+                      "play_caller",
+                      []
                   )
 
-                  if (
-                      average_ppr is None or
-                      league_high <= 0
-                  ):
+                  if average_ppr is None:
                       position_signal["score"] = 50
                       position_signal[
                           "score_source"
                       ] = "neutral_no_history"
 
                   else:
-                      score = round(
-                          (
-                              float(average_ppr) /
-                              league_high
-                          ) * 100
-                      )
-
-                      position_signal["score"] = max(
-                          0,
-                          min(100, score)
+                      position_signal["score"] = (
+                          normalize_matchup_score(
+                              average_ppr,
+                              values
+                          )
                       )
 
                       position_signal[
@@ -1567,36 +1626,26 @@ jobs:
                   "average_ppr"
               )
 
-              league_high = (
-                  position_highs.get(
-                      position,
-                      {}
-                  ).get(
-                      "player_vs_caller",
-                      0
-                  )
+              values = position_values.get(
+                  position,
+                  {}
+              ).get(
+                  "player_vs_caller",
+                  []
               )
 
-              if (
-                  average_ppr is None or
-                  league_high <= 0
-              ):
+              if average_ppr is None:
                   signal["score"] = 50
                   signal[
                       "score_source"
                   ] = "neutral_no_history"
 
               else:
-                  score = round(
-                      (
-                          float(average_ppr) /
-                          league_high
-                      ) * 100
-                  )
-
-                  signal["score"] = max(
-                      0,
-                      min(100, score)
+                  signal["score"] = (
+                      normalize_matchup_score(
+                          average_ppr,
+                          values
+                      )
                   )
 
                   signal[
@@ -1608,19 +1657,6 @@ jobs:
               "to 0-100 scores."
           )
 
-          for position in [
-              "QB",
-              "RB",
-              "WR",
-              "TE"
-          ]:
-              print(
-                  f"{position} normalization highs: "
-                  "play-caller="
-                  f"{position_highs[position]['play_caller']:.2f}, "
-                  "player-vs-caller="
-                  f"{position_highs[position]['player_vs_caller']:.2f}"
-              )
           # -------------------------------------------------
           # FANTASYPROS EXPERT CONSENSUS RANKINGS
           # -------------------------------------------------
@@ -1745,13 +1781,11 @@ jobs:
           rolling_model_rows = [
               dict(row)
               for row in historical_rows
-              if str(row.get("season") or "") == "2025"
+              if str(row.get("season") or "") in {
+                  "2025",
+                  "2026"
+              }
           ]
-
-          rolling_model_rows.extend(
-              dict(row)
-              for row in completed_2026_rows
-          )
 
           print(
               f"Created rolling model dataset with "
