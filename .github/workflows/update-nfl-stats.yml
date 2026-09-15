@@ -218,11 +218,12 @@ jobs:
 
           historical_rows = []
 
-          historical_seasons = [
-              2022,
-              2023,
-              2024
-          ]
+         historical_seasons = [
+            2022,
+            2023,
+            2024,
+            2025
+]
 
           for historical_season in historical_seasons:
               historical_url = (
