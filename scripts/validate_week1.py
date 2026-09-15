@@ -10,7 +10,7 @@ OUTPUT_FILE = "2026-week1-model-validation.csv"
 
 STATS_URL = (
     "https://github.com/nflverse/nflverse-data/releases/download/"
-    "player_stats/player_stats.csv"
+    "stats_player/stats_player_week_2026.csv"
 )
 
 print("Loading reconstructed Week 1 model snapshot...")
