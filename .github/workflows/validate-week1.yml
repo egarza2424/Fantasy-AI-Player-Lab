@@ -21,7 +21,7 @@ jobs:
 
       - name: Build Week 1 validation
         run: |
-          python <<'PY'
+                python - <<'PY'
                     import csv
           import io
           import urllib.request
@@ -470,7 +470,7 @@ jobs:
                   f'{row["actual_ppr"]} PPR | '
                   f'Difference {row["rank_difference"]:+d}'
               )
-PY
+                    PY
 
       - name: Commit Week 1 validation
         run: |
@@ -482,6 +482,3 @@ PY
           if git diff --cached --quiet; then
             echo "No validation changes to commit."
           else
-            git commit -m "Add Week 1 Model V1 validation"
-            git push
-          fi
