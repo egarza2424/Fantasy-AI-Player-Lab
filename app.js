@@ -416,21 +416,22 @@ function calculateUsageScore(player) {
   let validGames = 0;
 
   games.forEach((game) => {
-    const week = Number(game.week);
-    const team = game.team;
+  const season = Number(game.season);
+  const week = Number(game.week);
+  const team = game.team;
 
-    if (!team || !week) {
-      return;
-    }
+  if (!season || !team || !week) {
+    return;
+  }
 
-    // Find everyone from the same team
-    // in the same game.
-    const teamGameRows = weeklyStats.filter(
-      (row) =>
-        row.team === team &&
-        Number(row.week) === week
-    );
-
+  // Find everyone from the same team
+  // in the same season and game.
+  const teamGameRows = weeklyStats.filter(
+    (row) =>
+      Number(row.season) === season &&
+      row.team === team &&
+      Number(row.week) === week
+  );
     // WR and TE:
     // Player targets / total team targets.
     if (
@@ -695,30 +696,31 @@ function calculateRedZoneScore(player) {
   let teamRedZoneOpportunities = 0;
 
   games.forEach((game) => {
-    const week = Number(game.week);
-    const team = game.team;
+  const season = Number(game.season);
+  const week = Number(game.week);
+  const team = game.team;
 
-    if (!team || !week) {
-      return;
-    }
+  if (!season || !team || !week) {
+    return;
+  }
 
-    const playerCarries = Number(
-      game.red_zone_carries || 0
-    );
+  const playerCarries = Number(
+    game.red_zone_carries || 0
+  );
 
-    const playerTargets = Number(
-      game.red_zone_targets || 0
-    );
+  const playerTargets = Number(
+    game.red_zone_targets || 0
+  );
 
-    playerRedZoneOpportunities +=
-      playerCarries + playerTargets;
+  playerRedZoneOpportunities +=
+    playerCarries + playerTargets;
 
-    const teamGameRows = weeklyStats.filter(
-      (row) =>
-        row.team === team &&
-        Number(row.week) === week
-    );
-
+  const teamGameRows = weeklyStats.filter(
+    (row) =>
+      Number(row.season) === season &&
+      row.team === team &&
+      Number(row.week) === week
+  );
     const teamGameRedZoneOpportunities =
       teamGameRows.reduce(
         (total, row) =>
@@ -1179,21 +1181,22 @@ function calculateModelConfidence(player) {
     });
 
   const usageValues =
-    recentGames.map((game) => {
-      const week = Number(game.week);
-      const team = game.team;
+  recentGames.map((game) => {
+    const season = Number(game.season);
+    const week = Number(game.week);
+    const team = game.team;
 
-      if (!team || !week) {
-        return 0;
-      }
+    if (!season || !team || !week) {
+      return 0;
+    }
 
-      const teamGameRows =
-        weeklyStats.filter(
-          (row) =>
-            row.team === team &&
-            Number(row.week) === week
-        );
-
+    const teamGameRows =
+      weeklyStats.filter(
+        (row) =>
+          Number(row.season) === season &&
+          row.team === team &&
+          Number(row.week) === week
+      );
       if (player.position === "QB") {
         return (
           Number(game.attempts || 0) +
@@ -1364,17 +1367,19 @@ function getModelConfidenceBreakdown(player) {
     });
 
   const usageValues =
-    recentGames.map((game) => {
-      const week = Number(game.week);
-      const team = game.team;
+  recentGames.map((game) => {
+    const season = Number(game.season);
+    const week = Number(game.week);
+    const team = game.team;
 
-      const teamGameRows =
-        weeklyStats.filter(
-          (row) =>
-            row.team === team &&
-            Number(row.week) === week
-        );
-
+    const teamGameRows =
+      weeklyStats.filter(
+        (row) =>
+          Number(row.season) === season &&
+          row.team === team &&
+          Number(row.week) === week
+      );
+    
       if (player.position === "QB") {
         return (
           Number(game.attempts || 0) +
