@@ -1740,6 +1740,23 @@ jobs:
               f"Created expert ranking data "
               f"for {len(expert_rankings)} players."
           )
+          rolling_model_rows = [
+              dict(row)
+              for row in historical_rows
+              if str(row.get("season") or "") == "2025"
+          ]
+
+          rolling_model_rows.extend(
+              dict(row)
+              for row in completed_2026_rows
+          )
+
+          print(
+              f"Created rolling model dataset with "
+              f"{len(rolling_model_rows)} player-week records: "
+              "2025 baseline + completed 2026 weeks."
+          )
+
           output = {
               "season": season_used,
               "target_week": target_week,
@@ -1752,7 +1769,7 @@ jobs:
                   timezone.utc
               ).strftime("%Y-%m-%d"),
               "source": "nflverse",
-              "players": rows,
+              "players": rolling_model_rows,
               "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
