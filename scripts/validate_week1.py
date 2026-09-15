@@ -5,7 +5,7 @@ import unicodedata
 import urllib.request
 from collections import defaultdict
 
-MODEL_FILE = "2026-week1-reconstructed-model-snapshot.csv"
+MODEL_FILE = "2026-week1-reconstructed-model-snapshot-3.csv"
 OUTPUT_FILE = "2026-week1-model-validation.csv"
 
 STATS_URL = (
