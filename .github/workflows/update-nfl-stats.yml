@@ -1714,10 +1714,22 @@ jobs:
                           []
                       )
 
+                      fp_reported_count = fp_data.get(
+                          "count"
+                      )
+
+                      fp_total_experts = fp_data.get(
+                          "total_experts"
+                      )
+
                       print(
                           "FantasyPros "
                           f"{fantasypros_position} returned "
-                          f"{len(fp_players)} players."
+                          f"{len(fp_players)} players. "
+                          "API reported count: "
+                          f"{fp_reported_count}. "
+                          "Total experts: "
+                          f"{fp_total_experts}."
                       )
 
                       for player in fp_players:
