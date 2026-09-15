@@ -1656,7 +1656,90 @@ jobs:
               "Normalized play-caller signals "
               "to 0-100 scores."
           )
+          def normalize_player_name(name):
+              if not name:
+                  return ""
 
+              normalized_name = (
+                  str(name)
+                  .lower()
+                  .replace(".", "")
+                  .replace("'", "")
+                  .replace("-", " ")
+              )
+
+              name_parts = normalized_name.split()
+
+              suffixes = {
+                  "jr",
+                  "sr",
+                  "ii",
+                  "iii",
+                  "iv",
+                  "v"
+              }
+
+              while (
+                  name_parts and
+                  name_parts[-1] in suffixes
+              ):
+                  name_parts.pop()
+
+              return " ".join(name_parts)
+          nflverse_player_lookup = {}
+
+          for row in historical_rows:
+              nflverse_player_id = row.get(
+                  "player_id"
+              )
+
+              nflverse_player_name = (
+                  row.get("player_display_name") or
+                  row.get("player_name")
+              )
+
+              nflverse_position = row.get(
+                  "position"
+              )
+
+              if (
+                  not nflverse_player_id or
+                  not nflverse_player_name or
+                  nflverse_position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  }
+              ):
+                  continue
+
+              normalized_nflverse_name = (
+                  normalize_player_name(
+                      nflverse_player_name
+                  )
+              )
+
+              lookup_key = (
+                  normalized_nflverse_name,
+                  nflverse_position
+              )
+
+              nflverse_player_lookup[
+                  lookup_key
+              ] = {
+                  "player_id":
+                      nflverse_player_id,
+                  "player_name":
+                      nflverse_player_name,
+                  "position":
+                      nflverse_position
+              }
+
+          print(
+              "Created NFLverse identity lookup for "
+              f"{len(nflverse_player_lookup)} players."
+          )
           # -------------------------------------------------
           # FANTASYPROS EXPERT CONSENSUS RANKINGS
           # -------------------------------------------------
@@ -1667,6 +1750,7 @@ jobs:
 
           expert_rankings = {}
 
+          fantasypros_match_count = 0
           if fantasypros_api_key:
               print("Trying FantasyPros ECR data...")
 
@@ -1757,12 +1841,47 @@ jobs:
                               "TE"
                           }:
                               continue
+                          normalized_fp_name = (
+                              normalize_player_name(
+                                  name
+                              )
+                          )
 
+                          nflverse_match = (
+                              nflverse_player_lookup.get(
+                                  (
+                                      normalized_fp_name,
+                                      position
+                                  )
+                              )
+                          )
+
+                          nflverse_player_id = None
+                          nflverse_player_name = None
+
+                          if nflverse_match:
+                              nflverse_player_id = (
+                                  nflverse_match.get(
+                                      "player_id"
+                                  )
+                              )
+
+                              nflverse_player_name = (
+                                  nflverse_match.get(
+                                      "player_name"
+                                  )
+                              )
+                              
+                              fantasypros_match_count += 1
                           expert_rankings[name] = {
-                              "player_id":
+                              "fantasypros_player_id":
                                   player.get(
                                       "player_id"
                                   ),
+                              "nflverse_player_id":
+                                  nflverse_player_id,
+                              "nflverse_player_name":
+                                  nflverse_player_name,
                               "team":
                                   player.get(
                                       "player_team_id"
@@ -1811,6 +1930,11 @@ jobs:
           print(
               f"Created expert ranking data "
               f"for {len(expert_rankings)} players."
+          )
+          print(
+              "FantasyPros/NFLverse identity matches: "
+              f"{fantasypros_match_count} of "
+              f"{len(expert_rankings)}."
           )
           rolling_model_rows = [
               dict(row)
