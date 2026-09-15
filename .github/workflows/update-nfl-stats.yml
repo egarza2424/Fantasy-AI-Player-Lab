@@ -1709,8 +1709,11 @@ jobs:
                               )
                           )
                       print(
-                          "FantasyPros response fields: "
-                          f"{list(fp_data.keys())}"
+                          "FantasyPros access info: "
+                          f"limit={fp_data.get('limit')}, "
+                          "public_api_limited="
+                          f"{fp_data.get('public_api_limited')}, "
+                          f"tier={fp_data.get('tier')}"
                       )
                       fp_players = fp_data.get(
                           "players",
