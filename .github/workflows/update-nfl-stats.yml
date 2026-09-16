@@ -1724,12 +1724,12 @@ jobs:
               ].append({
                   "season": row_season,
                   "week": row_week,
+                  "position": position,
                   "ppr_points": round(
                       fantasy_points,
                       2
                   )
               })
-
           for (
               player_id,
               player_games
@@ -1839,7 +1839,167 @@ jobs:
                       "target or future games: "
                       f"{invalid_recent_games[:10]}"
                   )
+          recent_performance_position_values = {
+              "QB": [],
+              "RB": [],
+              "WR": [],
+              "TE": []
+          }
 
+          for player_id in current_player_ids:
+              performance = (
+                  recent_player_performance.get(
+                      player_id
+                  )
+              )
+
+              if not performance:
+                  continue
+
+              games = performance.get(
+                  "games",
+                  []
+              )
+
+              if not games:
+                  continue
+
+              position = games[0].get(
+                  "position"
+              )
+
+              average_ppr = performance.get(
+                  "average_ppr"
+              )
+
+              if (
+                  position in
+                  recent_performance_position_values and
+                  average_ppr is not None
+              ):
+                  recent_performance_position_values[
+                      position
+                  ].append(
+                      float(average_ppr)
+                  )
+
+          current_recent_performance = {}
+
+          for player_id in current_player_ids:
+              performance = (
+                  recent_player_performance.get(
+                      player_id
+                  )
+              )
+
+              if not performance:
+                  current_recent_performance[
+                      player_id
+                  ] = {
+                      "average_ppr": None,
+                      "sample_size": 0,
+                      "games": [],
+                      "score": 50,
+                      "score_source":
+                          "neutral_no_history"
+                  }
+
+                  continue
+
+              games = performance.get(
+                  "games",
+                  []
+              )
+
+              position = (
+                  games[0].get("position")
+                  if games
+                  else None
+              )
+
+              average_ppr = performance.get(
+                  "average_ppr"
+              )
+
+              values = (
+                  recent_performance_position_values.get(
+                      position,
+                      []
+                  )
+              )
+
+              score = normalize_matchup_score(
+                  average_ppr,
+                  values
+              )
+
+              current_recent_performance[
+                  player_id
+              ] = {
+                  "position": position,
+                  "average_ppr": average_ppr,
+                  "sample_size": performance.get(
+                      "sample_size",
+                      0
+                  ),
+                  "games": games,
+                  "score": score,
+                  "score_source":
+                      "recent_ppr_position_normalized"
+              }
+
+          print(
+              "Created position-normalized recent-"
+              "performance scores for "
+              f"{len(current_recent_performance)} "
+              "current players."
+          )
+
+          recent_performance_neutral_count = sum(
+              1
+              for performance in (
+                  current_recent_performance.values()
+              )
+              if performance.get("score_source") == (
+                  "neutral_no_history"
+              )
+          )
+
+          print(
+              "Current players with neutral recent-"
+              "performance scores: "
+              f"{recent_performance_neutral_count}."
+          )
+
+          for position in {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }:
+              position_scores = [
+                  performance.get("score")
+                  for performance in (
+                      current_recent_performance.values()
+                  )
+                  if (
+                      performance.get("position") ==
+                      position and
+                      performance.get("score") is not None
+                  )
+              ]
+
+              if position_scores:
+                  print(
+                      f"Recent-performance {position} "
+                      "score range: "
+                      f"{min(position_scores)}-"
+                      f"{max(position_scores)} "
+                      f"across {len(position_scores)} "
+                      "players."
+                  )
+
+          def normalize_player_name(name):
           def normalize_player_name(name):
               if not name:
                   return ""
