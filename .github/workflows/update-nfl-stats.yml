@@ -1995,6 +1995,345 @@ jobs:
                       f"across {len(position_scores)} "
                       "players."
                   )
+          # -------------------------------------------------
+          # OPPORTUNITY / VOLUME
+          # -------------------------------------------------
+
+          player_opportunity_history = defaultdict(
+              list
+          )
+
+          for row in rolling_model_rows:
+              player_id = row.get("player_id")
+              position = row.get("position")
+
+              if (
+                  not player_id or
+                  position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  }
+              ):
+                  continue
+
+              try:
+                  row_season = int(
+                      row.get("season") or 0
+                  )
+
+                  row_week = int(
+                      float(row.get("week") or 0)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if (
+                  row_season <= 0 or
+                  row_week <= 0
+              ):
+                  continue
+
+              pass_attempts = float(
+                  row.get("attempts") or 0
+              )
+
+              carries = float(
+                  row.get("carries") or 0
+              )
+
+              targets = float(
+                  row.get("targets") or 0
+              )
+
+              receptions = float(
+                  row.get("receptions") or 0
+              )
+
+              if position == "QB":
+                  opportunity_value = (
+                      pass_attempts + carries
+                  )
+              elif position == "RB":
+                  opportunity_value = (
+                      carries + targets
+                  )
+              else:
+                  opportunity_value = targets
+
+              player_opportunity_history[
+                  player_id
+              ].append({
+                  "season": row_season,
+                  "week": row_week,
+                  "position": position,
+                  "pass_attempts": pass_attempts,
+                  "carries": carries,
+                  "targets": targets,
+                  "receptions": receptions,
+                  "opportunity_value":
+                      opportunity_value
+              })
+
+          recent_player_opportunity = {}
+
+          for (
+              player_id,
+              player_games
+          ) in player_opportunity_history.items():
+              player_games.sort(
+                  key=lambda game: (
+                      game["season"],
+                      game["week"]
+                  ),
+                  reverse=True
+              )
+
+              recent_games = player_games[:4]
+
+              average_opportunity = sum(
+                  game["opportunity_value"]
+                  for game in recent_games
+              ) / len(recent_games)
+
+              recent_player_opportunity[
+                  player_id
+              ] = {
+                  "position":
+                      recent_games[0]["position"],
+                  "average_opportunity": round(
+                      average_opportunity,
+                      2
+                  ),
+                  "sample_size": len(
+                      recent_games
+                  ),
+                  "games": recent_games
+              }
+
+          print(
+              "Created opportunity/volume history "
+              f"for {len(recent_player_opportunity)} "
+              "players."
+          )
+
+          opportunity_sample_counts = defaultdict(
+              int
+          )
+
+          opportunity_source_weeks = set()
+
+          for opportunity in (
+              recent_player_opportunity.values()
+          ):
+              sample_size = opportunity.get(
+                  "sample_size",
+                  0
+              )
+
+              opportunity_sample_counts[
+                  sample_size
+              ] += 1
+
+              for game in opportunity.get(
+                  "games",
+                  []
+              ):
+                  opportunity_source_weeks.add(
+                      (
+                          game.get("season"),
+                          game.get("week")
+                      )
+                  )
+
+          print(
+              "Opportunity/volume sample sizes: "
+              f"{dict(sorted(
+                  opportunity_sample_counts.items()
+              ))}."
+          )
+
+          print(
+              "Opportunity/volume newest source games: "
+              f"{sorted(
+                  opportunity_source_weeks,
+                  reverse=True
+              )[:10]}."
+          )
+
+          if target_week is not None:
+              invalid_opportunity_games = []
+
+              for (
+                  player_id,
+                  opportunity
+              ) in recent_player_opportunity.items():
+                  for game in opportunity.get(
+                      "games",
+                      []
+                  ):
+                      if (
+                          game.get("season") == 2026 and
+                          game.get("week", 0) >= target_week
+                      ):
+                          invalid_opportunity_games.append(
+                              (
+                                  player_id,
+                                  game.get("week")
+                              )
+                          )
+
+              if invalid_opportunity_games:
+                  raise RuntimeError(
+                      "Opportunity/volume output contains "
+                      "target or future games: "
+                      f"{invalid_opportunity_games[:10]}"
+                  )
+          opportunity_position_values = {
+              "QB": [],
+              "RB": [],
+              "WR": [],
+              "TE": []
+          }
+
+          for player_id in current_player_ids:
+              opportunity = (
+                  recent_player_opportunity.get(
+                      player_id
+                  )
+              )
+
+              if not opportunity:
+                  continue
+
+              position = opportunity.get(
+                  "position"
+              )
+
+              average_opportunity = opportunity.get(
+                  "average_opportunity"
+              )
+
+              if (
+                  position in opportunity_position_values and
+                  average_opportunity is not None
+              ):
+                  opportunity_position_values[
+                      position
+                  ].append(
+                      float(average_opportunity)
+                  )
+
+          current_player_opportunity = {}
+
+          for player_id in current_player_ids:
+              opportunity = (
+                  recent_player_opportunity.get(
+                      player_id
+                  )
+              )
+
+              if not opportunity:
+                  current_player_opportunity[
+                      player_id
+                  ] = {
+                      "position": None,
+                      "average_opportunity": None,
+                      "sample_size": 0,
+                      "games": [],
+                      "score": 50,
+                      "score_source":
+                          "neutral_no_history"
+                  }
+
+                  continue
+
+              position = opportunity.get(
+                  "position"
+              )
+
+              average_opportunity = opportunity.get(
+                  "average_opportunity"
+              )
+
+              values = opportunity_position_values.get(
+                  position,
+                  []
+              )
+
+              score = normalize_matchup_score(
+                  average_opportunity,
+                  values
+              )
+
+              current_player_opportunity[
+                  player_id
+              ] = {
+                  "position": position,
+                  "average_opportunity":
+                      average_opportunity,
+                  "sample_size": opportunity.get(
+                      "sample_size",
+                      0
+                  ),
+                  "games": opportunity.get(
+                      "games",
+                      []
+                  ),
+                  "score": score,
+                  "score_source":
+                      "opportunity_position_normalized"
+              }
+
+          print(
+              "Created position-normalized opportunity/"
+              "volume scores for "
+              f"{len(current_player_opportunity)} "
+              "current players."
+          )
+
+          opportunity_neutral_count = sum(
+              1
+              for opportunity in
+              current_player_opportunity.values()
+              if opportunity.get("score_source") ==
+              "neutral_no_history"
+          )
+
+          print(
+              "Current players with neutral opportunity/"
+              "volume scores: "
+              f"{opportunity_neutral_count}."
+          )
+
+          for position in {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }:
+              position_scores = [
+                  opportunity.get("score")
+                  for opportunity in (
+                      current_player_opportunity.values()
+                  )
+                  if (
+                      opportunity.get("position") ==
+                      position and
+                      opportunity.get("score") is not None
+                  )
+              ]
+
+              if position_scores:
+                  print(
+                      f"Opportunity/volume {position} "
+                      "score range: "
+                      f"{min(position_scores)}-"
+                      f"{max(position_scores)} "
+                      f"across {len(position_scores)} "
+                      "players."
+                  )
 
           def normalize_player_name(name):
               if not name:
