@@ -1753,7 +1753,10 @@ jobs:
               except (TypeError, ValueError):
                   return 50
 
-              if ecr_rank <= 0:
+              if (
+                  ecr_rank < 1 or
+                  ecr_rank > 10
+              ):
                   return 50
 
               if ecr_rank <= 2:
@@ -2036,33 +2039,122 @@ jobs:
               "Model eligible: "
               f"{expert_rankings_model_eligible}."
           )
+
           for expert_ranking in expert_rankings.values():
               expert_ranking[
                   "model_eligible"
               ] = expert_rankings_model_eligible
-              
+
+              rank_ecr = expert_ranking.get(
+                  "rank_ecr"
+              )
+
+              try:
+                  numeric_rank_ecr = float(
+                      rank_ecr
+                  )
+              except (TypeError, ValueError):
+                  numeric_rank_ecr = None
+
+              expert_ranking[
+                  "ecr_available"
+              ] = (
+                  expert_rankings_model_eligible and
+                  numeric_rank_ecr is not None and
+                  1 <= numeric_rank_ecr <= 10
+              )
+
               expert_ranking[
                   "ecr_score"
               ] = calculate_ecr_score(
                   expert_ranking.get("rank_ecr"),
                   expert_rankings_model_eligible
-              )   
-              
+              )
+
+          invalid_available_ecr = []
+
+          for (
+              expert_name,
+              expert_ranking
+          ) in expert_rankings.items():
+              if not expert_ranking.get(
+                  "ecr_available"
+              ):
+                  continue
+
+              try:
+                  available_rank_ecr = float(
+                      expert_ranking.get("rank_ecr")
+                  )
+              except (TypeError, ValueError):
+                  available_rank_ecr = None
+
+              if (
+                  available_rank_ecr is None or
+                  available_rank_ecr < 1 or
+                  available_rank_ecr > 10 or
+                  not expert_ranking.get(
+                      "model_eligible"
+                  )
+              ):
+                  invalid_available_ecr.append(
+                      expert_name
+                  )
+
+          if invalid_available_ecr:
+              raise RuntimeError(
+                  "Invalid usable ECR state for: "
+                  f"{invalid_available_ecr}"
+              )              
+          invalid_unavailable_ecr_scores = [
+              expert_name
+              for expert_name, expert_ranking
+              in expert_rankings.items()
+              if (
+                  not expert_ranking.get(
+                      "ecr_available"
+                  ) and
+                  expert_ranking.get(
+                      "ecr_score"
+                  ) != 50
+              )
+          ]
+
+          if invalid_unavailable_ecr_scores:
+              raise RuntimeError(
+                  "Unavailable ECR has a non-neutral "
+                  "score for: "
+                  f"{invalid_unavailable_ecr_scores}"
+              )          
+          available_ecr_signals = sum(
+              1
+              for expert_ranking in expert_rankings.values()
+              if expert_ranking.get("ecr_available")
+          )
+
+          unavailable_ecr_signals = (
+              len(expert_rankings) -
+              available_ecr_signals
+          )
+
+          print(
+              "ECR availability: "
+              f"{available_ecr_signals} usable, "
+              f"{unavailable_ecr_signals} unavailable."
+          )
+
           active_ecr_scores = sum(
               1
               for expert_ranking in expert_rankings.values()
-              if expert_ranking.get("ecr_score") != 50
-          )
-
-          neutral_ecr_scores = (
-              len(expert_rankings) -
-              active_ecr_scores
+              if (
+                  expert_ranking.get("ecr_available") and
+                  expert_ranking.get("ecr_score") != 50
+              )
           )
 
           print(
               "ECR scoring signals: "
-              f"{active_ecr_scores} active, "
-              f"{neutral_ecr_scores} neutral."
+              f"{active_ecr_scores} active."
           )
           
           rolling_model_rows = [
