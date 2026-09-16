@@ -1997,9 +1997,7 @@ jobs:
                       f"{max(position_scores)} "
                       f"across {len(position_scores)} "
                       "players."
-                  )
-
-          def normalize_player_name(name):
+                  
           def normalize_player_name(name):
               if not name:
                   return ""
@@ -2449,7 +2447,46 @@ jobs:
               "ECR scoring signals: "
               f"{active_ecr_scores} active."
           )
+          if (
+              len(current_recent_performance) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Recent-performance current-player "
+                  "count does not match current player pool. "
+                  f"Scores: "
+                  f"{len(current_recent_performance)}, "
+                  f"players: {len(current_player_ids)}."
+              )
 
+          invalid_recent_performance_scores = []
+
+          for (
+              player_id,
+              performance
+          ) in current_recent_performance.items():
+              score = performance.get("score")
+
+              if (
+                  score is None or
+                  score < 0 or
+                  score > 100
+              ):
+                  invalid_recent_performance_scores.append(
+                      player_id
+                  )
+
+          if invalid_recent_performance_scores:
+              raise RuntimeError(
+                  "Invalid recent-performance scores for: "
+                  f"{invalid_recent_performance_scores[:10]}"
+              )
+
+          print(
+              "Validated recent-performance scores for "
+              f"{len(current_recent_performance)} "
+              "current players."
+          )
           output = {
               "season": season_used,
               "target_week": target_week,
@@ -2466,8 +2503,11 @@ jobs:
                   expert_rankings_mode,
               "expert_rankings_model_eligible":
                   expert_rankings_model_eligible,
+
               "players": rolling_model_rows,
-              "defense_position_allowed":
+              "recent_player_performance":
+                  current_recent_performance,
+                  "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
                   team_next_opponent,
