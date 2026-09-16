@@ -1686,6 +1686,42 @@ jobs:
                   name_parts.pop()
 
               return " ".join(name_parts)
+              
+          def calculate_ecr_score(
+              rank_ecr,
+              model_eligible
+          ):
+              if not model_eligible:
+                  return 50
+
+              if rank_ecr is None:
+                  return 50
+
+              try:
+                  ecr_rank = float(rank_ecr)
+              except (TypeError, ValueError):
+                  return 50
+
+              if ecr_rank <= 0:
+                  return 50
+
+              if ecr_rank <= 2:
+                  return 100
+
+              if ecr_rank <= 4:
+                  return 90
+
+              if ecr_rank <= 6:
+                  return 80
+
+              if ecr_rank <= 8:
+                  return 70
+
+              if ecr_rank <= 10:
+                  return 60
+
+              return 50
+              
           nflverse_player_lookup = {}
 
           for row in historical_rows:
@@ -1954,6 +1990,30 @@ jobs:
                   "model_eligible"
               ] = expert_rankings_model_eligible
               
+              expert_ranking[
+                  "ecr_score"
+              ] = calculate_ecr_score(
+                  expert_ranking.get("rank_ecr"),
+                  expert_rankings_model_eligible
+              )   
+              
+          active_ecr_scores = sum(
+              1
+              for expert_ranking in expert_rankings.values()
+              if expert_ranking.get("ecr_score") != 50
+          )
+
+          neutral_ecr_scores = (
+              len(expert_rankings) -
+              active_ecr_scores
+          )
+
+          print(
+              "ECR scoring signals: "
+              f"{active_ecr_scores} active, "
+              f"{neutral_ecr_scores} neutral."
+          )
+          
           rolling_model_rows = [
               dict(row)
               for row in historical_rows
