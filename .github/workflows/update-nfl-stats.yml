@@ -1629,6 +1629,217 @@ jobs:
               "Normalized play-caller signals "
               "to 0-100 scores."
           )
+          rolling_model_rows = [
+              dict(row)
+              for row in historical_rows
+              if str(row.get("season") or "") in {
+                  "2025",
+                  "2026"
+              }
+          ]
+
+          print(
+              f"Created rolling model dataset with "
+              f"{len(rolling_model_rows)} player-week records: "
+              "2025 baseline + completed 2026 weeks."
+          )
+
+          # -------------------------------------------------
+          # RECENT PLAYER PERFORMANCE
+          # -------------------------------------------------
+
+          recent_player_performance = {}
+
+          player_performance_history = defaultdict(
+              list
+          )
+
+          if target_week is not None:
+              leaked_performance_rows = []
+
+              for row in rolling_model_rows:
+                  if str(
+                      row.get("season") or ""
+                  ) != "2026":
+                      continue
+
+                  try:
+                      performance_week = int(
+                          float(row.get("week") or 0)
+                      )
+                  except (TypeError, ValueError):
+                      continue
+
+                  if performance_week >= target_week:
+                      leaked_performance_rows.append(
+                          performance_week
+                      )
+
+              if leaked_performance_rows:
+                  raise RuntimeError(
+                      "Recent-performance leakage "
+                      "detected. Rolling dataset contains "
+                      "target or future 2026 weeks: "
+                      f"{sorted(set(leaked_performance_rows))}"
+                  )
+
+          for row in rolling_model_rows:
+              player_id = row.get("player_id")
+              position = row.get("position")
+
+              if (
+                  not player_id or
+                  position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  }
+              ):
+                  continue
+
+              try:
+                  row_season = int(
+                      row.get("season") or 0
+                  )
+
+                  row_week = int(
+                      float(row.get("week") or 0)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if (
+                  row_season <= 0 or
+                  row_week <= 0
+              ):
+                  continue
+
+              fantasy_points = (
+                  calculate_ppr_points(row)
+              )
+
+              player_performance_history[
+                  player_id
+              ].append({
+                  "season": row_season,
+                  "week": row_week,
+                  "ppr_points": round(
+                      fantasy_points,
+                      2
+                  )
+              })
+
+          for (
+              player_id,
+              player_games
+          ) in player_performance_history.items():
+              player_games.sort(
+                  key=lambda game: (
+                      game["season"],
+                      game["week"]
+                  ),
+                  reverse=True
+              )
+
+              recent_games = player_games[:4]
+
+              average_ppr = sum(
+                  game["ppr_points"]
+                  for game in recent_games
+              ) / len(recent_games)
+
+              recent_player_performance[
+                  player_id
+              ] = {
+                  "average_ppr": round(
+                      average_ppr,
+                      2
+                  ),
+                  "sample_size": len(
+                      recent_games
+                  ),
+                  "games": recent_games
+              }
+
+          print(
+              "Created recent-performance history "
+              f"for {len(recent_player_performance)} "
+              "players."
+          )
+          recent_performance_sample_counts = (
+              defaultdict(int)
+          )
+
+          recent_performance_source_weeks = set()
+
+          for performance in (
+              recent_player_performance.values()
+          ):
+              sample_size = performance.get(
+                  "sample_size",
+                  0
+              )
+
+              recent_performance_sample_counts[
+                  sample_size
+              ] += 1
+
+              for game in performance.get(
+                  "games",
+                  []
+              ):
+                  recent_performance_source_weeks.add(
+                      (
+                          game.get("season"),
+                          game.get("week")
+                      )
+                  )
+
+          print(
+              "Recent-performance sample sizes: "
+              f"{dict(sorted(
+                  recent_performance_sample_counts.items()
+              ))}."
+          )
+
+          print(
+              "Recent-performance newest source games: "
+              f"{sorted(
+                  recent_performance_source_weeks,
+                  reverse=True
+              )[:10]}."
+          )
+
+          if target_week is not None:
+              invalid_recent_games = []
+
+              for (
+                  player_id,
+                  performance
+              ) in recent_player_performance.items():
+                  for game in performance.get(
+                      "games",
+                      []
+                  ):
+                      if (
+                          game.get("season") == 2026 and
+                          game.get("week", 0) >= target_week
+                      ):
+                          invalid_recent_games.append(
+                              (
+                                  player_id,
+                                  game.get("week")
+                              )
+                          )
+
+              if invalid_recent_games:
+                  raise RuntimeError(
+                      "Recent-performance output contains "
+                      "target or future games: "
+                      f"{invalid_recent_games[:10]}"
+                  )
+
           def normalize_player_name(name):
               if not name:
                   return ""
@@ -2077,21 +2288,6 @@ jobs:
           print(
               "ECR scoring signals: "
               f"{active_ecr_scores} active."
-          )
-          
-          rolling_model_rows = [
-              dict(row)
-              for row in historical_rows
-              if str(row.get("season") or "") in {
-                  "2025",
-                  "2026"
-              }
-          ]
-
-          print(
-              f"Created rolling model dataset with "
-              f"{len(rolling_model_rows)} player-week records: "
-              "2025 baseline + completed 2026 weeks."
           )
 
           output = {
