@@ -1947,7 +1947,7 @@ jobs:
                   "score_source":
                       "recent_ppr_position_normalized"
               }
-
+              
           print(
               "Created position-normalized recent-"
               "performance scores for "
@@ -1957,14 +1957,11 @@ jobs:
 
           recent_performance_neutral_count = sum(
               1
-              for performance in (
-                  current_recent_performance.values()
-              )
-              if performance.get("score_source") == (
-                  "neutral_no_history"
-              )
+              for performance in
+              current_recent_performance.values()
+              if performance.get("score_source") ==
+              "neutral_no_history"
           )
-
           print(
               "Current players with neutral recent-"
               "performance scores: "
@@ -1997,7 +1994,8 @@ jobs:
                       f"{max(position_scores)} "
                       f"across {len(position_scores)} "
                       "players."
-                  
+                  )
+
           def normalize_player_name(name):
               if not name:
                   return ""
@@ -2507,7 +2505,7 @@ jobs:
               "players": rolling_model_rows,
               "recent_player_performance":
                   current_recent_performance,
-                  "defense_position_allowed":
+              "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
                   team_next_opponent,
