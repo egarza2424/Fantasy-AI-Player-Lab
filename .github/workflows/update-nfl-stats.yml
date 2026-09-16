@@ -1300,10 +1300,43 @@ jobs:
           # -------------------------------------------------
 
           current_player_vs_defensive_caller = {}
+          
+          if target_week is not None:
+              player_signal_source_rows = (
+                  completed_2026_rows
+              )
+          else:
+              player_signal_source_rows = rows
 
+          player_signal_source_weeks = sorted({
+              int(float(row.get("week") or 0))
+              for row in player_signal_source_rows
+              if row.get("week")
+          })
+
+          print(
+              "Player-signal source weeks: "
+              f"{player_signal_source_weeks}."
+          )
+
+          if target_week is not None:
+              leaked_player_signal_weeks = [
+                  week
+                  for week in player_signal_source_weeks
+                  if week >= target_week
+              ]
+
+              if leaked_player_signal_weeks:
+                  raise RuntimeError(
+                      "Fixed-week player-signal leakage "
+                      "detected. Source contains target "
+                      "or future weeks: "
+                      f"{leaked_player_signal_weeks}"
+                  )
+                  
           current_player_ids = {
               row.get("player_id")
-              for row in rows
+              for row in player_signal_source_rows
               if row.get("player_id")
           }
 
@@ -1317,7 +1350,7 @@ jobs:
           for player_id in current_player_ids:
               player_rows = [
                   row
-                  for row in rows
+                  for row in player_signal_source_rows
                   if row.get("player_id") == player_id
               ]
 
@@ -1330,7 +1363,25 @@ jobs:
                       float(row.get("week") or 0)
                   )
               )
+              
+              latest_player_week = int(
+                  float(
+                      latest_player_row.get("week") or 0
+                  )
+              )
 
+              if (
+                  target_week is not None and
+                  latest_player_week >= target_week
+              ):
+                  raise RuntimeError(
+                      "Fixed-week latest-player-row "
+                      "leakage detected for "
+                      f"{player_id}. Selected Week "
+                      f"{latest_player_week} for target "
+                      f"Week {target_week}."
+                  )
+                  
               player_name = (
                   latest_player_row.get(
                       "player_display_name"
