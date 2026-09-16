@@ -1936,6 +1936,24 @@ jobs:
               f"{fantasypros_match_count} of "
               f"{len(expert_rankings)}."
           )
+          if target_week is None:
+              expert_rankings_mode = "live"
+              expert_rankings_model_eligible = True
+          else:
+              expert_rankings_mode = "current_ecr_on_historical_snapshot"
+              expert_rankings_model_eligible = False
+
+          print(
+              "FantasyPros ECR mode: "
+              f"{expert_rankings_mode}. "
+              "Model eligible: "
+              f"{expert_rankings_model_eligible}."
+          )
+          for expert_ranking in expert_rankings.values():
+              expert_ranking[
+                  "model_eligible"
+              ] = expert_rankings_model_eligible
+              
           rolling_model_rows = [
               dict(row)
               for row in historical_rows
@@ -1963,6 +1981,10 @@ jobs:
                   timezone.utc
               ).strftime("%Y-%m-%d"),
               "source": "nflverse",
+              "expert_rankings_mode":
+                  expert_rankings_mode,
+              "expert_rankings_model_eligible":
+                  expert_rankings_model_eligible,
               "players": rolling_model_rows,
               "defense_position_allowed":
                   defense_position_allowed,
