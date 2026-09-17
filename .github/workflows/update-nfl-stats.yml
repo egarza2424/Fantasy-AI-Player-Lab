@@ -1599,8 +1599,52 @@ jobs:
               for row in player_signal_source_rows
               if row.get("player_id")
           }
-          current_player_defensive_matchup = {}
 
+          rookie_ids_in_current_pool = (
+              set(rookie_player_metadata.keys()) &
+              current_player_ids
+          )
+
+          rookie_ids_missing_from_current_pool = (
+              set(rookie_player_metadata.keys()) -
+              current_player_ids
+          )
+
+          print(
+              "2026 rookies in current model pool: "
+              f"{len(rookie_ids_in_current_pool)}."
+          )
+
+          print(
+              "2026 rookies missing from current model pool: "
+              f"{len(rookie_ids_missing_from_current_pool)}."
+          )
+
+          missing_rookie_details = []
+
+          for rookie_id in sorted(
+              rookie_ids_missing_from_current_pool
+          ):
+              rookie = rookie_player_metadata.get(
+                  rookie_id,
+                  {}
+              )
+
+              missing_rookie_details.append({
+                  "player_id": rookie_id,
+                  "player_name": rookie.get("player_name"),
+                  "position": rookie.get("position"),
+                  "draft_round": rookie.get("draft_round"),
+                  "draft_pick": rookie.get("draft_pick"),
+                  "draft_team": rookie.get("draft_team")
+              })
+
+          print(
+              "Missing rookie player details: "
+              f"{missing_rookie_details}"
+          )
+
+          current_player_defensive_matchup = {}
           for player_id in current_player_ids:
               player_rows = [
                   row
