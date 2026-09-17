@@ -1001,11 +1001,16 @@ jobs:
 
           defense_position_totals = defaultdict(
               lambda: {
-                  "fantasy_points": 0.0,
-                  "games": set()
+                  "2025": {
+                      "fantasy_points": 0.0,
+                      "games": set()
+                  },
+                  "2026": {
+                      "fantasy_points": 0.0,
+                      "games": set()
+                  }
               }
           )
-
           for row in historical_rows:
               row_season = str(
                   row.get("season") or ""
@@ -1042,22 +1047,73 @@ jobs:
               key = (defense, position)
 
               defense_position_totals[key][
+                  row_season
+              ][
                   "fantasy_points"
               ] += fantasy_points
 
               defense_position_totals[key][
+                  row_season
+              ][
                   "games"
               ].add(game_id)
-
           defense_position_allowed = {}
 
           for (defense, position), data in (
               defense_position_totals.items()
           ):
-              game_count = len(data["games"])
+              season_2025 = data["2025"]
+              season_2026 = data["2026"]
 
-              if game_count == 0:
+              games_2025 = len(
+                  season_2025["games"]
+              )
+              games_2026 = len(
+                  season_2026["games"]
+              )
+
+              average_2025 = (
+                  season_2025["fantasy_points"] /
+                  games_2025
+                  if games_2025 > 0
+                  else None
+              )
+
+              average_2026 = (
+                  season_2026["fantasy_points"] /
+                  games_2026
+                  if games_2026 > 0
+                  else None
+              )
+
+              if games_2025 == 0 and games_2026 == 0:
                   continue
+
+              prior_season_weight_games = 4.0
+
+              if (
+                  average_2025 is not None and
+                  average_2026 is not None
+              ):
+                  blended_average = (
+                      season_2026["fantasy_points"] +
+                      (
+                          average_2025 *
+                          prior_season_weight_games
+                      )
+                  ) / (
+                      games_2026 +
+                      prior_season_weight_games
+                  )
+                  blend_source = "2025_2026_progressive"
+
+              elif average_2026 is not None:
+                  blended_average = average_2026
+                  blend_source = "2026_only"
+
+              else:
+                  blended_average = average_2025
+                  blend_source = "2025_only"
 
               if defense not in defense_position_allowed:
                   defense_position_allowed[defense] = {}
@@ -1066,13 +1122,25 @@ jobs:
                   defense
               ][position] = {
                   "fantasy_points_allowed": round(
-                      data["fantasy_points"] /
-                      game_count,
+                      blended_average,
                       2
                   ),
-                  "sample_size": game_count
+                  "fantasy_points_allowed_2025": (
+                      round(average_2025, 2)
+                      if average_2025 is not None
+                      else None
+                  ),
+                  "fantasy_points_allowed_2026": (
+                      round(average_2026, 2)
+                      if average_2026 is not None
+                      else None
+                  ),
+                  "sample_size_2025": games_2025,
+                  "sample_size_2026": games_2026,
+                  "prior_season_weight_games":
+                      prior_season_weight_games,
+                  "blend_source": blend_source
               }
-
           print(
               f"Created defensive matchup data for "
               f"{len(defense_position_allowed)} teams."
@@ -1490,8 +1558,12 @@ jobs:
                       "team": team,
                       "opponent": None,
                       "fantasy_points_allowed": None,
-                      "sample_size": 0,
-                      "sample_confidence": 0.0,
+                      "fantasy_points_allowed_2025": None,
+                      "fantasy_points_allowed_2026": None,
+                      "sample_size_2025": 0,
+                      "sample_size_2026": 0,
+                      "blend_source":
+                          "no_upcoming_matchup",
                       "raw_score": 50,
                       "score": 50,
                       "score_source":
@@ -1529,11 +1601,36 @@ jobs:
                   )
               )
 
-              defensive_sample_size = int(
+              defensive_sample_size_2025 = int(
                   position_defense_data.get(
-                      "sample_size",
+                      "sample_size_2025",
                       0
                   ) or 0
+              )
+
+              defensive_sample_size_2026 = int(
+                  position_defense_data.get(
+                      "sample_size_2026",
+                      0
+                  ) or 0
+              )
+
+              defensive_average_2025 = (
+                  position_defense_data.get(
+                      "fantasy_points_allowed_2025"
+                  )
+              )
+
+              defensive_average_2026 = (
+                  position_defense_data.get(
+                      "fantasy_points_allowed_2026"
+                  )
+              )
+
+              defensive_blend_source = (
+                  position_defense_data.get(
+                      "blend_source"
+                  )
               )
 
               values = (
@@ -1545,7 +1642,6 @@ jobs:
 
               if fantasy_points_allowed is None:
                   raw_score = 50
-                  confidence = 0.0
                   adjusted_score = 50
                   score_source = (
                       "neutral_no_defensive_history"
@@ -1555,30 +1651,11 @@ jobs:
                       fantasy_points_allowed,
                       values
                   )
-
-                  if defensive_sample_size >= 4:
-                      confidence = 1.0
-                  elif defensive_sample_size == 3:
-                      confidence = 0.8
-                  elif defensive_sample_size == 2:
-                      confidence = 0.6
-                  elif defensive_sample_size == 1:
-                      confidence = 0.4
-                  else:
-                      confidence = 0.0
-
-                  adjusted_score = round(
-                      50 + (
-                          raw_score - 50
-                      ) * confidence,
-                      2
-                  )
-
+                  adjusted_score = raw_score
                   score_source = (
                       "defense_ppr_allowed_"
-                      "sample_adjusted"
+                      "progressive_season_blend"
                   )
-
               current_player_defensive_matchup[
                   player_id
               ] = {
@@ -1587,9 +1664,16 @@ jobs:
                   "opponent": opponent,
                   "fantasy_points_allowed":
                       fantasy_points_allowed,
-                  "sample_size":
-                      defensive_sample_size,
-                  "sample_confidence": confidence,
+                  "fantasy_points_allowed_2025":
+                      defensive_average_2025,
+                  "fantasy_points_allowed_2026":
+                      defensive_average_2026,
+                  "sample_size_2025":
+                      defensive_sample_size_2025,
+                  "sample_size_2026":
+                      defensive_sample_size_2026,
+                  "blend_source":
+                      defensive_blend_source,
                   "raw_score": raw_score,
                   "score": adjusted_score,
                   "score_source": score_source
@@ -1677,123 +1761,226 @@ jobs:
               )
 
           # ---------------------------------------------
-          # VALIDATE DEFENSIVE MATCHUP SAMPLE CONFIDENCE
+          # VALIDATE DEFENSIVE SEASON BLEND
           # ---------------------------------------------
 
-          defensive_confidence_sample_counts = {
-              0: 0,
-              1: 0,
-              2: 0,
-              3: 0,
-              4: 0
+          defensive_blend_source_counts = {
+              "2025_2026_progressive": 0,
+              "2026_only": 0,
+              "2025_only": 0
           }
 
-          invalid_defensive_confidence_scores = []
+          defensive_2026_sample_counts = defaultdict(int)
+          invalid_defensive_blends = []
 
-          for (
-              player_id,
-              matchup
-          ) in current_player_defensive_matchup.items():
-              sample_size = int(
-                  matchup.get(
-                      "sample_size",
+          for (defense, position), data in (
+              defense_position_totals.items()
+          ):
+              season_2025 = data["2025"]
+              season_2026 = data["2026"]
+
+              games_2025 = len(
+                  season_2025["games"]
+              )
+
+              games_2026 = len(
+                  season_2026["games"]
+              )
+
+              stored = (
+                  defense_position_allowed.get(
+                      defense,
+                      {}
+                  ).get(
+                      position,
+                      {}
+                  )
+              )
+
+              if not stored:
+                  invalid_defensive_blends.append(
+                      (
+                          defense,
+                          position,
+                          "missing_stored_blend"
+                      )
+                  )
+                  continue
+
+              stored_sample_2025 = int(
+                  stored.get(
+                      "sample_size_2025",
                       0
                   ) or 0
               )
 
-              raw_score = matchup.get(
-                  "raw_score"
+              stored_sample_2026 = int(
+                  stored.get(
+                      "sample_size_2026",
+                      0
+                  ) or 0
               )
 
-              actual_score = matchup.get(
-                  "score"
+              if (
+                  stored_sample_2025 != games_2025 or
+                  stored_sample_2026 != games_2026
+              ):
+                  invalid_defensive_blends.append(
+                      (
+                          defense,
+                          position,
+                          "sample_size_mismatch",
+                          games_2025,
+                          stored_sample_2025,
+                          games_2026,
+                          stored_sample_2026
+                      )
+                  )
+                  continue
+
+              average_2025 = (
+                  season_2025["fantasy_points"] /
+                  games_2025
+                  if games_2025 > 0
+                  else None
               )
 
-              actual_confidence = float(
-                  matchup.get(
-                      "sample_confidence",
+              average_2026 = (
+                  season_2026["fantasy_points"] /
+                  games_2026
+                  if games_2026 > 0
+                  else None
+              )
+
+              prior_weight = float(
+                  stored.get(
+                      "prior_season_weight_games",
                       0.0
                   ) or 0.0
               )
 
-              if sample_size >= 4:
-                  expected_confidence = 1.0
-              elif sample_size == 3:
-                  expected_confidence = 0.8
-              elif sample_size == 2:
-                  expected_confidence = 0.6
-              elif sample_size == 1:
-                  expected_confidence = 0.4
-              else:
-                  expected_confidence = 0.0
-
-              sample_bucket = min(
-                  max(sample_size, 0),
-                  4
-              )
-
-              defensive_confidence_sample_counts[
-                  sample_bucket
-              ] += 1
-
-              if sample_size == 0:
-                  if (
-                      actual_score != 50 or
-                      actual_confidence != 0.0
-                  ):
-                      invalid_defensive_confidence_scores.append(
-                          (
-                              player_id,
-                              sample_size,
-                              actual_score,
-                              actual_confidence
-                          )
+              if (
+                  average_2025 is not None and
+                  average_2026 is not None
+              ):
+                  expected_blend = (
+                      season_2026["fantasy_points"] +
+                      (
+                          average_2025 *
+                          prior_weight
                       )
+                  ) / (
+                      games_2026 +
+                      prior_weight
+                  )
 
+                  expected_source = (
+                      "2025_2026_progressive"
+                  )
+
+              elif average_2026 is not None:
+                  expected_blend = average_2026
+                  expected_source = "2026_only"
+
+              elif average_2025 is not None:
+                  expected_blend = average_2025
+                  expected_source = "2025_only"
+
+              else:
                   continue
 
-              expected_score = round(
-                  50 + (
-                      raw_score - 50
-                  ) * expected_confidence,
-                  2
+              actual_blend = stored.get(
+                  "fantasy_points_allowed"
               )
 
-              if (
-                  actual_confidence !=
-                  expected_confidence or
-                  actual_score != expected_score
+              actual_source = stored.get(
+                  "blend_source"
+              )
+
+              defensive_2026_sample_counts[
+                  games_2026
+              ] += 1
+
+              if actual_source in (
+                  defensive_blend_source_counts
               ):
-                  invalid_defensive_confidence_scores.append(
+                  defensive_blend_source_counts[
+                      actual_source
+                  ] += 1
+
+              if (
+                  actual_blend != round(
+                      expected_blend,
+                      2
+                  ) or
+                  actual_source != expected_source
+              ):
+                  invalid_defensive_blends.append(
                       (
-                          player_id,
-                          sample_size,
-                          actual_score,
-                          expected_score,
-                          actual_confidence,
-                          expected_confidence
+                          defense,
+                          position,
+                          actual_blend,
+                          round(expected_blend, 2),
+                          actual_source,
+                          expected_source
                       )
                   )
 
-          if invalid_defensive_confidence_scores:
+          if invalid_defensive_blends:
               raise RuntimeError(
-                  "Defensive-matchup sample-confidence "
-                  "validation failed for: "
-                  f"{invalid_defensive_confidence_scores[:10]}"
+                  "Defensive season-blend validation "
+                  "failed for: "
+                  f"{invalid_defensive_blends[:10]}"
+              )
+
+          if target_week is not None:
+              defensive_2026_source_weeks = sorted({
+                  int(float(row.get("week") or 0))
+                  for row in historical_rows
+                  if (
+                      str(row.get("season") or "") ==
+                      "2026" and
+                      row.get("week")
+                  )
+              })
+
+              leaked_defensive_weeks = [
+                  week
+                  for week in defensive_2026_source_weeks
+                  if week >= target_week
+              ]
+
+              if leaked_defensive_weeks:
+                  raise RuntimeError(
+                      "Fixed-week defensive matchup "
+                      "leakage detected. 2026 defensive "
+                      "history contains target or future "
+                      "weeks: "
+                      f"{leaked_defensive_weeks}"
+                  )
+
+              print(
+                  "Defensive 2026 source weeks: "
+                  f"{defensive_2026_source_weeks}."
               )
 
           print(
-              "Defensive-matchup confidence sample sizes: "
-              f"{defensive_confidence_sample_counts}."
+              "Defensive blend sources: "
+              f"{defensive_blend_source_counts}."
           )
 
           print(
-              "Validated defensive-matchup sample confidence "
-              "for "
-              f"{len(current_player_defensive_matchup)} "
-              "current players."
+              "Defensive 2026 sample sizes: "
+              f"{dict(sorted(
+                  defensive_2026_sample_counts.items()
+              ))}."
           )
 
+          print(
+              "Validated progressive defensive season "
+              "blend for "
+              f"{len(defense_position_allowed)} teams."
+          )
           defensive_matchup_neutral_count = sum(
               1
               for matchup in (
