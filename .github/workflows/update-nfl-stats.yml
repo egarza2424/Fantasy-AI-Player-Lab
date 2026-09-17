@@ -2335,6 +2335,66 @@ jobs:
                       "players."
                   )
 
+          if (
+              len(current_player_opportunity) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Opportunity/volume current-player "
+                  "count does not match current player pool. "
+                  f"Scores: "
+                  f"{len(current_player_opportunity)}, "
+                  f"players: {len(current_player_ids)}."
+              )
+
+          invalid_opportunity_scores = []
+          invalid_neutral_opportunity_scores = []
+
+          for (
+              player_id,
+              opportunity
+          ) in current_player_opportunity.items():
+              score = opportunity.get("score")
+              score_source = opportunity.get(
+                  "score_source"
+              )
+
+              if (
+                  score is None or
+                  score < 0 or
+                  score > 100
+              ):
+                  invalid_opportunity_scores.append(
+                      player_id
+                  )
+
+              if (
+                  score_source == "neutral_no_history" and
+                  score != 50
+              ):
+                  invalid_neutral_opportunity_scores.append(
+                      player_id
+                  )
+
+          if invalid_opportunity_scores:
+              raise RuntimeError(
+                  "Invalid opportunity/volume scores for: "
+                  f"{invalid_opportunity_scores[:10]}"
+              )
+
+          if invalid_neutral_opportunity_scores:
+              raise RuntimeError(
+                  "Neutral opportunity/volume scores "
+                  "must equal 50. Invalid players: "
+                  f"{invalid_neutral_opportunity_scores[:10]}"
+              )
+
+          print(
+              "Validated opportunity/volume scores for "
+              f"{len(current_player_opportunity)} "
+              "current players."
+          )
+
           def normalize_player_name(name):
               if not name:
                   return ""
@@ -2844,6 +2904,8 @@ jobs:
               "players": rolling_model_rows,
               "recent_player_performance":
                   current_recent_performance,
+              "opportunity_volume":
+                  current_player_opportunity,
               "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
