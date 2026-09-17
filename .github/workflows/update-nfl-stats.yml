@@ -4231,6 +4231,228 @@ jobs:
               f"{len(current_recent_performance)} "
               "current players."
           )
+          # ---------------------------------------------
+          # FINAL MODEL COMPONENT DIAGNOSTICS
+          # ---------------------------------------------
+
+          model_component_diagnostics = {
+              "recent_performance": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              },
+              "opportunity_volume": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              },
+              "red_zone_opportunity": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              },
+              "defensive_matchup": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              },
+              "play_caller_matchup": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              },
+              "fantasypros_ecr": {
+                  "scores": [],
+                  "available": 0,
+                  "unavailable": 0
+              }
+          }
+
+          for player_id in current_player_ids:
+              recent_signal = (
+                  current_recent_performance.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              opportunity_signal = (
+                  current_player_opportunity.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              red_zone_signal = (
+                  current_player_red_zone.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              defensive_signal = (
+                  current_player_defensive_matchup.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              play_caller_signal = (
+                  current_player_play_caller_matchup.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              component_signals = {
+                  "recent_performance": recent_signal,
+                  "opportunity_volume": opportunity_signal,
+                  "red_zone_opportunity": red_zone_signal,
+                  "defensive_matchup": defensive_signal
+              }
+
+              for (
+                  component_name,
+                  component_signal
+              ) in component_signals.items():
+                  score_source = component_signal.get(
+                      "score_source"
+                  )
+
+                  score = component_signal.get("score")
+
+                  component_available = (
+                      score is not None and
+                      not str(score_source).startswith(
+                          "neutral_"
+                      )
+                  )
+
+                  if component_available:
+                      model_component_diagnostics[
+                          component_name
+                      ]["available"] += 1
+
+                      model_component_diagnostics[
+                          component_name
+                      ]["scores"].append(
+                          float(score)
+                      )
+
+                  else:
+                      model_component_diagnostics[
+                          component_name
+                      ]["unavailable"] += 1
+
+              play_caller_available = (
+                  play_caller_signal.get(
+                      "available",
+                      False
+                  ) and
+                  play_caller_signal.get("score") is not None
+              )
+
+              if play_caller_available:
+                  model_component_diagnostics[
+                      "play_caller_matchup"
+                  ]["available"] += 1
+
+                  model_component_diagnostics[
+                      "play_caller_matchup"
+                  ]["scores"].append(
+                      float(
+                          play_caller_signal.get("score")
+                      )
+                  )
+
+              else:
+                  model_component_diagnostics[
+                      "play_caller_matchup"
+                  ]["unavailable"] += 1
+
+              matching_ecr = None
+
+              for expert_ranking in (
+                  expert_rankings.values()
+              ):
+                  if (
+                      expert_ranking.get(
+                          "nflverse_player_id"
+                      ) == player_id
+                  ):
+                      matching_ecr = expert_ranking
+                      break
+
+              ecr_available = (
+                  matching_ecr is not None and
+                  matching_ecr.get(
+                      "ecr_available",
+                      False
+                  )
+              )
+
+              if ecr_available:
+                  model_component_diagnostics[
+                      "fantasypros_ecr"
+                  ]["available"] += 1
+
+                  model_component_diagnostics[
+                      "fantasypros_ecr"
+                  ]["scores"].append(
+                      float(
+                          matching_ecr.get(
+                              "ecr_score"
+                          )
+                      )
+                  )
+
+              else:
+                  model_component_diagnostics[
+                      "fantasypros_ecr"
+                  ]["unavailable"] += 1
+
+          print(
+              "Final-model component diagnostics "
+              f"for {len(current_player_ids)} players:"
+          )
+
+          for (
+              component_name,
+              diagnostic
+          ) in model_component_diagnostics.items():
+              component_scores = diagnostic["scores"]
+
+              if component_scores:
+                  average_score = round(
+                      sum(component_scores) /
+                      len(component_scores),
+                      2
+                  )
+
+                  minimum_score = min(
+                      component_scores
+                  )
+
+                  maximum_score = max(
+                      component_scores
+                  )
+
+                  print(
+                      f"{component_name}: "
+                      f"{diagnostic['available']} available, "
+                      f"{diagnostic['unavailable']} unavailable, "
+                      f"range {minimum_score}-"
+                      f"{maximum_score}, "
+                      f"average {average_score}."
+                  )
+
+              else:
+                  print(
+                      f"{component_name}: "
+                      f"{diagnostic['available']} available, "
+                      f"{diagnostic['unavailable']} unavailable, "
+                      "no active score distribution."
+                  )          
           output = {
               "season": season_used,
               "target_week": target_week,
