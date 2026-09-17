@@ -5265,6 +5265,48 @@ jobs:
                   )
               )
 
+              transparent_components = {}
+
+              for (
+                  component_name,
+                  component_data
+              ) in component_scores.items():
+                  active_component = (
+                      fantasy_ai_result.get(
+                          "components",
+                          {}
+                      ).get(
+                          component_name,
+                          {}
+                      )
+                  )
+
+                  transparent_components[
+                      component_name
+                  ] = {
+                      "score":
+                          component_data.get("score"),
+                      "available":
+                          component_data.get(
+                              "available",
+                              False
+                          ),
+                      "base_weight":
+                          fantasy_ai_base_weights.get(
+                              component_name,
+                              0.0
+                          ),
+                      "effective_weight":
+                          active_component.get(
+                              "effective_weight",
+                              0.0
+                          )
+                  }
+
+              fantasy_ai_result[
+                  "components"
+              ] = transparent_components
+
               current_fantasy_ai_scores[
                   player_id
               ] = fantasy_ai_result
@@ -5311,6 +5353,28 @@ jobs:
                   {}
               )
 
+              expected_component_names = set(
+                  fantasy_ai_base_weights.keys()
+              )
+
+              actual_component_names = set(
+                  components.keys()
+              )
+
+              if (
+                  actual_component_names !=
+                  expected_component_names
+              ):
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "component_structure_mismatch",
+                          sorted(actual_component_names),
+                          sorted(expected_component_names)
+                      )
+                  )
+                  continue
+
               active_weight_total = float(
                   fantasy_ai_result.get(
                       "active_weight_total",
@@ -5341,6 +5405,26 @@ jobs:
                   )
                   continue
 
+              active_components = {
+                  component_name: component
+                  for component_name, component
+                  in components.items()
+                  if component.get(
+                      "available",
+                      False
+                  )
+              }
+
+              unavailable_components = {
+                  component_name: component
+                  for component_name, component
+                  in components.items()
+                  if not component.get(
+                      "available",
+                      False
+                  )
+              }
+
               effective_weight_sum = sum(
                   float(
                       component.get(
@@ -5348,9 +5432,31 @@ jobs:
                           0.0
                       ) or 0.0
                   )
-                  for component in components.values()
+                  for component in active_components.values()
               )
 
+              invalid_unavailable_weights = [
+                  component_name
+                  for component_name, component
+                  in unavailable_components.items()
+                  if abs(
+                      float(
+                          component.get(
+                              "effective_weight",
+                              0.0
+                          ) or 0.0
+                      )
+                  ) > 0.0001
+              ]
+
+              if invalid_unavailable_weights:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "unavailable_component_has_weight",
+                          invalid_unavailable_weights
+                      )
+                  )
               if abs(
                   effective_weight_sum - 1.0
               ) > 0.001:
@@ -5373,9 +5479,8 @@ jobs:
                       ) /
                       active_weight_total
                   )
-                  for component in components.values()
+                  for component in active_components.values()
               )
-
               if abs(
                   float(final_score) -
                   round(independently_rebuilt_score, 1)
@@ -5399,9 +5504,8 @@ jobs:
                           0.0
                       ) or 0.0
                   )
-                  for component in components.values()
+                  for component in active_components.values()
               )
-
               if abs(
                   active_weight_total -
                   expected_active_weight_total
@@ -5418,9 +5522,29 @@ jobs:
                       )
                   )
 
+              historical_ecr_component = (
+                  components.get(
+                      "fantasypros_ecr",
+                      {}
+                  )
+              )
+
               if (
                   target_week is not None and
-                  "fantasypros_ecr" in components
+                  (
+                      historical_ecr_component.get(
+                          "available",
+                          False
+                      ) or
+                      abs(
+                          float(
+                              historical_ecr_component.get(
+                                  "effective_weight",
+                                  0.0
+                              ) or 0.0
+                          )
+                      ) > 0.0001
+                  )
               ):
                   invalid_fantasy_ai_scores.append(
                       (
@@ -5428,7 +5552,6 @@ jobs:
                           "historical_ecr_leakage"
                       )
                   )
-
               active_weight_key = round(
                   active_weight_total,
                   2
@@ -5438,7 +5561,7 @@ jobs:
                   active_weight_key
               ] += 1
 
-              for component_name in components:
+              for component_name in active_components:
                   fantasy_ai_component_usage[
                       component_name
                   ] += 1
@@ -5760,7 +5883,9 @@ jobs:
               "player_vs_defensive_caller":
                   player_vs_defensive_caller,
               "expert_rankings":
-                  expert_rankings
+                  expert_rankings,
+              "fantasy_ai_scores":
+                  current_fantasy_ai_scores
           }
           if target_week is not None:
               output_filename = (
