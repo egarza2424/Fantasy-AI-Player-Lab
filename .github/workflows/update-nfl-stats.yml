@@ -5011,7 +5011,492 @@ jobs:
               "confidence for "
               f"{len(current_recent_performance)} "
               "current players."
-          )          
+          )
+
+          # ---------------------------------------------
+          # FANTASY AI SCORE WEIGHTS
+          # ---------------------------------------------
+
+          fantasy_ai_base_weights = {
+              "recent_performance": 0.25,
+              "opportunity_volume": 0.25,
+              "red_zone_opportunity": 0.15,
+              "defensive_matchup": 0.15,
+              "play_caller_matchup": 0.10,
+              "fantasypros_ecr": 0.10
+          }
+
+          if round(
+              sum(fantasy_ai_base_weights.values()),
+              10
+          ) != 1.0:
+              raise RuntimeError(
+                  "Fantasy AI base weights must total 1.0."
+              )
+
+          def calculate_fantasy_ai_score(
+              component_scores
+          ):
+              active_components = {}
+
+              for (
+                  component_name,
+                  component_data
+              ) in component_scores.items():
+                  if not component_data.get(
+                      "available",
+                      False
+                  ):
+                      continue
+
+                  score = component_data.get("score")
+
+                  if score is None:
+                      continue
+
+                  base_weight = (
+                      fantasy_ai_base_weights.get(
+                          component_name,
+                          0.0
+                      )
+                  )
+
+                  if base_weight <= 0:
+                      continue
+
+                  active_components[
+                      component_name
+                  ] = {
+                      "score": float(score),
+                      "base_weight": base_weight
+                  }
+
+              active_weight_total = sum(
+                  component["base_weight"]
+                  for component in (
+                      active_components.values()
+                  )
+              )
+
+              if active_weight_total <= 0:
+                  return {
+                      "score": 50.0,
+                      "available": False,
+                      "active_weight_total": 0.0,
+                      "components": {}
+                  }
+
+              weighted_score = 0.0
+
+              for (
+                  component_name,
+                  component
+              ) in active_components.items():
+                  effective_weight = (
+                      component["base_weight"] /
+                      active_weight_total
+                  )
+
+                  component[
+                      "effective_weight"
+                  ] = round(
+                      effective_weight,
+                      4
+                  )
+
+                  weighted_score += (
+                      component["score"] *
+                      effective_weight
+                  )
+
+              return {
+                  "score": round(weighted_score, 1),
+                  "available": True,
+                  "active_weight_total": round(
+                      active_weight_total,
+                      4
+                  ),
+                  "components": active_components
+              }
+
+          # ---------------------------------------------
+          # CALCULATE CURRENT FANTASY AI SCORES
+          # ---------------------------------------------
+
+          current_fantasy_ai_scores = {}
+
+          expert_rankings_by_player_id = {}
+
+          for expert_ranking in expert_rankings.values():
+              nflverse_player_id = expert_ranking.get(
+                  "nflverse_player_id"
+              )
+
+              if nflverse_player_id:
+                  expert_rankings_by_player_id[
+                      nflverse_player_id
+                  ] = expert_ranking
+
+          for player_id in current_player_ids:
+              recent_signal = (
+                  current_recent_performance.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              opportunity_signal = (
+                  current_player_opportunity.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              red_zone_signal = (
+                  current_player_red_zone.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              defensive_signal = (
+                  current_player_defensive_matchup.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              play_caller_signal = (
+                  current_player_play_caller_matchup.get(
+                      player_id,
+                      {}
+                  )
+              )
+
+              matching_ecr = (
+                  expert_rankings_by_player_id.get(
+                      player_id
+                  )
+              )
+
+              recent_available = (
+                  recent_signal.get("score") is not None and
+                  not str(
+                      recent_signal.get("score_source")
+                  ).startswith("neutral_")
+              )
+
+              opportunity_available = (
+                  opportunity_signal.get("score") is not None and
+                  not str(
+                      opportunity_signal.get("score_source")
+                  ).startswith("neutral_")
+              )
+
+              red_zone_available = (
+                  red_zone_signal.get("score") is not None and
+                  not str(
+                      red_zone_signal.get("score_source")
+                  ).startswith("neutral_")
+              )
+
+              defensive_available = (
+                  defensive_signal.get("score") is not None and
+                  not str(
+                      defensive_signal.get("score_source")
+                  ).startswith("neutral_")
+              )
+
+              play_caller_available = (
+                  play_caller_signal.get(
+                      "available",
+                      False
+                  ) and
+                  play_caller_signal.get("score") is not None
+              )
+
+              ecr_available = (
+                  matching_ecr is not None and
+                  matching_ecr.get(
+                      "ecr_available",
+                      False
+                  ) and
+                  matching_ecr.get(
+                      "model_eligible",
+                      False
+                  ) and
+                  matching_ecr.get("ecr_score") is not None
+              )
+
+              component_scores = {
+                  "recent_performance": {
+                      "score": recent_signal.get("score"),
+                      "available": recent_available
+                  },
+                  "opportunity_volume": {
+                      "score": opportunity_signal.get("score"),
+                      "available": opportunity_available
+                  },
+                  "red_zone_opportunity": {
+                      "score": red_zone_signal.get("score"),
+                      "available": red_zone_available
+                  },
+                  "defensive_matchup": {
+                      "score": defensive_signal.get("score"),
+                      "available": defensive_available
+                  },
+                  "play_caller_matchup": {
+                      "score": play_caller_signal.get("score"),
+                      "available": play_caller_available
+                  },
+                  "fantasypros_ecr": {
+                      "score": (
+                          matching_ecr.get("ecr_score")
+                          if matching_ecr
+                          else None
+                      ),
+                      "available": ecr_available
+                  }
+              }
+
+              fantasy_ai_result = (
+                  calculate_fantasy_ai_score(
+                      component_scores
+                  )
+              )
+
+              current_fantasy_ai_scores[
+                  player_id
+              ] = fantasy_ai_result
+
+          print(
+              "Created Fantasy AI scores for "
+              f"{len(current_fantasy_ai_scores)} "
+              "current players."
+          )
+
+          # ---------------------------------------------
+          # VALIDATE FANTASY AI SCORES
+          # ---------------------------------------------
+
+          invalid_fantasy_ai_scores = []
+          fantasy_ai_active_weight_counts = defaultdict(int)
+          fantasy_ai_component_usage = defaultdict(int)
+          fantasy_ai_scores_for_diagnostics = []
+
+          if (
+              len(current_fantasy_ai_scores) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Fantasy AI score count does not match "
+                  "current player pool. Scores: "
+                  f"{len(current_fantasy_ai_scores)}, "
+                  "players: "
+                  f"{len(current_player_ids)}."
+              )
+
+          for (
+              player_id,
+              fantasy_ai_result
+          ) in current_fantasy_ai_scores.items():
+              final_score = fantasy_ai_result.get("score")
+              score_available = fantasy_ai_result.get(
+                  "available",
+                  False
+              )
+
+              components = fantasy_ai_result.get(
+                  "components",
+                  {}
+              )
+
+              active_weight_total = float(
+                  fantasy_ai_result.get(
+                      "active_weight_total",
+                      0.0
+                  ) or 0.0
+              )
+
+              if not score_available:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "final_score_unavailable"
+                      )
+                  )
+                  continue
+
+              if (
+                  final_score is None or
+                  float(final_score) < 0 or
+                  float(final_score) > 100
+              ):
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "invalid_final_score",
+                          final_score
+                      )
+                  )
+                  continue
+
+              effective_weight_sum = sum(
+                  float(
+                      component.get(
+                          "effective_weight",
+                          0.0
+                      ) or 0.0
+                  )
+                  for component in components.values()
+              )
+
+              if abs(
+                  effective_weight_sum - 1.0
+              ) > 0.001:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "effective_weights_do_not_sum_to_1",
+                          round(effective_weight_sum, 6)
+                      )
+                  )
+
+              independently_rebuilt_score = sum(
+                  float(component.get("score") or 0.0) *
+                  (
+                      float(
+                          component.get(
+                              "base_weight",
+                              0.0
+                          ) or 0.0
+                      ) /
+                      active_weight_total
+                  )
+                  for component in components.values()
+              )
+
+              if abs(
+                  float(final_score) -
+                  round(independently_rebuilt_score, 1)
+              ) > 0.0001:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "final_score_math_mismatch",
+                          final_score,
+                          round(
+                              independently_rebuilt_score,
+                              1
+                          )
+                      )
+                  )
+
+              expected_active_weight_total = sum(
+                  float(
+                      component.get(
+                          "base_weight",
+                          0.0
+                      ) or 0.0
+                  )
+                  for component in components.values()
+              )
+
+              if abs(
+                  active_weight_total -
+                  expected_active_weight_total
+              ) > 0.0001:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "active_weight_total_mismatch",
+                          active_weight_total,
+                          round(
+                              expected_active_weight_total,
+                              4
+                          )
+                      )
+                  )
+
+              if (
+                  target_week is not None and
+                  "fantasypros_ecr" in components
+              ):
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "historical_ecr_leakage"
+                      )
+                  )
+
+              active_weight_key = round(
+                  active_weight_total,
+                  2
+              )
+
+              fantasy_ai_active_weight_counts[
+                  active_weight_key
+              ] += 1
+
+              for component_name in components:
+                  fantasy_ai_component_usage[
+                      component_name
+                  ] += 1
+
+              fantasy_ai_scores_for_diagnostics.append(
+                  float(final_score)
+              )
+
+          if invalid_fantasy_ai_scores:
+              raise RuntimeError(
+                  "Fantasy AI score validation failed for: "
+                  f"{invalid_fantasy_ai_scores[:10]}"
+              )
+
+          print(
+              "Fantasy AI active base-weight totals: "
+              f"{dict(sorted(
+                  fantasy_ai_active_weight_counts.items()
+              ))}."
+          )
+
+          print(
+              "Fantasy AI component usage: "
+              f"{dict(
+                  sorted(
+                      fantasy_ai_component_usage.items()
+                  )
+              )}."
+          )
+
+          if fantasy_ai_scores_for_diagnostics:
+              print(
+                  "Fantasy AI score range: "
+                  f"{round(
+                      min(fantasy_ai_scores_for_diagnostics),
+                      1
+                  )}-"
+                  f"{round(
+                      max(fantasy_ai_scores_for_diagnostics),
+                      1
+                  )}; average "
+                  f"{round(
+                      sum(
+                          fantasy_ai_scores_for_diagnostics
+                      ) /
+                      len(
+                          fantasy_ai_scores_for_diagnostics
+                      ),
+                      2
+                  )}."
+              )
+
+          print(
+              "Validated Fantasy AI scores for "
+              f"{len(current_fantasy_ai_scores)} "
+              "current players."
+          )
+
           # ---------------------------------------------
           # FINAL MODEL COMPONENT DIAGNOSTICS
           # ---------------------------------------------
