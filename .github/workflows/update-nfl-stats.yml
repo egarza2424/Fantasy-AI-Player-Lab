@@ -1062,10 +1062,16 @@ jobs:
               if defense not in defense_position_allowed:
                   defense_position_allowed[defense] = {}
 
-              defense_position_allowed[defense][position] = round(
-                  data["fantasy_points"] / game_count,
-                  2
-              )
+              defense_position_allowed[
+                  defense
+              ][position] = {
+                  "fantasy_points_allowed": round(
+                      data["fantasy_points"] /
+                      game_count,
+                      2
+                  ),
+                  "sample_size": game_count
+              }
 
           print(
               f"Created defensive matchup data for "
@@ -1088,8 +1094,17 @@ jobs:
                   "WR",
                   "TE"
               }:
+                  position_defense_data = (
+                      defense_data.get(
+                          position,
+                          {}
+                      )
+                  )
+
                   fantasy_points_allowed = (
-                      defense_data.get(position)
+                      position_defense_data.get(
+                          "fantasy_points_allowed"
+                      )
                   )
 
                   if fantasy_points_allowed is not None:
@@ -1475,11 +1490,13 @@ jobs:
                       "team": team,
                       "opponent": None,
                       "fantasy_points_allowed": None,
+                      "sample_size": 0,
+                      "sample_confidence": 0.0,
+                      "raw_score": 50,
                       "score": 50,
                       "score_source":
                           "neutral_no_upcoming_matchup"
                   }
-
                   continue
 
               opponent = team_matchup.get(
@@ -1499,8 +1516,24 @@ jobs:
                   )
               )
 
+              position_defense_data = (
+                  defense_data.get(
+                      position,
+                      {}
+                  )
+              )
+
               fantasy_points_allowed = (
-                  defense_data.get(position)
+                  position_defense_data.get(
+                      "fantasy_points_allowed"
+                  )
+              )
+
+              defensive_sample_size = int(
+                  position_defense_data.get(
+                      "sample_size",
+                      0
+                  ) or 0
               )
 
               values = (
@@ -1511,18 +1544,39 @@ jobs:
               )
 
               if fantasy_points_allowed is None:
-                  score = 50
+                  raw_score = 50
+                  confidence = 0.0
+                  adjusted_score = 50
                   score_source = (
                       "neutral_no_defensive_history"
                   )
               else:
-                  score = normalize_matchup_score(
+                  raw_score = normalize_matchup_score(
                       fantasy_points_allowed,
                       values
                   )
+
+                  if defensive_sample_size >= 4:
+                      confidence = 1.0
+                  elif defensive_sample_size == 3:
+                      confidence = 0.8
+                  elif defensive_sample_size == 2:
+                      confidence = 0.6
+                  elif defensive_sample_size == 1:
+                      confidence = 0.4
+                  else:
+                      confidence = 0.0
+
+                  adjusted_score = round(
+                      50 + (
+                          raw_score - 50
+                      ) * confidence,
+                      2
+                  )
+
                   score_source = (
                       "defense_ppr_allowed_"
-                      "position_normalized"
+                      "sample_adjusted"
                   )
 
               current_player_defensive_matchup[
@@ -1533,10 +1587,13 @@ jobs:
                   "opponent": opponent,
                   "fantasy_points_allowed":
                       fantasy_points_allowed,
-                  "score": score,
+                  "sample_size":
+                      defensive_sample_size,
+                  "sample_confidence": confidence,
+                  "raw_score": raw_score,
+                  "score": adjusted_score,
                   "score_source": score_source
               }
-
           if (
               len(current_player_defensive_matchup) !=
               len(current_player_ids)
@@ -1618,6 +1675,124 @@ jobs:
                   "Defensive-matchup opponent mismatch for: "
                   f"{invalid_defensive_matchup_opponents[:10]}"
               )
+
+          # ---------------------------------------------
+          # VALIDATE DEFENSIVE MATCHUP SAMPLE CONFIDENCE
+          # ---------------------------------------------
+
+          defensive_confidence_sample_counts = {
+              0: 0,
+              1: 0,
+              2: 0,
+              3: 0,
+              4: 0
+          }
+
+          invalid_defensive_confidence_scores = []
+
+          for (
+              player_id,
+              matchup
+          ) in current_player_defensive_matchup.items():
+              sample_size = int(
+                  matchup.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
+              raw_score = matchup.get(
+                  "raw_score"
+              )
+
+              actual_score = matchup.get(
+                  "score"
+              )
+
+              actual_confidence = float(
+                  matchup.get(
+                      "sample_confidence",
+                      0.0
+                  ) or 0.0
+              )
+
+              if sample_size >= 4:
+                  expected_confidence = 1.0
+              elif sample_size == 3:
+                  expected_confidence = 0.8
+              elif sample_size == 2:
+                  expected_confidence = 0.6
+              elif sample_size == 1:
+                  expected_confidence = 0.4
+              else:
+                  expected_confidence = 0.0
+
+              sample_bucket = min(
+                  max(sample_size, 0),
+                  4
+              )
+
+              defensive_confidence_sample_counts[
+                  sample_bucket
+              ] += 1
+
+              if sample_size == 0:
+                  if (
+                      actual_score != 50 or
+                      actual_confidence != 0.0
+                  ):
+                      invalid_defensive_confidence_scores.append(
+                          (
+                              player_id,
+                              sample_size,
+                              actual_score,
+                              actual_confidence
+                          )
+                      )
+
+                  continue
+
+              expected_score = round(
+                  50 + (
+                      raw_score - 50
+                  ) * expected_confidence,
+                  2
+              )
+
+              if (
+                  actual_confidence !=
+                  expected_confidence or
+                  actual_score != expected_score
+              ):
+                  invalid_defensive_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          actual_score,
+                          expected_score,
+                          actual_confidence,
+                          expected_confidence
+                      )
+                  )
+
+          if invalid_defensive_confidence_scores:
+              raise RuntimeError(
+                  "Defensive-matchup sample-confidence "
+                  "validation failed for: "
+                  f"{invalid_defensive_confidence_scores[:10]}"
+              )
+
+          print(
+              "Defensive-matchup confidence sample sizes: "
+              f"{defensive_confidence_sample_counts}."
+          )
+
+          print(
+              "Validated defensive-matchup sample confidence "
+              "for "
+              f"{len(current_player_defensive_matchup)} "
+              "current players."
+          )
 
           defensive_matchup_neutral_count = sum(
               1
