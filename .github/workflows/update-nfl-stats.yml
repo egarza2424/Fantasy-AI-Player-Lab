@@ -3215,14 +3215,39 @@ jobs:
                   "average_opportunity"
               )
 
+              sample_size = int(
+                  opportunity.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
               values = opportunity_position_values.get(
                   position,
                   []
               )
 
-              score = normalize_matchup_score(
+              raw_score = normalize_matchup_score(
                   average_opportunity,
                   values
+              )
+
+              if sample_size >= 4:
+                  confidence = 1.0
+              elif sample_size == 3:
+                  confidence = 0.8
+              elif sample_size == 2:
+                  confidence = 0.6
+              elif sample_size == 1:
+                  confidence = 0.4
+              else:
+                  confidence = 0.0
+
+              adjusted_score = round(
+                  50 + (
+                      raw_score - 50
+                  ) * confidence,
+                  2
               )
 
               current_player_opportunity[
@@ -3231,19 +3256,17 @@ jobs:
                   "position": position,
                   "average_opportunity":
                       average_opportunity,
-                  "sample_size": opportunity.get(
-                      "sample_size",
-                      0
-                  ),
+                  "sample_size": sample_size,
+                  "sample_confidence": confidence,
                   "games": opportunity.get(
                       "games",
                       []
                   ),
-                  "score": score,
+                  "raw_score": raw_score,
+                  "score": adjusted_score,
                   "score_source":
-                      "opportunity_position_normalized"
+                      "opportunity_sample_adjusted"
               }
-
           print(
               "Created position-normalized opportunity/"
               "volume scores for "
@@ -3352,7 +3375,123 @@ jobs:
               f"{len(current_player_opportunity)} "
               "current players."
           )
+          # ---------------------------------------------
+          # VALIDATE OPPORTUNITY SAMPLE CONFIDENCE
+          # ---------------------------------------------
 
+          opportunity_confidence_sample_counts = {
+              0: 0,
+              1: 0,
+              2: 0,
+              3: 0,
+              4: 0
+          }
+
+          invalid_opportunity_confidence_scores = []
+
+          for (
+              player_id,
+              opportunity
+          ) in current_player_opportunity.items():
+              sample_size = int(
+                  opportunity.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
+              raw_score = opportunity.get(
+                  "raw_score"
+              )
+
+              actual_score = opportunity.get(
+                  "score"
+              )
+
+              actual_confidence = float(
+                  opportunity.get(
+                      "sample_confidence",
+                      0.0
+                  ) or 0.0
+              )
+
+              if sample_size >= 4:
+                  expected_confidence = 1.0
+              elif sample_size == 3:
+                  expected_confidence = 0.8
+              elif sample_size == 2:
+                  expected_confidence = 0.6
+              elif sample_size == 1:
+                  expected_confidence = 0.4
+              else:
+                  expected_confidence = 0.0
+
+              sample_bucket = min(
+                  max(sample_size, 0),
+                  4
+              )
+
+              opportunity_confidence_sample_counts[
+                  sample_bucket
+              ] += 1
+
+              if sample_size == 0:
+                  if (
+                      actual_score != 50 or
+                      actual_confidence != 0.0
+                  ):
+                      invalid_opportunity_confidence_scores.append(
+                          (
+                              player_id,
+                              sample_size,
+                              actual_score,
+                              actual_confidence
+                          )
+                      )
+
+                  continue
+
+              expected_score = round(
+                  50 + (
+                      raw_score - 50
+                  ) * expected_confidence,
+                  2
+              )
+
+              if (
+                  actual_confidence !=
+                  expected_confidence or
+                  actual_score != expected_score
+              ):
+                  invalid_opportunity_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          actual_score,
+                          expected_score,
+                          actual_confidence,
+                          expected_confidence
+                      )
+                  )
+
+          if invalid_opportunity_confidence_scores:
+              raise RuntimeError(
+                  "Opportunity sample-confidence "
+                  "validation failed for: "
+                  f"{invalid_opportunity_confidence_scores[:10]}"
+              )
+
+          print(
+              "Opportunity confidence sample sizes: "
+              f"{opportunity_confidence_sample_counts}."
+          )
+
+          print(
+              "Validated opportunity sample confidence "
+              "for "
+              f"{len(current_player_opportunity)} "
+              "current players."
+          )
           # -------------------------------------------------
           # RED-ZONE OPPORTUNITY
           # -------------------------------------------------
