@@ -2395,6 +2395,419 @@ jobs:
               "current players."
           )
 
+          # -------------------------------------------------
+          # RED-ZONE OPPORTUNITY
+          # -------------------------------------------------
+
+          player_red_zone_history = defaultdict(
+              list
+          )
+
+          for row in rolling_model_rows:
+              player_id = row.get("player_id")
+              position = row.get("position")
+
+              if (
+                  not player_id or
+                  position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  }
+              ):
+                  continue
+
+              try:
+                  row_season = int(
+                      row.get("season") or 0
+                  )
+
+                  row_week = int(
+                      float(row.get("week") or 0)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if (
+                  row_season <= 0 or
+                  row_week <= 0
+              ):
+                  continue
+
+              red_zone_pass_attempts = float(
+                  row.get(
+                      "red_zone_pass_attempts"
+                  ) or 0
+              )
+
+              red_zone_carries = float(
+                  row.get(
+                      "red_zone_carries"
+                  ) or 0
+              )
+
+              red_zone_targets = float(
+                  row.get(
+                      "red_zone_targets"
+                  ) or 0
+              )
+
+              if position == "QB":
+                  red_zone_opportunity = (
+                      red_zone_pass_attempts +
+                      red_zone_carries
+                  )
+              elif position == "RB":
+                  red_zone_opportunity = (
+                      red_zone_carries +
+                      red_zone_targets
+                  )
+              else:
+                  red_zone_opportunity = (
+                      red_zone_targets
+                  )
+
+              player_red_zone_history[
+                  player_id
+              ].append({
+                  "season": row_season,
+                  "week": row_week,
+                  "position": position,
+                  "red_zone_pass_attempts":
+                      red_zone_pass_attempts,
+                  "red_zone_carries":
+                      red_zone_carries,
+                  "red_zone_targets":
+                      red_zone_targets,
+                  "red_zone_opportunity":
+                      red_zone_opportunity
+              })
+
+          recent_player_red_zone = {}
+
+          for (
+              player_id,
+              player_games
+          ) in player_red_zone_history.items():
+              player_games.sort(
+                  key=lambda game: (
+                      game["season"],
+                      game["week"]
+                  ),
+                  reverse=True
+              )
+
+              recent_games = player_games[:4]
+
+              average_red_zone_opportunity = sum(
+                  game["red_zone_opportunity"]
+                  for game in recent_games
+              ) / len(recent_games)
+
+              recent_player_red_zone[
+                  player_id
+              ] = {
+                  "position":
+                      recent_games[0]["position"],
+                  "average_red_zone_opportunity":
+                      round(
+                          average_red_zone_opportunity,
+                          2
+                      ),
+                  "sample_size": len(
+                      recent_games
+                  ),
+                  "games": recent_games
+              }
+
+          print(
+              "Created red-zone opportunity history "
+              f"for {len(recent_player_red_zone)} "
+              "players."
+          )
+
+          red_zone_sample_counts = defaultdict(
+              int
+          )
+
+          red_zone_source_weeks = set()
+
+          for red_zone in (
+              recent_player_red_zone.values()
+          ):
+              sample_size = red_zone.get(
+                  "sample_size",
+                  0
+              )
+
+              red_zone_sample_counts[
+                  sample_size
+              ] += 1
+
+              for game in red_zone.get(
+                  "games",
+                  []
+              ):
+                  red_zone_source_weeks.add(
+                      (
+                          game.get("season"),
+                          game.get("week")
+                      )
+                  )
+
+          print(
+              "Red-zone opportunity sample sizes: "
+              f"{dict(sorted(
+                  red_zone_sample_counts.items()
+              ))}."
+          )
+
+          print(
+              "Red-zone opportunity newest source games: "
+              f"{sorted(
+                  red_zone_source_weeks,
+                  reverse=True
+              )[:10]}."
+          )
+
+          if target_week is not None:
+              invalid_red_zone_games = []
+
+              for (
+                  player_id,
+                  red_zone
+              ) in recent_player_red_zone.items():
+                  for game in red_zone.get(
+                      "games",
+                      []
+                  ):
+                      if (
+                          game.get("season") == 2026 and
+                          game.get("week", 0) >= target_week
+                      ):
+                          invalid_red_zone_games.append(
+                              (
+                                  player_id,
+                                  game.get("week")
+                              )
+                          )
+
+              if invalid_red_zone_games:
+                  raise RuntimeError(
+                      "Red-zone opportunity output contains "
+                      "target or future games: "
+                      f"{invalid_red_zone_games[:10]}"
+                  )
+
+          red_zone_position_values = {
+              "QB": [],
+              "RB": [],
+              "WR": [],
+              "TE": []
+          }
+
+          for player_id in current_player_ids:
+              red_zone = recent_player_red_zone.get(
+                  player_id
+              )
+
+              if not red_zone:
+                  continue
+
+              position = red_zone.get(
+                  "position"
+              )
+
+              average_red_zone_opportunity = (
+                  red_zone.get(
+                      "average_red_zone_opportunity"
+                  )
+              )
+
+              if (
+                  position in red_zone_position_values and
+                  average_red_zone_opportunity is not None
+              ):
+                  red_zone_position_values[
+                      position
+                  ].append(
+                      float(
+                          average_red_zone_opportunity
+                      )
+                  )
+
+          current_player_red_zone = {}
+
+          for player_id in current_player_ids:
+              red_zone = recent_player_red_zone.get(
+                  player_id
+              )
+
+              if not red_zone:
+                  current_player_red_zone[
+                      player_id
+                  ] = {
+                      "position": None,
+                      "average_red_zone_opportunity":
+                          None,
+                      "sample_size": 0,
+                      "games": [],
+                      "score": 50,
+                      "score_source":
+                          "neutral_no_history"
+                  }
+
+                  continue
+
+              position = red_zone.get(
+                  "position"
+              )
+
+              average_red_zone_opportunity = (
+                  red_zone.get(
+                      "average_red_zone_opportunity"
+                  )
+              )
+
+              values = red_zone_position_values.get(
+                  position,
+                  []
+              )
+
+              score = normalize_matchup_score(
+                  average_red_zone_opportunity,
+                  values
+              )
+
+              current_player_red_zone[
+                  player_id
+              ] = {
+                  "position": position,
+                  "average_red_zone_opportunity":
+                      average_red_zone_opportunity,
+                  "sample_size": red_zone.get(
+                      "sample_size",
+                      0
+                  ),
+                  "games": red_zone.get(
+                      "games",
+                      []
+                  ),
+                  "score": score,
+                  "score_source":
+                      "red_zone_position_normalized"
+              }
+
+          print(
+              "Created position-normalized red-zone "
+              "opportunity scores for "
+              f"{len(current_player_red_zone)} "
+              "current players."
+          )
+
+          red_zone_neutral_count = sum(
+              1
+              for red_zone in
+              current_player_red_zone.values()
+              if red_zone.get("score_source") ==
+              "neutral_no_history"
+          )
+
+          print(
+              "Current players with neutral red-zone "
+              "opportunity scores: "
+              f"{red_zone_neutral_count}."
+          )
+
+          for position in {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }:
+              position_scores = [
+                  red_zone.get("score")
+                  for red_zone in (
+                      current_player_red_zone.values()
+                  )
+                  if (
+                      red_zone.get("position") ==
+                      position and
+                      red_zone.get("score") is not None
+                  )
+              ]
+
+              if position_scores:
+                  print(
+                      f"Red-zone opportunity {position} "
+                      "score range: "
+                      f"{min(position_scores)}-"
+                      f"{max(position_scores)} "
+                      f"across {len(position_scores)} "
+                      "players."
+                  )
+
+          if (
+              len(current_player_red_zone) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Red-zone opportunity current-player "
+                  "count does not match current player pool. "
+                  f"Scores: "
+                  f"{len(current_player_red_zone)}, "
+                  f"players: {len(current_player_ids)}."
+              )
+
+          invalid_red_zone_scores = []
+          invalid_neutral_red_zone_scores = []
+
+          for (
+              player_id,
+              red_zone
+          ) in current_player_red_zone.items():
+              score = red_zone.get("score")
+              score_source = red_zone.get(
+                  "score_source"
+              )
+
+              if (
+                  score is None or
+                  score < 0 or
+                  score > 100
+              ):
+                  invalid_red_zone_scores.append(
+                      player_id
+                  )
+
+              if (
+                  score_source == "neutral_no_history" and
+                  score != 50
+              ):
+                  invalid_neutral_red_zone_scores.append(
+                      player_id
+                  )
+
+          if invalid_red_zone_scores:
+              raise RuntimeError(
+                  "Invalid red-zone opportunity scores for: "
+                  f"{invalid_red_zone_scores[:10]}"
+              )
+
+          if invalid_neutral_red_zone_scores:
+              raise RuntimeError(
+                  "Neutral red-zone opportunity scores "
+                  "must equal 50. Invalid players: "
+                  f"{invalid_neutral_red_zone_scores[:10]}"
+              )
+
+          print(
+              "Validated red-zone opportunity scores for "
+              f"{len(current_player_red_zone)} "
+              "current players."
+          )
+
           def normalize_player_name(name):
               if not name:
                   return ""
@@ -2906,6 +3319,8 @@ jobs:
                   current_recent_performance,
               "opportunity_volume":
                   current_player_opportunity,
+              "red_zone_opportunity":
+                  current_player_red_zone,
               "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
