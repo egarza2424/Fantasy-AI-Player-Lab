@@ -259,6 +259,92 @@ jobs:
               raise RuntimeError(
                   "No NFL player stats could be downloaded."
               )
+
+          # -------------------------------------------------
+          # 2026 ROOKIE / PLAYER METADATA
+          # -------------------------------------------------
+
+          player_metadata_url = (
+              "https://github.com/nflverse/nflverse-data/"
+              "releases/download/players/players.csv"
+          )
+
+          print(
+              "Trying NFL player metadata: "
+              f"{player_metadata_url}"
+          )
+
+          with urllib.request.urlopen(
+              player_metadata_url
+          ) as response:
+              player_metadata_content = (
+                  response.read().decode("utf-8")
+              )
+
+          player_metadata_reader = csv.DictReader(
+              io.StringIO(player_metadata_content)
+          )
+
+          player_metadata_by_id = {}
+          rookie_player_metadata = {}
+
+          for player in player_metadata_reader:
+              player_id = (
+                  player.get("gsis_id") or
+                  player.get("player_id")
+              )
+
+              if not player_id:
+                  continue
+
+              player_metadata_by_id[player_id] = player
+
+              draft_year = str(
+                  player.get("draft_year") or ""
+              ).strip()
+
+              if draft_year != "2026":
+                  continue
+
+              position = str(
+                  player.get("position") or ""
+              ).strip()
+
+              if position not in {
+                  "QB",
+                  "RB",
+                  "WR",
+                  "TE"
+              }:
+                  continue
+
+              rookie_player_metadata[player_id] = {
+                  "player_id": player_id,
+                  "player_name": (
+                      player.get("display_name") or
+                      player.get("full_name") or
+                      player.get("football_name") or
+                      player.get("short_name")
+                  ),
+                  "position": position,
+                  "college": player.get("college_name"),
+                  "draft_year": draft_year,
+                  "draft_round": player.get("draft_round"),
+                  "draft_pick": player.get("draft_pick"),
+                  "draft_team": player.get("draft_club")
+              }
+
+          print(
+              "Loaded metadata for "
+              f"{len(player_metadata_by_id)} NFL players."
+          )
+
+          print(
+              "Identified "
+              f"{len(rookie_player_metadata)} "
+              "2026 QB/RB/WR/TE rookies."
+          )
+
           # -------------------------------------------------
           # COMPLETED 2026 PLAYER-WEEK DATA
           # Use completed 2026 weeks as rolling model history.
