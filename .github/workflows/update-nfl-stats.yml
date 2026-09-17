@@ -173,6 +173,37 @@ jobs:
                   receiving_yards / 10 +
                   receiving_tds * 6
               )
+          def normalize_matchup_score(
+              value,
+              values
+          ):
+              if value is None or not values:
+                  return 50
+
+              minimum = min(values)
+              maximum = max(values)
+
+              if maximum <= minimum:
+                  return 50
+
+              normalized = (
+                  (
+                      float(value) - minimum
+                  ) /
+                  (
+                      maximum - minimum
+                  )
+              )
+
+              score = round(
+                  25 + normalized * 75
+              )
+
+              return max(
+                  0,
+                  min(100, score)
+              )
+              
           rows = []
           season_used = None
 
@@ -987,6 +1018,10 @@ jobs:
                   continue
 
               defense = row.get("opponent_team")
+
+              if defense == "LA":
+                  defense = "LAR"
+
               position = row.get("position")
               week = str(row.get("week") or "")
 
@@ -1036,10 +1071,37 @@ jobs:
               f"Created defensive matchup data for "
               f"{len(defense_position_allowed)} teams."
           )
+
+          defense_matchup_position_values = {
+              "QB": [],
+              "RB": [],
+              "WR": [],
+              "TE": []
+          }
+
+          for defense_data in (
+              defense_position_allowed.values()
+          ):
+              for position in {
+                  "QB",
+                  "RB",
+                  "WR",
+                  "TE"
+              }:
+                  fantasy_points_allowed = (
+                      defense_data.get(position)
+                  )
+
+                  if fantasy_points_allowed is not None:
+                      defense_matchup_position_values[
+                          position
+                      ].append(
+                          float(fantasy_points_allowed)
+                      )
+
           # -------------------------------------------------
           # 2026 CURRENT / NEXT OPPONENT DATA
           # -------------------------------------------------
-
           schedule_url = (
               "https://raw.githubusercontent.com/"
               "nflverse/nfldata/master/data/games.csv"
@@ -1362,6 +1424,251 @@ jobs:
               for row in player_signal_source_rows
               if row.get("player_id")
           }
+          current_player_defensive_matchup = {}
+
+          for player_id in current_player_ids:
+              player_rows = [
+                  row
+                  for row in player_signal_source_rows
+                  if row.get("player_id") == player_id
+              ]
+
+              if not player_rows:
+                  continue
+
+              latest_player_row = max(
+                  player_rows,
+                  key=lambda row: int(
+                      float(row.get("week") or 0)
+                  )
+              )
+
+              position = latest_player_row.get(
+                  "position"
+              )
+
+              team = latest_player_row.get(
+                  "team"
+              )
+
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              team_matchup = team_next_opponent.get(
+                  normalized_team
+              )
+
+              if not team_matchup:
+                  current_player_defensive_matchup[
+                      player_id
+                  ] = {
+                      "position": position,
+                      "team": team,
+                      "opponent": None,
+                      "fantasy_points_allowed": None,
+                      "score": 50,
+                      "score_source":
+                          "neutral_no_upcoming_matchup"
+                  }
+
+                  continue
+
+              opponent = team_matchup.get(
+                  "opponent"
+              )
+
+              normalized_opponent = (
+                  "LAR"
+                  if opponent == "LA"
+                  else opponent
+              )
+
+              defense_data = (
+                  defense_position_allowed.get(
+                      normalized_opponent,
+                      {}
+                  )
+              )
+
+              fantasy_points_allowed = (
+                  defense_data.get(position)
+              )
+
+              values = (
+                  defense_matchup_position_values.get(
+                      position,
+                      []
+                  )
+              )
+
+              if fantasy_points_allowed is None:
+                  score = 50
+                  score_source = (
+                      "neutral_no_defensive_history"
+                  )
+              else:
+                  score = normalize_matchup_score(
+                      fantasy_points_allowed,
+                      values
+                  )
+                  score_source = (
+                      "defense_ppr_allowed_"
+                      "position_normalized"
+                  )
+
+              current_player_defensive_matchup[
+                  player_id
+              ] = {
+                  "position": position,
+                  "team": team,
+                  "opponent": opponent,
+                  "fantasy_points_allowed":
+                      fantasy_points_allowed,
+                  "score": score,
+                  "score_source": score_source
+              }
+
+          if (
+              len(current_player_defensive_matchup) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Defensive-matchup current-player "
+                  "count does not match current player pool. "
+                  f"Scores: "
+                  f"{len(current_player_defensive_matchup)}, "
+                  f"players: {len(current_player_ids)}."
+              )
+
+          invalid_defensive_matchup_scores = []
+          invalid_defensive_matchup_opponents = []
+
+          for (
+              player_id,
+              matchup
+          ) in current_player_defensive_matchup.items():
+              score = matchup.get("score")
+              team = matchup.get("team")
+              opponent = matchup.get("opponent")
+
+              if (
+                  score is None or
+                  score < 0 or
+                  score > 100
+              ):
+                  invalid_defensive_matchup_scores.append(
+                      player_id
+                  )
+
+              normalized_validation_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              expected_team_matchup = (
+                  team_next_opponent.get(
+                      normalized_validation_team
+                  )
+              )
+
+              expected_opponent = (
+                  expected_team_matchup.get("opponent")
+                  if expected_team_matchup
+                  else None
+              )
+
+              if opponent != expected_opponent:
+                  invalid_defensive_matchup_opponents.append(
+                      (
+                          player_id,
+                          opponent,
+                          expected_opponent
+                      )
+                  )
+
+              if (
+                  matchup.get("score_source") in {
+                      "neutral_no_upcoming_matchup",
+                      "neutral_no_defensive_history"
+                  } and
+                  score != 50
+              ):
+                  invalid_defensive_matchup_scores.append(
+                      player_id
+                  )
+
+          if invalid_defensive_matchup_scores:
+              raise RuntimeError(
+                  "Invalid defensive-matchup scores for: "
+                  f"{invalid_defensive_matchup_scores[:10]}"
+              )
+
+          if invalid_defensive_matchup_opponents:
+              raise RuntimeError(
+                  "Defensive-matchup opponent mismatch for: "
+                  f"{invalid_defensive_matchup_opponents[:10]}"
+              )
+
+          defensive_matchup_neutral_count = sum(
+              1
+              for matchup in (
+                  current_player_defensive_matchup.values()
+              )
+              if matchup.get("score_source") in {
+                  "neutral_no_upcoming_matchup",
+                  "neutral_no_defensive_history"
+              }
+          )
+
+          print(
+              "Created position-normalized defensive-"
+              "matchup scores for "
+              f"{len(current_player_defensive_matchup)} "
+              "current players."
+          )
+
+          print(
+              "Current players with neutral defensive-"
+              "matchup scores: "
+              f"{defensive_matchup_neutral_count}."
+          )
+
+          for position in {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }:
+              position_scores = [
+                  matchup.get("score")
+                  for matchup in (
+                      current_player_defensive_matchup.values()
+                  )
+                  if (
+                      matchup.get("position") == position and
+                      matchup.get("score") is not None
+                  )
+              ]
+
+              if position_scores:
+                  print(
+                      f"Defensive-matchup {position} "
+                      "score range: "
+                      f"{min(position_scores)}-"
+                      f"{max(position_scores)} "
+                      f"across {len(position_scores)} "
+                      "players."
+                  )
+
+          print(
+              "Validated defensive-matchup scores for "
+              f"{len(current_player_defensive_matchup)} "
+              "current players."
+          )
 
           player_signal_counts = {
               "players_checked": 0,
@@ -1613,37 +1920,6 @@ jobs:
                   ]["player_vs_caller"].append(
                       float(average_ppr)
                   )
-
-          def normalize_matchup_score(
-              value,
-              values
-          ):
-              if value is None or not values:
-                  return 50
-
-              minimum = min(values)
-              maximum = max(values)
-
-              if maximum <= minimum:
-                  return 50
-
-              normalized = (
-                  (
-                      float(value) - minimum
-                  ) /
-                  (
-                      maximum - minimum
-                  )
-              )
-
-              score = round(
-                  25 + normalized * 75
-              )
-
-              return max(
-                  0,
-                  min(100, score)
-              )
 
           # ---------------------------------------------
           # SCORE CURRENT PLAY-CALLER MATCHUPS
@@ -3422,6 +3698,8 @@ jobs:
                   current_player_opportunity,
               "red_zone_opportunity":
                   current_player_red_zone,
+              "defensive_matchup":
+                  current_player_defensive_matchup,
               "defense_position_allowed":
                   defense_position_allowed,
               "team_next_opponent":
