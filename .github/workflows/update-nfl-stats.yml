@@ -2172,11 +2172,29 @@ jobs:
                   team_position_available and
                   player_history_available
               ):
+                  player_history_confidence = (
+                      player_signal.get(
+                          "sample_confidence",
+                          0.0
+                      )
+                  )
+
+                  team_foundation_weight = 1.0
+                  player_history_weight = (
+                      player_history_confidence
+                  )
+
                   combined_score = round(
                       (
-                          team_position_score +
-                          player_history_score
-                      ) / 2,
+                          team_position_score *
+                          team_foundation_weight +
+                          player_history_score *
+                          player_history_weight
+                      ) /
+                      (
+                          team_foundation_weight +
+                          player_history_weight
+                      ),
                       2
                   )
 
@@ -2253,6 +2271,100 @@ jobs:
                   "available": available,
                   "score_source": score_source
               }
+          # ---------------------------------------------
+          # VALIDATE SAMPLE-AWARE PLAY-CALLER BLEND
+          # ---------------------------------------------
+
+          play_caller_blend_sample_counts = {
+              1: 0,
+              2: 0,
+              3: 0,
+              4: 0
+          }
+
+          invalid_play_caller_blends = []
+
+          for (
+              player_id,
+              matchup
+          ) in current_player_play_caller_matchup.items():
+              if matchup.get("score_source") != (
+                  "team_position_and_player_history"
+              ):
+                  continue
+
+              sample_size = int(
+                  matchup.get(
+                      "player_history_sample_size",
+                      0
+                  ) or 0
+              )
+
+              player_confidence = float(
+                  matchup.get(
+                      "player_history_confidence",
+                      0.0
+                  ) or 0.0
+              )
+
+              team_score = matchup.get(
+                  "team_position_score"
+              )
+
+              player_score = matchup.get(
+                  "player_history_score"
+              )
+
+              actual_score = matchup.get("score")
+
+              expected_score = round(
+                  (
+                      team_score +
+                      player_score * player_confidence
+                  ) /
+                  (
+                      1.0 + player_confidence
+                  ),
+                  2
+              )
+
+              if actual_score != expected_score:
+                  invalid_play_caller_blends.append(
+                      (
+                          player_id,
+                          actual_score,
+                          expected_score
+                      )
+                  )
+
+              sample_bucket = min(
+                  max(sample_size, 1),
+                  4
+              )
+
+              play_caller_blend_sample_counts[
+                  sample_bucket
+              ] += 1
+
+          if invalid_play_caller_blends:
+              raise RuntimeError(
+                  "Sample-aware play-caller blend "
+                  "validation failed for: "
+                  f"{invalid_play_caller_blends[:10]}"
+              )
+
+          print(
+              "Play-caller both-signal individual-history "
+              "sample sizes: "
+              f"{play_caller_blend_sample_counts}."
+          )
+
+          print(
+              "Validated sample-aware play-caller blend "
+              "for "
+              f"{sum(play_caller_blend_sample_counts.values())} "
+              "both-signal players."
+          )              
           # ---------------------------------------------
           # VALIDATE COMBINED PLAY-CALLER MATCHUP
           # ---------------------------------------------
