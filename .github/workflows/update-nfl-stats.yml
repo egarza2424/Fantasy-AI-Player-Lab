@@ -1190,6 +1190,12 @@ jobs:
               away_team = game["away_team"]
               home_team = game["home_team"]
 
+              if away_team == "LA":
+                  away_team = "LAR"
+
+              if home_team == "LA":
+                  home_team = "LAR"
+
               if away_team not in team_next_opponent:
                   team_next_opponent[away_team] = {
                       "opponent": home_team,
