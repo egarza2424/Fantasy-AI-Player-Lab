@@ -1949,6 +1949,13 @@ jobs:
                       "average_ppr"
                   )
 
+                  sample_size = int(
+                      position_signal.get(
+                          "sample_size",
+                          0
+                      ) or 0
+                  )
+
                   values = position_values.get(
                       position,
                       {}
@@ -1958,23 +1965,51 @@ jobs:
                   )
 
                   if average_ppr is None:
-                      position_signal["score"] = 50
-                      position_signal[
-                          "score_source"
-                      ] = "neutral_no_history"
+                      raw_score = 50
+                      confidence = 0.0
+                      adjusted_score = 50
+                      score_source = "neutral_no_history"
 
                   else:
-                      position_signal["score"] = (
-                          normalize_matchup_score(
-                              average_ppr,
-                              values
-                          )
+                      raw_score = normalize_matchup_score(
+                          average_ppr,
+                          values
                       )
 
-                      position_signal[
-                          "score_source"
-                      ] = "historical"
+                      if sample_size >= 4:
+                          confidence = 1.0
+                      elif sample_size == 3:
+                          confidence = 0.8
+                      elif sample_size == 2:
+                          confidence = 0.6
+                      elif sample_size == 1:
+                          confidence = 0.4
+                      else:
+                          confidence = 0.0
 
+                      adjusted_score = round(
+                          50 + (
+                              raw_score - 50
+                          ) * confidence,
+                          2
+                      )
+
+                      score_source = (
+                          "historical_sample_adjusted"
+                      )
+
+                  position_signal["raw_score"] = (
+                      raw_score
+                  )
+                  position_signal[
+                      "sample_confidence"
+                  ] = confidence
+                  position_signal["score"] = (
+                      adjusted_score
+                  )
+                  position_signal[
+                      "score_source"
+                  ] = score_source
           # ---------------------------------------------
           # SCORE PLAYER VS DEFENSIVE CALLER
           # ---------------------------------------------
@@ -1987,6 +2022,13 @@ jobs:
                   "average_ppr"
               )
 
+              sample_size = int(
+                  signal.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
               values = position_values.get(
                   position,
                   {}
@@ -1996,27 +2038,419 @@ jobs:
               )
 
               if average_ppr is None:
-                  signal["score"] = 50
-                  signal[
-                      "score_source"
-                  ] = "neutral_no_history"
+                  raw_score = 50
+                  confidence = 0.0
+                  adjusted_score = 50
+                  score_source = "neutral_no_history"
 
               else:
-                  signal["score"] = (
-                      normalize_matchup_score(
-                          average_ppr,
-                          values
-                      )
+                  raw_score = normalize_matchup_score(
+                      average_ppr,
+                      values
                   )
 
-                  signal[
-                      "score_source"
-                  ] = "historical"
+                  if sample_size >= 4:
+                      confidence = 1.0
+                  elif sample_size == 3:
+                      confidence = 0.8
+                  elif sample_size == 2:
+                      confidence = 0.6
+                  elif sample_size == 1:
+                      confidence = 0.4
+                  else:
+                      confidence = 0.0
+
+                  adjusted_score = round(
+                      50 + (
+                          raw_score - 50
+                      ) * confidence,
+                      2
+                  )
+
+                  score_source = (
+                      "historical_sample_adjusted"
+                  )
+
+              signal["raw_score"] = raw_score
+              signal[
+                  "sample_confidence"
+              ] = confidence
+              signal["score"] = adjusted_score
+              signal[
+                  "score_source"
+              ] = score_source
 
           print(
               "Normalized play-caller signals "
               "to 0-100 scores."
           )
+          # ---------------------------------------------
+          # COMBINE PLAYER-LEVEL PLAY-CALLER MATCHUP
+          # ---------------------------------------------
+
+          current_player_play_caller_matchup = {}
+
+          for player_id in current_player_ids:
+              player_signal = (
+                  current_player_vs_defensive_caller.get(
+                      player_id
+                  )
+              )
+
+              if not player_signal:
+                  current_player_play_caller_matchup[
+                      player_id
+                  ] = {
+                      "position": None,
+                      "team": None,
+                      "opponent": None,
+                      "team_position_score": None,
+                      "player_history_score": None,
+                      "score": 50,
+                      "available": False,
+                      "score_source":
+                          "neutral_no_play_caller_matchup"
+                  }
+
+                  continue
+
+              position = player_signal.get(
+                  "position"
+              )
+              team = player_signal.get(
+                  "team"
+              )
+
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              team_signal = (
+                  current_play_caller_signals.get(
+                      normalized_team,
+                      {}
+                  )
+              )
+
+              position_signal = (
+                  team_signal.get(
+                      "positions",
+                      {}
+                  ).get(
+                      position,
+                      {}
+                  )
+              )
+
+              team_position_available = (
+                  position_signal.get(
+                      "average_ppr"
+                  ) is not None
+              )
+
+              player_history_available = (
+                  player_signal.get(
+                      "average_ppr"
+                  ) is not None
+              )
+
+              team_position_score = (
+                  position_signal.get("score")
+                  if team_position_available
+                  else None
+              )
+
+              player_history_score = (
+                  player_signal.get("score")
+                  if player_history_available
+                  else None
+              )
+
+              if (
+                  team_position_available and
+                  player_history_available
+              ):
+                  combined_score = round(
+                      (
+                          team_position_score +
+                          player_history_score
+                      ) / 2,
+                      2
+                  )
+
+                  available = True
+                  score_source = (
+                      "team_position_and_player_history"
+                  )
+
+              elif team_position_available:
+                  combined_score = (
+                      team_position_score
+                  )
+                  available = True
+                  score_source = (
+                      "team_position_history_only"
+                  )
+
+              elif player_history_available:
+                  combined_score = (
+                      player_history_score
+                  )
+                  available = True
+                  score_source = (
+                      "player_history_only"
+                  )
+
+              else:
+                  combined_score = 50
+                  available = False
+                  score_source = (
+                      "neutral_no_play_caller_history"
+                  )
+
+              current_player_play_caller_matchup[
+                  player_id
+              ] = {
+                  "position": position,
+                  "team": team,
+                  "opponent":
+                      player_signal.get("opponent"),
+                  "offensive_play_caller":
+                      team_signal.get(
+                          "offensive_play_caller"
+                      ),
+                  "defensive_play_caller":
+                      player_signal.get(
+                          "defensive_play_caller"
+                      ),
+                  "team_position_score":
+                      team_position_score,
+                  "team_position_sample_size":
+                      position_signal.get(
+                          "sample_size",
+                          0
+                      ),
+                  "team_position_confidence":
+                      position_signal.get(
+                          "sample_confidence",
+                          0.0
+                      ),
+                  "player_history_score":
+                      player_history_score,
+                  "player_history_sample_size":
+                      player_signal.get(
+                          "sample_size",
+                          0
+                      ),
+                  "player_history_confidence":
+                      player_signal.get(
+                          "sample_confidence",
+                          0.0
+                      ),
+                  "score": combined_score,
+                  "available": available,
+                  "score_source": score_source
+              }
+          # ---------------------------------------------
+          # VALIDATE COMBINED PLAY-CALLER MATCHUP
+          # ---------------------------------------------
+
+          if (
+              len(current_player_play_caller_matchup) !=
+              len(current_player_ids)
+          ):
+              raise RuntimeError(
+                  "Combined play-caller current-player "
+                  "count does not match current player pool. "
+                  f"Scores: "
+                  f"{len(current_player_play_caller_matchup)}, "
+                  f"players: {len(current_player_ids)}."
+              )
+
+          invalid_play_caller_scores = []
+          invalid_play_caller_neutral_scores = []
+          invalid_play_caller_opponents = []
+
+          play_caller_source_counts = {
+              "both": 0,
+              "team_only": 0,
+              "player_only": 0,
+              "neither": 0
+          }
+
+          for (
+              player_id,
+              matchup
+          ) in current_player_play_caller_matchup.items():
+              score = matchup.get("score")
+              available = matchup.get("available")
+              score_source = matchup.get(
+                  "score_source"
+              )
+
+              if (
+                  score is None or
+                  score < 0 or
+                  score > 100
+              ):
+                  invalid_play_caller_scores.append(
+                      player_id
+                  )
+
+              if (
+                  not available and
+                  score != 50
+              ):
+                  invalid_play_caller_neutral_scores.append(
+                      player_id
+                  )
+
+              if score_source == (
+                  "team_position_and_player_history"
+              ):
+                  play_caller_source_counts["both"] += 1
+
+              elif score_source == (
+                  "team_position_history_only"
+              ):
+                  play_caller_source_counts[
+                      "team_only"
+                  ] += 1
+
+              elif score_source == (
+                  "player_history_only"
+              ):
+                  play_caller_source_counts[
+                      "player_only"
+                  ] += 1
+
+              elif score_source in {
+                  "neutral_no_play_caller_history",
+                  "neutral_no_play_caller_matchup"
+              }:
+                  play_caller_source_counts[
+                      "neither"
+                  ] += 1
+
+              team = matchup.get("team")
+              opponent = matchup.get("opponent")
+
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
+              expected_matchup = (
+                  team_next_opponent.get(
+                      normalized_team
+                  )
+                  if normalized_team
+                  else None
+              )
+
+              expected_opponent = (
+                  expected_matchup.get("opponent")
+                  if expected_matchup
+                  else None
+              )
+
+              if (
+                  opponent != expected_opponent and
+                  score_source !=
+                  "neutral_no_play_caller_matchup"
+              ):
+                  invalid_play_caller_opponents.append(
+                      (
+                          player_id,
+                          opponent,
+                          expected_opponent
+                      )
+                  )
+
+          if invalid_play_caller_scores:
+              raise RuntimeError(
+                  "Invalid combined play-caller scores for: "
+                  f"{invalid_play_caller_scores[:10]}"
+              )
+
+          if invalid_play_caller_neutral_scores:
+              raise RuntimeError(
+                  "Unavailable combined play-caller signals "
+                  "must score 50. Invalid players: "
+                  f"{invalid_play_caller_neutral_scores[:10]}"
+              )
+
+          if invalid_play_caller_opponents:
+              raise RuntimeError(
+                  "Combined play-caller opponent mismatch for: "
+                  f"{invalid_play_caller_opponents[:10]}"
+              )
+
+          source_count_total = sum(
+              play_caller_source_counts.values()
+          )
+
+          if source_count_total != len(
+              current_player_ids
+          ):
+              raise RuntimeError(
+                  "Combined play-caller source counts do not "
+                  "match current player pool. "
+                  f"Sources: {source_count_total}, "
+                  f"players: {len(current_player_ids)}."
+              )
+
+          print(
+              "Created combined play-caller matchup scores "
+              f"for {len(current_player_play_caller_matchup)} "
+              "current players."
+          )
+
+          print(
+              "Combined play-caller signal sources: "
+              f"{play_caller_source_counts}."
+          )
+
+          print(
+              "Combined play-caller unavailable players: "
+              f"{play_caller_source_counts['neither']}."
+          )
+
+          for position in {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }:
+              position_scores = [
+                  matchup.get("score")
+                  for matchup in (
+                      current_player_play_caller_matchup.values()
+                  )
+                  if (
+                      matchup.get("position") == position and
+                      matchup.get("score") is not None
+                  )
+              ]
+
+              if position_scores:
+                  print(
+                      f"Combined play-caller {position} "
+                      "score range: "
+                      f"{min(position_scores)}-"
+                      f"{max(position_scores)} "
+                      f"across {len(position_scores)} "
+                      "players."
+                  )
+
+          print(
+              "Validated combined play-caller scores for "
+              f"{len(current_player_play_caller_matchup)} "
+              "current players."
+          )              
           rolling_model_rows = [
               dict(row)
               for row in historical_rows
@@ -3717,6 +4151,8 @@ jobs:
                   team_next_opponent,
               "current_play_caller_signals":
                   current_play_caller_signals,
+              "play_caller_matchup":
+                  current_player_play_caller_matchup,
               "current_player_vs_defensive_caller":
                   current_player_vs_defensive_caller,
               "play_caller_matchups":
