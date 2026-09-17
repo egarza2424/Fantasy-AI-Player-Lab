@@ -1733,16 +1733,21 @@ jobs:
 
               team = latest_player_row.get("team")
 
+              normalized_team = (
+                  "LAR"
+                  if team == "LA"
+                  else team
+              )
+
               player_signal_counts[
                   "players_checked"
               ] += 1
 
               team_signal = (
                   current_play_caller_signals.get(
-                      team
+                      normalized_team
                   )
               )
-
               if not team_signal:
                   player_signal_counts[
                       "without_upcoming_matchup"
