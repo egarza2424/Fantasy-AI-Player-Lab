@@ -749,16 +749,15 @@ jobs:
               "player-vs-defensive-play-caller "
               "profiles."
           )
-          red_zone_season = season_used
+          red_zone_seasons = {2025}
+
+          if season_used:
+              red_zone_seasons.add(
+                  season_used
+              )
 
           if completed_2026_rows:
-              red_zone_season = 2026
-          pbp_url = (
-              "https://github.com/nflverse/nflverse-data/"
-              f"releases/download/pbp/play_by_play_{red_zone_season}.csv.gz"
-          )
-
-          print(f"Trying play-by-play: {pbp_url}")
+              red_zone_seasons.add(2026)
 
           red_zone_stats = defaultdict(
               lambda: {
@@ -768,67 +767,138 @@ jobs:
               }
           )
 
-          with urllib.request.urlopen(pbp_url) as response:
-              compressed = response.read()
+          for red_zone_season in sorted(
+              red_zone_seasons
+          ):
+              pbp_url = (
+                  "https://github.com/nflverse/nflverse-data/"
+                  "releases/download/pbp/"
+                  f"play_by_play_{red_zone_season}.csv.gz"
+              )
 
-          content = gzip.decompress(compressed).decode("utf-8")
+              print(
+                  f"Trying play-by-play: {pbp_url}"
+              )
 
-          reader = csv.DictReader(io.StringIO(content))
+              with urllib.request.urlopen(
+                  pbp_url
+              ) as response:
+                  compressed = response.read()
 
-          for play in reader:
-              if play.get("season_type") != "REG":
-                  continue
+              content = gzip.decompress(
+                  compressed
+              ).decode("utf-8")
 
-              try:
-                  yardline = float(play.get("yardline_100") or 999)
-              except ValueError:
-                  continue
+              reader = csv.DictReader(
+                  io.StringIO(content)
+              )
 
-              if yardline > 20:
-                  continue
+              for play in reader:
+                  if play.get("season_type") != "REG":
+                      continue
 
-              week = play.get("week")
-              team = play.get("posteam")
+                  try:
+                      yardline = float(
+                          play.get("yardline_100") or 999
+                      )
+                  except (TypeError, ValueError):
+                      continue
 
-              if not week or not team:
-                  continue
+                  if yardline > 20:
+                      continue
 
-              passer_id = play.get("passer_player_id")
-              rusher_id = play.get("rusher_player_id")
-              receiver_id = play.get("receiver_player_id")
+                  week = play.get("week")
+                  team = play.get("posteam")
 
-              pass_attempt = play.get("pass_attempt") == "1"
-              rush_attempt = play.get("rush_attempt") == "1"
+                  if not week or not team:
+                      continue
 
-              if pass_attempt and passer_id:
-                  key = (passer_id, str(week))
+                  try:
+                      play_week = int(
+                          float(week)
+                      )
+                  except (TypeError, ValueError):
+                      continue
 
-                  red_zone_stats[key][
-                      "red_zone_pass_attempts"
-                  ] += 1
+                  if (
+                      target_week is not None and
+                      red_zone_season == 2026 and
+                      play_week >= target_week
+                  ):
+                      continue
 
-              if rush_attempt and rusher_id:
-                  key = (rusher_id, str(week))
+                  passer_id = play.get(
+                      "passer_player_id"
+                  )
+                  rusher_id = play.get(
+                      "rusher_player_id"
+                  )
+                  receiver_id = play.get(
+                      "receiver_player_id"
+                  )
 
-                  red_zone_stats[key][
-                      "red_zone_carries"
-                  ] += 1
+                  pass_attempt = (
+                      play.get("pass_attempt") == "1"
+                  )
 
-              if pass_attempt and receiver_id:
-                  key = (receiver_id, str(week))
+                  rush_attempt = (
+                      play.get("rush_attempt") == "1"
+                  )
 
-                  red_zone_stats[key][
-                      "red_zone_targets"
-                  ] += 1
+                  if pass_attempt and passer_id:
+                      key = (
+                          str(red_zone_season),
+                          passer_id,
+                          str(play_week)
+                      )
+
+                      red_zone_stats[key][
+                          "red_zone_pass_attempts"
+                      ] += 1
+
+                  if rush_attempt and rusher_id:
+                      key = (
+                          str(red_zone_season),
+                          rusher_id,
+                          str(play_week)
+                      )
+
+                      red_zone_stats[key][
+                          "red_zone_carries"
+                      ] += 1
+
+                  if pass_attempt and receiver_id:
+                      key = (
+                          str(red_zone_season),
+                          receiver_id,
+                          str(play_week)
+                      )
+
+                      red_zone_stats[key][
+                          "red_zone_targets"
+                      ] += 1
 
           matched = 0
-          historical_matched = 0
+
+          historical_matched_by_season = defaultdict(
+              int
+          )
 
           for row in rows:
-              player_id = row.get("player_id")
-              week = str(row.get("week"))
+              row_season = str(
+                  row.get("season") or
+                  season_used or
+                  ""
+              )
 
-              key = (player_id, week)
+              player_id = row.get("player_id")
+              week = str(row.get("week") or "")
+
+              key = (
+                  row_season,
+                  player_id,
+                  week
+              )
 
               rz = red_zone_stats.get(key)
 
@@ -837,29 +907,60 @@ jobs:
                   matched += 1
 
           for row in historical_rows:
-              if str(row.get("season") or "") != "2026":
+              row_season = str(
+                  row.get("season") or ""
+              )
+
+              if row_season not in {
+                  "2025",
+                  "2026"
+              }:
                   continue
 
-              player_id = row.get("player_id")
-              week = str(row.get("week"))
+              row["red_zone_pass_attempts"] = 0
+              row["red_zone_carries"] = 0
+              row["red_zone_targets"] = 0
 
-              key = (player_id, week)
+              player_id = row.get("player_id")
+              week = str(row.get("week") or "")
+
+              key = (
+                  row_season,
+                  player_id,
+                  week
+              )
 
               rz = red_zone_stats.get(key)
 
               if rz:
                   row.update(rz)
-                  historical_matched += 1
+
+                  historical_matched_by_season[
+                      row_season
+                  ] += 1
+
           print(
-              f"Matched red-zone stats to "
+              "Matched red-zone stats to "
               f"{matched} current player-week rows."
           )
 
-          print(
-              f"Matched red-zone stats to "
-              f"{historical_matched} completed 2026 "
-              "historical player-week rows."
-          )
+          for red_zone_season in {
+              "2025",
+              "2026"
+          }:
+              season_match_count = (
+                  historical_matched_by_season.get(
+                      red_zone_season,
+                      0
+                  )
+              )
+
+              print(
+                  "Matched red-zone stats to "
+                  f"{season_match_count} historical "
+                  "player-week rows for "
+                  f"{red_zone_season}."
+              )
           # -------------------------------------------------
           # MATCHUP DATA
           # Calculate rolling 2025-2026 fantasy points
