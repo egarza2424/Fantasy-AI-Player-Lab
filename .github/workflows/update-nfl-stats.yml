@@ -3767,14 +3767,39 @@ jobs:
                   )
               )
 
+              sample_size = int(
+                  red_zone.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
               values = red_zone_position_values.get(
                   position,
                   []
               )
 
-              score = normalize_matchup_score(
+              raw_score = normalize_matchup_score(
                   average_red_zone_opportunity,
                   values
+              )
+
+              if sample_size >= 4:
+                  confidence = 1.0
+              elif sample_size == 3:
+                  confidence = 0.8
+              elif sample_size == 2:
+                  confidence = 0.6
+              elif sample_size == 1:
+                  confidence = 0.4
+              else:
+                  confidence = 0.0
+
+              adjusted_score = round(
+                  50 + (
+                      raw_score - 50
+                  ) * confidence,
+                  2
               )
 
               current_player_red_zone[
@@ -3783,17 +3808,16 @@ jobs:
                   "position": position,
                   "average_red_zone_opportunity":
                       average_red_zone_opportunity,
-                  "sample_size": red_zone.get(
-                      "sample_size",
-                      0
-                  ),
+                  "sample_size": sample_size,
+                  "sample_confidence": confidence,
                   "games": red_zone.get(
                       "games",
                       []
                   ),
-                  "score": score,
+                  "raw_score": raw_score,
+                  "score": adjusted_score,
                   "score_source":
-                      "red_zone_position_normalized"
+                      "red_zone_sample_adjusted"
               }
 
           print(
@@ -3904,7 +3928,122 @@ jobs:
               f"{len(current_player_red_zone)} "
               "current players."
           )
+          # ---------------------------------------------
+          # VALIDATE RED-ZONE SAMPLE CONFIDENCE
+          # ---------------------------------------------
 
+          red_zone_confidence_sample_counts = {
+              0: 0,
+              1: 0,
+              2: 0,
+              3: 0,
+              4: 0
+          }
+
+          invalid_red_zone_confidence_scores = []
+
+          for (
+              player_id,
+              red_zone
+          ) in current_player_red_zone.items():
+              sample_size = int(
+                  red_zone.get(
+                      "sample_size",
+                      0
+                  ) or 0
+              )
+
+              raw_score = red_zone.get(
+                  "raw_score"
+              )
+
+              actual_score = red_zone.get(
+                  "score"
+              )
+
+              actual_confidence = float(
+                  red_zone.get(
+                      "sample_confidence",
+                      0.0
+                  ) or 0.0
+              )
+
+              if sample_size >= 4:
+                  expected_confidence = 1.0
+              elif sample_size == 3:
+                  expected_confidence = 0.8
+              elif sample_size == 2:
+                  expected_confidence = 0.6
+              elif sample_size == 1:
+                  expected_confidence = 0.4
+              else:
+                  expected_confidence = 0.0
+
+              sample_bucket = min(
+                  max(sample_size, 0),
+                  4
+              )
+
+              red_zone_confidence_sample_counts[
+                  sample_bucket
+              ] += 1
+
+              if sample_size == 0:
+                  if (
+                      actual_score != 50 or
+                      actual_confidence != 0.0
+                  ):
+                      invalid_red_zone_confidence_scores.append(
+                          (
+                              player_id,
+                              sample_size,
+                              actual_score,
+                              actual_confidence
+                          )
+                      )
+
+                  continue
+
+              expected_score = round(
+                  50 + (
+                      raw_score - 50
+                  ) * expected_confidence,
+                  2
+              )
+
+              if (
+                  actual_confidence !=
+                  expected_confidence or
+                  actual_score != expected_score
+              ):
+                  invalid_red_zone_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          actual_score,
+                          expected_score,
+                          actual_confidence,
+                          expected_confidence
+                      )
+                  )
+
+          if invalid_red_zone_confidence_scores:
+              raise RuntimeError(
+                  "Red-zone sample-confidence "
+                  "validation failed for: "
+                  f"{invalid_red_zone_confidence_scores[:10]}"
+              )
+
+          print(
+              "Red-zone confidence sample sizes: "
+              f"{red_zone_confidence_sample_counts}."
+          )
+
+          print(
+              "Validated red-zone sample confidence for "
+              f"{len(current_player_red_zone)} "
+              "current players."
+          )
           def normalize_player_name(name):
               if not name:
                   return ""
