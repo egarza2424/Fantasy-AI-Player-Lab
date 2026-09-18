@@ -442,20 +442,20 @@ jobs:
               if roster_team == "LA":
                   roster_team = "LAR"
 
-          roster_players_by_id[roster_player_id] = {
-              "player_id": roster_player_id,
-              "player_name": (
-                  roster_player.get("full_name") or
-                  roster_player.get("player_name")
-              ),
-              "position": roster_position,
-              "team": roster_team,
-              "years_exp": roster_player.get("years_exp"),
-              "rookie_year": roster_player.get("rookie_year"),
-              "entry_year": roster_player.get("entry_year"),
-              "draft_club": roster_player.get("draft_club"),
-              "draft_number": roster_player.get("draft_number")
-          }
+              roster_players_by_id[roster_player_id] = {
+                  "player_id": roster_player_id,
+                  "player_name": (
+                      roster_player.get("full_name") or
+                      roster_player.get("player_name")
+                  ),
+                  "position": roster_position,
+                  "team": roster_team,
+                  "years_exp": roster_player.get("years_exp"),
+                  "rookie_year": roster_player.get("rookie_year"),
+                  "entry_year": roster_player.get("entry_year"),
+                  "draft_club": roster_player.get("draft_club"),
+                  "draft_number": roster_player.get("draft_number")
+              }
           print(
               "Loaded "
               f"{len(roster_players_by_id)} "
