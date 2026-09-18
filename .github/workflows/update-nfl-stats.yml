@@ -346,6 +346,77 @@ jobs:
           )
 
           # -------------------------------------------------
+          # 2026 ROSTER DATA
+          # -------------------------------------------------
+
+          roster_url = (
+              "https://github.com/nflverse/nflverse-data/"
+              "releases/download/rosters/roster_2026.csv"
+          )
+
+          print(
+              "Trying 2026 roster data: "
+              f"{roster_url}"
+          )
+
+          with urllib.request.urlopen(
+              roster_url
+          ) as response:
+              roster_content = (
+                  response.read().decode("utf-8")
+              )
+
+          roster_reader = csv.DictReader(
+              io.StringIO(roster_content)
+          )
+
+          roster_players_by_id = {}
+
+          for roster_player in roster_reader:
+              roster_player_id = (
+                  roster_player.get("gsis_id") or
+                  roster_player.get("player_id")
+              )
+
+              if not roster_player_id:
+                  continue
+
+              roster_position = str(
+                  roster_player.get("position") or ""
+              ).strip()
+
+              if roster_position not in {
+                  "QB",
+                  "RB",
+                  "WR",
+                  "TE"
+              }:
+                  continue
+
+              roster_team = str(
+                  roster_player.get("team") or ""
+              ).strip()
+
+              if roster_team == "LA":
+                  roster_team = "LAR"
+
+              roster_players_by_id[roster_player_id] = {
+                  "player_id": roster_player_id,
+                  "player_name": (
+                      roster_player.get("full_name") or
+                      roster_player.get("player_name")
+                  ),
+                  "position": roster_position,
+                  "team": roster_team
+              }
+
+          print(
+              "Loaded "
+              f"{len(roster_players_by_id)} "
+              "2026 rostered QB/RB/WR/TE players."
+          )
+
+          # -------------------------------------------------
           # COMPLETED 2026 PLAYER-WEEK DATA
           # Use completed 2026 weeks as rolling model history.
           # Never include the target prediction week itself.
@@ -1621,6 +1692,8 @@ jobs:
           )
 
           missing_rookie_details = []
+          missing_rookies_on_roster = []
+          missing_rookies_not_on_roster = []
 
           for rookie_id in sorted(
               rookie_ids_missing_from_current_pool
@@ -1630,20 +1703,50 @@ jobs:
                   {}
               )
 
-              missing_rookie_details.append({
+              roster_player = roster_players_by_id.get(
+                  rookie_id
+              )
+
+              rookie_detail = {
                   "player_id": rookie_id,
                   "player_name": rookie.get("player_name"),
                   "position": rookie.get("position"),
                   "draft_round": rookie.get("draft_round"),
                   "draft_pick": rookie.get("draft_pick"),
-                  "draft_team": rookie.get("draft_team")
-              })
+                  "roster_team": (
+                      roster_player.get("team")
+                      if roster_player
+                      else None
+                  )
+              }
+
+              missing_rookie_details.append(
+                  rookie_detail
+              )
+
+              if roster_player:
+                  missing_rookies_on_roster.append(
+                      rookie_detail
+                  )
+              else:
+                  missing_rookies_not_on_roster.append(
+                      rookie_detail
+                  )
 
           print(
-              "Missing rookie player details: "
-              f"{missing_rookie_details}"
+              "Missing rookies found on 2026 roster: "
+              f"{len(missing_rookies_on_roster)}."
           )
 
+          print(
+              "Missing rookies not found on 2026 roster: "
+              f"{len(missing_rookies_not_on_roster)}."
+          )
+
+          print(
+              "Missing rookie roster details: "
+              f"{missing_rookie_details}"
+          )
           current_player_defensive_matchup = {}
           for player_id in current_player_ids:
               player_rows = [
