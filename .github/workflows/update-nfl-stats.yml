@@ -284,6 +284,14 @@ jobs:
           player_metadata_reader = csv.DictReader(
               io.StringIO(player_metadata_content)
           )
+          player_metadata_reader = csv.DictReader(
+              io.StringIO(player_metadata_content)
+          )
+
+          print(
+              "NFL player metadata columns: "
+              f"{player_metadata_reader.fieldnames}"
+          )
 
           player_metadata_by_id = {}
           rookie_player_metadata = {}
@@ -368,6 +376,11 @@ jobs:
 
           roster_reader = csv.DictReader(
               io.StringIO(roster_content)
+          )
+
+          print(
+              "NFL roster columns: "
+              f"{roster_reader.fieldnames}"
           )
 
           roster_players_by_id = {}
