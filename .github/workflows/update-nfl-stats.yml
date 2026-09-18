@@ -1842,10 +1842,23 @@ jobs:
               if row.get("player_id")
           }
 
-          rostered_rookie_ids = (
-              set(rookie_player_metadata.keys()) &
-              set(roster_players_by_id.keys())
-          )
+          rostered_rookie_ids = {
+              player_id
+              for player_id, roster_player in (
+                  roster_players_by_id.items()
+              )
+              if (
+                  str(
+                      roster_player.get("rookie_year") or ""
+                  ).strip() == "2026" and
+                  str(
+                      roster_player.get("entry_year") or ""
+                  ).strip() == "2026" and
+                  str(
+                      roster_player.get("years_exp") or ""
+                  ).strip() in {"0", "0.0"}
+              )
+          }
 
           current_player_context_ids = (
               current_player_ids |
@@ -1895,6 +1908,39 @@ jobs:
               if player_team == "LA":
                   player_team = "LAR"
 
+              player_metadata = player_metadata_by_id.get(
+                  player_id,
+                  {}
+              )
+
+              is_rookie = (
+                  player_id in rostered_rookie_ids
+              )
+
+              rookie_season = (
+                  player_metadata.get("rookie_season")
+              )
+
+              draft_year = (
+                  player_metadata.get("draft_year")
+              )
+
+              draft_round = (
+                  player_metadata.get("draft_round")
+              )
+
+              draft_pick = (
+                  player_metadata.get("draft_pick")
+              )
+
+              draft_team = (
+                  player_metadata.get("draft_team")
+              )
+
+              college = (
+                  player_metadata.get("college_name")
+              )
+
               current_player_context[player_id] = {
                   "player_id": player_id,
                   "player_name": (
@@ -1914,7 +1960,14 @@ jobs:
                   "has_stat_history": bool(player_rows),
                   "roster_source_available": bool(
                       roster_player
-                  )
+                  ),
+                  "is_rookie": is_rookie,
+                  "rookie_season": rookie_season,
+                  "draft_year": draft_year,
+                  "draft_round": draft_round,
+                  "draft_pick": draft_pick,
+                  "draft_team": draft_team,
+                  "college": college
               }
 
           print(
@@ -1991,6 +2044,40 @@ jobs:
                   f"found "
                   f"{len(zero_stat_rookie_context_ids)}."
               )
+
+          invalid_rookie_context = []
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              if not player_context.get("is_rookie"):
+                  invalid_rookie_context.append({
+                      "player_id": player_id,
+                      "reason": "missing_rookie_flag"
+                  })
+                  continue
+
+              if not player_context.get(
+                  "roster_source_available"
+              ):
+                  invalid_rookie_context.append({
+                      "player_id": player_id,
+                      "reason": "missing_roster_source"
+                  })
+
+          if invalid_rookie_context:
+              raise RuntimeError(
+                  "Invalid rookie player context: "
+                  f"{invalid_rookie_context[:10]}"
+              )
+
+          print(
+              "Validated rookie metadata context for "
+              f"{len(rostered_rookie_ids)} players."
+          )
 
           print(
               "Validated roster-aware context for "
