@@ -442,20 +442,60 @@ jobs:
               if roster_team == "LA":
                   roster_team = "LAR"
 
-              roster_players_by_id[roster_player_id] = {
-                  "player_id": roster_player_id,
-                  "player_name": (
-                      roster_player.get("full_name") or
-                      roster_player.get("player_name")
-                  ),
-                  "position": roster_position,
-                  "team": roster_team
-              }
+           roster_players_by_id[roster_player_id] = {
+              "player_id": roster_player_id,
+              "player_name": (
+                  roster_player.get("full_name") or
+                  roster_player.get("player_name")
+              ),
+              "position": roster_position,
+              "team": roster_team,
+              "years_exp": roster_player.get("years_exp"),
+              "rookie_year": roster_player.get("rookie_year"),
+              "entry_year": roster_player.get("entry_year"),
+              "draft_club": roster_player.get("draft_club"),
+              "draft_number": roster_player.get("draft_number")
+          }
 
           print(
               "Loaded "
               f"{len(roster_players_by_id)} "
               "2026 rostered QB/RB/WR/TE players."
+          )
+
+          roster_rookie_ids = {
+              player_id
+              for player_id, roster_player in (
+                  roster_players_by_id.items()
+              )
+              if str(
+                  roster_player.get("rookie_year") or ""
+              ).strip() == "2026"
+          }
+
+          rookie_metadata_roster_ids = (
+              set(rookie_player_metadata.keys()) &
+              set(roster_players_by_id.keys())
+          )
+
+          print(
+              "2026 roster rookies by rookie_year: "
+              f"{len(roster_rookie_ids)}."
+          )
+
+          print(
+              "2026 metadata rookies found on roster: "
+              f"{len(rookie_metadata_roster_ids)}."
+          )
+
+          print(
+              "Roster rookie IDs missing from player metadata: "
+              f"{len(roster_rookie_ids - set(rookie_player_metadata.keys()))}."
+          )
+
+          print(
+              "Player-metadata rookie IDs missing from roster rookie_year: "
+              f"{len(rookie_metadata_roster_ids - roster_rookie_ids)}."
           )
 
           # -------------------------------------------------
