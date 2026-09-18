@@ -5628,24 +5628,27 @@ jobs:
               )
 
               recent_available = (
-                  recent_signal.get("score") is not None and
-                  not str(
-                      recent_signal.get("score_source")
-                  ).startswith("neutral_")
+                  recent_signal.get(
+                      "available",
+                      False
+                  ) and
+                  recent_signal.get("score") is not None
               )
 
               opportunity_available = (
-                  opportunity_signal.get("score") is not None and
-                  not str(
-                      opportunity_signal.get("score_source")
-                  ).startswith("neutral_")
+                  opportunity_signal.get(
+                      "available",
+                      False
+                  ) and
+                  opportunity_signal.get("score") is not None
               )
 
               red_zone_available = (
-                  red_zone_signal.get("score") is not None and
-                  not str(
-                      red_zone_signal.get("score_source")
-                  ).startswith("neutral_")
+                  red_zone_signal.get(
+                      "available",
+                      False
+                  ) and
+                  red_zone_signal.get("score") is not None
               )
 
               defensive_available = (
@@ -5872,7 +5875,58 @@ jobs:
                       False
                   )
               }
+              signal_availability_checks = {
+                  "recent_performance": (
+                      current_recent_performance.get(
+                          player_id,
+                          {}
+                      ).get(
+                          "available",
+                          False
+                      )
+                  ),
+                  "opportunity_volume": (
+                      current_player_opportunity.get(
+                          player_id,
+                          {}
+                      ).get(
+                          "available",
+                          False
+                      )
+                  ),
+                  "red_zone_opportunity": (
+                      current_player_red_zone.get(
+                          player_id,
+                          {}
+                      ).get(
+                          "available",
+                          False
+                      )
+                  )
+              }
 
+              for (
+                  component_name,
+                  expected_available
+              ) in signal_availability_checks.items():
+                  actual_available = components.get(
+                      component_name,
+                      {}
+                  ).get(
+                      "available",
+                      False
+                  )
+
+                  if actual_available != expected_available:
+                      invalid_fantasy_ai_scores.append(
+                          (
+                              player_id,
+                              "component_availability_mismatch",
+                              component_name,
+                              expected_available,
+                              actual_available
+                          )
+                      )
               effective_weight_sum = sum(
                   float(
                       component.get(
