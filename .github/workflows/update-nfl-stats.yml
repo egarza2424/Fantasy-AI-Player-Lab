@@ -3538,15 +3538,28 @@ jobs:
               )
 
               if not performance:
+                  player_context = (
+                      current_player_context.get(
+                          player_id,
+                          {}
+                      )
+                  )
+
                   current_recent_performance[
                       player_id
                   ] = {
+                      "position": player_context.get(
+                          "position"
+                      ),
                       "average_ppr": None,
                       "sample_size": 0,
+                      "sample_confidence": 0.0,
                       "games": [],
+                      "raw_score": None,
                       "score": 50,
+                      "available": False,
                       "score_source":
-                          "neutral_no_history"
+                          "unavailable_no_history"
                   }
 
                   continue
@@ -3613,6 +3626,7 @@ jobs:
                   "games": games,
                   "raw_score": raw_score,
                   "score": adjusted_score,
+                  "available": True,
                   "score_source":
                       "recent_ppr_sample_adjusted"
               }
@@ -3624,17 +3638,19 @@ jobs:
               "current players."
           )
 
-          recent_performance_neutral_count = sum(
+          recent_performance_unavailable_count = sum(
               1
               for performance in
               current_recent_performance.values()
-              if performance.get("score_source") ==
-              "neutral_no_history"
+              if not performance.get(
+                  "available",
+                  False
+              )
           )
           print(
-              "Current players with neutral recent-"
+              "Current players with unavailable recent-"
               "performance scores: "
-              f"{recent_performance_neutral_count}."
+              f"{recent_performance_unavailable_count}."
           )
 
           for position in {
@@ -3904,16 +3920,28 @@ jobs:
               )
 
               if not opportunity:
+                  player_context = (
+                      current_player_context.get(
+                          player_id,
+                          {}
+                      )
+                  )
+
                   current_player_opportunity[
                       player_id
                   ] = {
-                      "position": None,
+                      "position": player_context.get(
+                          "position"
+                      ),
                       "average_opportunity": None,
                       "sample_size": 0,
+                      "sample_confidence": 0.0,
                       "games": [],
+                      "raw_score": None,
                       "score": 50,
+                      "available": False,
                       "score_source":
-                          "neutral_no_history"
+                          "unavailable_no_history"
                   }
 
                   continue
@@ -3975,6 +4003,7 @@ jobs:
                   ),
                   "raw_score": raw_score,
                   "score": adjusted_score,
+                  "available": True,
                   "score_source":
                       "opportunity_sample_adjusted"
               }
@@ -3985,18 +4014,20 @@ jobs:
               "current players."
           )
 
-          opportunity_neutral_count = sum(
+          opportunity_unavailable_count = sum(
               1
               for opportunity in
               current_player_opportunity.values()
-              if opportunity.get("score_source") ==
-              "neutral_no_history"
+              if not opportunity.get(
+                  "available",
+                  False
+              )
           )
 
           print(
-              "Current players with neutral opportunity/"
+              "Current players with unavailable opportunity/"
               "volume scores: "
-              f"{opportunity_neutral_count}."
+              f"{opportunity_unavailable_count}."
           )
 
           for position in {
@@ -4126,6 +4157,11 @@ jobs:
                   ) or 0.0
               )
 
+              actual_available = opportunity.get(
+                  "available",
+                  False
+              )
+
               if sample_size >= 4:
                   expected_confidence = 1.0
               elif sample_size == 3:
@@ -4149,16 +4185,29 @@ jobs:
               if sample_size == 0:
                   if (
                       actual_score != 50 or
-                      actual_confidence != 0.0
+                      actual_confidence != 0.0 or
+                      actual_available
                   ):
                       invalid_opportunity_confidence_scores.append(
                           (
                               player_id,
                               sample_size,
                               actual_score,
-                              actual_confidence
+                              actual_confidence,
+                              actual_available
                           )
                       )
+
+                  continue
+
+              if not actual_available:
+                  invalid_opportunity_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          "history_marked_unavailable"
+                      )
+                  )
 
                   continue
 
@@ -4453,21 +4502,32 @@ jobs:
               )
 
               if not red_zone:
+                  player_context = (
+                      current_player_context.get(
+                          player_id,
+                          {}
+                      )
+                  )
+
                   current_player_red_zone[
                       player_id
                   ] = {
-                      "position": None,
+                      "position": player_context.get(
+                          "position"
+                      ),
                       "average_red_zone_opportunity":
                           None,
                       "sample_size": 0,
+                      "sample_confidence": 0.0,
                       "games": [],
+                      "raw_score": None,
                       "score": 50,
+                      "available": False,
                       "score_source":
-                          "neutral_no_history"
+                          "unavailable_no_history"
                   }
 
                   continue
-
               position = red_zone.get(
                   "position"
               )
@@ -4525,8 +4585,9 @@ jobs:
                       "games",
                       []
                   ),
-                  "raw_score": raw_score,
+                   "raw_score": raw_score,
                   "score": adjusted_score,
+                  "available": True,
                   "score_source":
                       "red_zone_sample_adjusted"
               }
@@ -4538,18 +4599,20 @@ jobs:
               "current players."
           )
 
-          red_zone_neutral_count = sum(
+          red_zone_unavailable_count = sum(
               1
               for red_zone in
               current_player_red_zone.values()
-              if red_zone.get("score_source") ==
-              "neutral_no_history"
+              if not red_zone.get(
+                  "available",
+                  False
+              )
           )
 
           print(
-              "Current players with neutral red-zone "
+              "Current players with unavailable red-zone "
               "opportunity scores: "
-              f"{red_zone_neutral_count}."
+              f"{red_zone_unavailable_count}."
           )
 
           for position in {
@@ -4679,6 +4742,11 @@ jobs:
                   ) or 0.0
               )
 
+              actual_available = red_zone.get(
+                  "available",
+                  False
+              )
+
               if sample_size >= 4:
                   expected_confidence = 1.0
               elif sample_size == 3:
@@ -4702,16 +4770,29 @@ jobs:
               if sample_size == 0:
                   if (
                       actual_score != 50 or
-                      actual_confidence != 0.0
+                      actual_confidence != 0.0 or
+                      actual_available
                   ):
                       invalid_red_zone_confidence_scores.append(
                           (
                               player_id,
                               sample_size,
                               actual_score,
-                              actual_confidence
+                              actual_confidence,
+                              actual_available
                           )
                       )
+
+                  continue
+
+              if not actual_available:
+                  invalid_red_zone_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          "history_marked_unavailable"
+                      )
+                  )
 
                   continue
 
@@ -5284,6 +5365,11 @@ jobs:
                   ) or 0.0
               )
 
+              actual_available = performance.get(
+                  "available",
+                  False
+              )
+
               if sample_size >= 4:
                   expected_confidence = 1.0
               elif sample_size == 3:
@@ -5307,16 +5393,29 @@ jobs:
               if sample_size == 0:
                   if (
                       actual_score != 50 or
-                      actual_confidence != 0.0
+                      actual_confidence != 0.0 or
+                      actual_available
                   ):
                       invalid_recent_confidence_scores.append(
                           (
                               player_id,
                               sample_size,
                               actual_score,
-                              actual_confidence
+                              actual_confidence,
+                              actual_available
                           )
                       )
+
+                  continue
+
+              if not actual_available:
+                  invalid_recent_confidence_scores.append(
+                      (
+                          player_id,
+                          sample_size,
+                          "history_marked_unavailable"
+                      )
+                  )
 
                   continue
 
