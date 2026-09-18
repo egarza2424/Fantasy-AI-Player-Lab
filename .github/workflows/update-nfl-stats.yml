@@ -1664,12 +1664,172 @@ jobs:
                       "or future weeks: "
                       f"{leaked_player_signal_weeks}"
                   )
-                  
+
           current_player_ids = {
               row.get("player_id")
               for row in player_signal_source_rows
               if row.get("player_id")
           }
+
+          rostered_rookie_ids = (
+              set(rookie_player_metadata.keys()) &
+              set(roster_players_by_id.keys())
+          )
+
+          current_player_context_ids = (
+              current_player_ids |
+              rostered_rookie_ids
+          )
+
+          print(
+              "Current stats-based model pool: "
+              f"{len(current_player_ids)} players."
+          )
+
+          print(
+              "Roster-aware player context pool: "
+              f"{len(current_player_context_ids)} players."
+          )
+
+          current_player_context = {}
+
+          for player_id in current_player_context_ids:
+              player_rows = [
+                  row
+                  for row in player_signal_source_rows
+                  if row.get("player_id") == player_id
+              ]
+
+              latest_player_row = (
+                  max(
+                      player_rows,
+                      key=lambda row: int(
+                          float(row.get("week") or 0)
+                      )
+                  )
+                  if player_rows
+                  else {}
+              )
+
+              roster_player = roster_players_by_id.get(
+                  player_id,
+                  {}
+              )
+
+              player_team = (
+                  latest_player_row.get("team") or
+                  roster_player.get("team")
+              )
+
+              if player_team == "LA":
+                  player_team = "LAR"
+
+              current_player_context[player_id] = {
+                  "player_id": player_id,
+                  "player_name": (
+                      latest_player_row.get(
+                          "player_display_name"
+                      ) or
+                      latest_player_row.get(
+                          "player_name"
+                      ) or
+                      roster_player.get("player_name")
+                  ),
+                  "position": (
+                      latest_player_row.get("position") or
+                      roster_player.get("position")
+                  ),
+                  "team": player_team,
+                  "has_stat_history": bool(player_rows),
+                  "roster_source_available": bool(
+                      roster_player
+                  )
+              }
+
+          print(
+              "Created roster-aware current-player "
+              "context for "
+              f"{len(current_player_context)} players."
+          )
+
+          invalid_current_player_context = []
+          zero_stat_rookie_context_ids = []
+
+          for player_id in current_player_context_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              player_name = player_context.get(
+                  "player_name"
+              )
+
+              position = player_context.get(
+                  "position"
+              )
+
+              team = player_context.get(
+                  "team"
+              )
+
+              if (
+                  not player_name or
+                  position not in {
+                      "QB",
+                      "RB",
+                      "WR",
+                      "TE"
+                  } or
+                  not team
+              ):
+                  invalid_current_player_context.append({
+                      "player_id": player_id,
+                      "player_name": player_name,
+                      "position": position,
+                      "team": team
+                  })
+
+              if (
+                  player_id in rostered_rookie_ids and
+                  player_id not in current_player_ids
+              ):
+                  zero_stat_rookie_context_ids.append(
+                      player_id
+                  )
+
+          if invalid_current_player_context:
+              raise RuntimeError(
+                  "Invalid roster-aware player context: "
+                  f"{invalid_current_player_context[:10]}"
+              )
+
+          expected_zero_stat_rookie_ids = (
+              rostered_rookie_ids -
+              current_player_ids
+          )
+
+          if (
+              set(zero_stat_rookie_context_ids) !=
+              expected_zero_stat_rookie_ids
+          ):
+              raise RuntimeError(
+                  "Zero-stat rookie context mismatch. "
+                  f"Expected "
+                  f"{len(expected_zero_stat_rookie_ids)}, "
+                  f"found "
+                  f"{len(zero_stat_rookie_context_ids)}."
+              )
+
+          print(
+              "Validated roster-aware context for "
+              f"{len(current_player_context)} players."
+          )
+
+          print(
+              "Validated zero-stat rookie contexts: "
+              f"{len(zero_stat_rookie_context_ids)}."
+          )
 
           rookie_ids_in_current_pool = (
               set(rookie_player_metadata.keys()) &
