@@ -497,6 +497,96 @@ jobs:
               f"{len(rookie_metadata_roster_ids - roster_rookie_ids)}."
           )
 
+          roster_only_rookie_ids = (
+              roster_rookie_ids -
+              set(rookie_player_metadata.keys())
+          )
+
+          metadata_only_rookie_ids = (
+              rookie_metadata_roster_ids -
+              roster_rookie_ids
+          )
+
+          roster_only_rookie_details = [
+              {
+                  "player_id": player_id,
+                  "player_name": (
+                      roster_players_by_id[player_id].get(
+                          "player_name"
+                      )
+                  ),
+                  "position": (
+                      roster_players_by_id[player_id].get(
+                          "position"
+                      )
+                  ),
+                  "team": (
+                      roster_players_by_id[player_id].get(
+                          "team"
+                      )
+                  ),
+                  "rookie_year": (
+                      roster_players_by_id[player_id].get(
+                          "rookie_year"
+                      )
+                  ),
+                  "entry_year": (
+                      roster_players_by_id[player_id].get(
+                          "entry_year"
+                      )
+                  ),
+                  "years_exp": (
+                      roster_players_by_id[player_id].get(
+                          "years_exp"
+                      )
+                  ),
+                  "draft_club": (
+                      roster_players_by_id[player_id].get(
+                          "draft_club"
+                      )
+                  ),
+                  "draft_number": (
+                      roster_players_by_id[player_id].get(
+                          "draft_number"
+                      )
+                  )
+              }
+              for player_id in sorted(
+                  roster_only_rookie_ids
+              )
+          ]
+
+          metadata_only_rookie_details = [
+              {
+                  "player_id": player_id,
+                  "player_metadata": (
+                      rookie_player_metadata.get(
+                          player_id,
+                          {}
+                      )
+                  ),
+                  "roster_metadata": (
+                      roster_players_by_id.get(
+                          player_id,
+                          {}
+                      )
+                  )
+              }
+              for player_id in sorted(
+                  metadata_only_rookie_ids
+              )
+          ]
+
+          print(
+              "Roster-only rookie mismatch details: "
+              f"{roster_only_rookie_details}"
+          )
+
+          print(
+              "Metadata-only rookie mismatch details: "
+              f"{metadata_only_rookie_details}"
+          )
+
           # -------------------------------------------------
           # COMPLETED 2026 PLAYER-WEEK DATA
           # Use completed 2026 weeks as rolling model history.
