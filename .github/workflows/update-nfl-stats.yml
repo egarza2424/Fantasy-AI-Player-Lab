@@ -1930,11 +1930,33 @@ jobs:
               )
 
               draft_pick = (
-                  player_metadata.get("draft_pick")
+                  player_metadata.get("draft_pick") or
+                  roster_player.get("draft_number")
               )
 
               draft_team = (
-                  player_metadata.get("draft_team")
+                  player_metadata.get("draft_team") or
+                  roster_player.get("draft_club")
+              )
+
+              draft_pick_source = (
+                  "player_metadata"
+                  if player_metadata.get("draft_pick")
+                  else (
+                      "roster"
+                      if roster_player.get("draft_number")
+                      else "unavailable"
+                  )
+              )
+
+              draft_team_source = (
+                  "player_metadata"
+                  if player_metadata.get("draft_team")
+                  else (
+                      "roster"
+                      if roster_player.get("draft_club")
+                      else "unavailable"
+                  )
               )
 
               college = (
@@ -1961,12 +1983,14 @@ jobs:
                   "roster_source_available": bool(
                       roster_player
                   ),
-                  "is_rookie": is_rookie,
+                   "is_rookie": is_rookie,
                   "rookie_season": rookie_season,
                   "draft_year": draft_year,
                   "draft_round": draft_round,
                   "draft_pick": draft_pick,
+                  "draft_pick_source": draft_pick_source,
                   "draft_team": draft_team,
+                  "draft_team_source": draft_team_source,
                   "college": college
               }
 
@@ -2077,6 +2101,103 @@ jobs:
           print(
               "Validated rookie metadata context for "
               f"{len(rostered_rookie_ids)} players."
+          )
+
+          invalid_rookie_draft_context = []
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              draft_pick = player_context.get(
+                  "draft_pick"
+              )
+
+              draft_pick_source = player_context.get(
+                  "draft_pick_source"
+              )
+
+              draft_team = player_context.get(
+                  "draft_team"
+              )
+
+              draft_team_source = player_context.get(
+                  "draft_team_source"
+              )
+
+              if draft_pick_source not in {
+                  "player_metadata",
+                  "roster",
+                  "unavailable"
+              }:
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason": "invalid_draft_pick_source",
+                      "source": draft_pick_source
+                  })
+
+              if draft_team_source not in {
+                  "player_metadata",
+                  "roster",
+                  "unavailable"
+              }:
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason": "invalid_draft_team_source",
+                      "source": draft_team_source
+                  })
+
+              if (
+                  draft_pick_source == "unavailable" and
+                  draft_pick
+              ):
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason":
+                          "draft_pick_present_without_source"
+                  })
+
+              if (
+                  draft_pick_source != "unavailable" and
+                  not draft_pick
+              ):
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason":
+                          "draft_pick_missing_with_source"
+                  })
+
+              if (
+                  draft_team_source == "unavailable" and
+                  draft_team
+              ):
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason":
+                          "draft_team_present_without_source"
+                  })
+
+              if (
+                  draft_team_source != "unavailable" and
+                  not draft_team
+              ):
+                  invalid_rookie_draft_context.append({
+                      "player_id": player_id,
+                      "reason":
+                          "draft_team_missing_with_source"
+                  })
+
+          if invalid_rookie_draft_context:
+              raise RuntimeError(
+                  "Invalid rookie draft context: "
+                  f"{invalid_rookie_draft_context[:10]}"
+              )
+
+          print(
+              "Validated canonical draft context for "
+              f"{len(rostered_rookie_ids)} rookies."
           )
 
           print(
