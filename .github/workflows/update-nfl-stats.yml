@@ -1909,27 +1909,16 @@ jobs:
           )
           current_player_defensive_matchup = {}
           for player_id in current_player_ids:
-              player_rows = [
-                  row
-                  for row in player_signal_source_rows
-                  if row.get("player_id") == player_id
-              ]
-
-              if not player_rows:
-                  continue
-
-              latest_player_row = max(
-                  player_rows,
-                  key=lambda row: int(
-                      float(row.get("week") or 0)
-                  )
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
               )
 
-              position = latest_player_row.get(
+              position = player_context.get(
                   "position"
               )
 
-              team = latest_player_row.get(
+              team = player_context.get(
                   "team"
               )
 
@@ -1938,7 +1927,6 @@ jobs:
                   if team == "LA"
                   else team
               )
-
               team_matchup = team_next_opponent.get(
                   normalized_team
               )
