@@ -307,13 +307,16 @@ jobs:
 
               player_metadata_by_id[player_id] = player
 
+              rookie_season = str(
+                  player.get("rookie_season") or ""
+              ).strip()
+
               draft_year = str(
                   player.get("draft_year") or ""
               ).strip()
 
-              if draft_year != "2026":
+              if rookie_season != "2026":
                   continue
-
               position = str(
                   player.get("position") or ""
               ).strip()
@@ -336,12 +339,12 @@ jobs:
                   ),
                   "position": position,
                   "college": player.get("college_name"),
+                  "rookie_season": rookie_season,
                   "draft_year": draft_year,
                   "draft_round": player.get("draft_round"),
                   "draft_pick": player.get("draft_pick"),
-                  "draft_team": player.get("draft_club")
+                  "draft_team": player.get("draft_team")
               }
-
           print(
               "Loaded metadata for "
               f"{len(player_metadata_by_id)} NFL players."
@@ -351,6 +354,32 @@ jobs:
               "Identified "
               f"{len(rookie_player_metadata)} "
               "2026 QB/RB/WR/TE rookies."
+          )
+
+          drafted_rookie_ids = {
+              player_id
+              for player_id, rookie in (
+                  rookie_player_metadata.items()
+              )
+              if str(
+                  rookie.get("draft_year") or ""
+              ).strip() == "2026"
+          }
+
+          undrafted_rookie_ids = (
+              set(rookie_player_metadata.keys()) -
+              drafted_rookie_ids
+          )
+
+          print(
+              "2026 rookie metadata breakdown: "
+              f"{len(drafted_rookie_ids)} drafted, "
+              f"{len(undrafted_rookie_ids)} undrafted."
+          )
+
+          print(
+              "2026 undrafted rookie details: "
+              f"{[rookie_player_metadata[player_id] for player_id in sorted(undrafted_rookie_ids)]}"
           )
 
           # -------------------------------------------------
