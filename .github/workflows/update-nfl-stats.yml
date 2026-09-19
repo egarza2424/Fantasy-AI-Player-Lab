@@ -2638,6 +2638,11 @@ jobs:
                       "established_nfl_evidence"
                   )
 
+              rookie_nfl_evidence_confidence = min(
+                  nfl_games_with_stats / 4.0,
+                  1.0
+              )
+
               player_context[
                   "rookie_nfl_games_with_stats"
               ] = nfl_games_with_stats
@@ -2646,10 +2651,16 @@ jobs:
                   "rookie_evidence_level"
               ] = rookie_evidence_level
 
+              player_context[
+                  "rookie_nfl_evidence_confidence"
+              ] = round(
+                  rookie_nfl_evidence_confidence,
+                  2
+              )
+
               rookie_evidence_counts[
                   rookie_evidence_level
               ] += 1
-
           print(
               "Rookie evidence levels: "
               f"{rookie_evidence_counts}."
@@ -2670,6 +2681,35 @@ jobs:
               rookie_evidence_level = player_context.get(
                   "rookie_evidence_level"
               )
+
+              rookie_nfl_evidence_confidence = (
+                  player_context.get(
+                      "rookie_nfl_evidence_confidence"
+                  )
+              )
+
+              expected_nfl_evidence_confidence = round(
+                  min(
+                      nfl_games_with_stats / 4.0,
+                      1.0
+                  ),
+                  2
+              )
+
+              if (
+                  rookie_nfl_evidence_confidence !=
+                  expected_nfl_evidence_confidence
+              ):
+                  invalid_rookie_evidence_context.append({
+                      "player_id": player_id,
+                      "reason":
+                          "rookie_evidence_confidence_mismatch",
+                      "games": nfl_games_with_stats,
+                      "expected":
+                          expected_nfl_evidence_confidence,
+                      "actual":
+                          rookie_nfl_evidence_confidence
+                  })
 
               if (
                   not isinstance(nfl_games_with_stats, int) or
