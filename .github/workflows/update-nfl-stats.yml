@@ -2993,6 +2993,68 @@ jobs:
               f"{len(rostered_rookie_ids)} rookies."
           )
 
+          rookie_prior_eligible_draft_year_counts = defaultdict(
+              int
+          )
+          invalid_rookie_prior_draft_years = []
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              rookie_prior_eligible = player_context.get(
+                  "rookie_prior_eligible"
+              )
+
+              if not rookie_prior_eligible:
+                  continue
+
+              draft_year = str(
+                  player_context.get("draft_year") or ""
+              ).strip()
+
+              draft_pick_source = player_context.get(
+                  "draft_pick_source"
+              )
+
+              rookie_prior_eligible_draft_year_counts[
+                  draft_year or "unavailable"
+              ] += 1
+
+              if (
+                  target_week is not None and
+                  (
+                      draft_pick_source != "player_metadata" or
+                      draft_year != "2026"
+                  )
+              ):
+                  invalid_rookie_prior_draft_years.append({
+                      "player_id": player_id,
+                      "draft_year": draft_year,
+                      "draft_pick_source": draft_pick_source
+                  })
+
+          print(
+              "Rookie prior eligible draft years: "
+              f"{dict(rookie_prior_eligible_draft_year_counts)}."
+          )
+
+          if invalid_rookie_prior_draft_years:
+              raise RuntimeError(
+                  "Historical rookie prior draft-year safety "
+                  "validation failed: "
+                  f"{invalid_rookie_prior_draft_years[:10]}"
+              )
+
+          print(
+              "Validated historical rookie prior draft-year "
+              f"safety for "
+              f"{sum(rookie_prior_eligible_draft_year_counts.values())} "
+              "eligible rookies."
+          )
+
           print(
               "Validated roster-aware context for "
               f"{len(current_player_context)} players."
