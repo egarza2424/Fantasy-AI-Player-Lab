@@ -1243,7 +1243,286 @@ jobs:
               f"calibration for "
               f"{len(rookie_draft_capital_prior_lookup)} "
               "position/bucket combinations."
-          )          
+          )
+          # -------------------------------------------------
+          # ROOKIE PRIOR LEAVE-ONE-SEASON-OUT BACKTEST
+          # Each rookie season is scored using priors built
+          # only from the other historical rookie seasons.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_prior_backtest_results = []
+
+          for held_out_season in sorted(
+              historical_rookie_seasons
+          ):
+              training_rookies = [
+                  rookie
+                  for rookie in (
+                      historical_rookie_player_outcomes.values()
+                  )
+                  if (
+                      rookie["rookie_season"] !=
+                      held_out_season
+                  )
+              ]
+
+              test_rookies = [
+                  rookie
+                  for rookie in (
+                      historical_rookie_player_outcomes.values()
+                  )
+                  if (
+                      rookie["rookie_season"] ==
+                      held_out_season
+                  )
+              ]
+
+              training_bucket_outcomes = defaultdict(
+                  list
+              )
+
+              for rookie in training_rookies:
+                  training_bucket_outcomes[
+                      (
+                          rookie["position"],
+                          rookie[
+                              "draft_capital_bucket"
+                          ]
+                      )
+                  ].append(
+                      rookie
+                  )
+
+              training_position_bucket_averages = (
+                  defaultdict(dict)
+              )
+
+              for (
+                  position,
+                  draft_capital_bucket
+              ), rookie_outcomes in (
+                  training_bucket_outcomes.items()
+              ):
+                  average_weekly_ppr = sum(
+                      rookie[
+                          "average_weekly_ppr_weeks_1_4"
+                      ]
+                      for rookie in rookie_outcomes
+                  ) / len(rookie_outcomes)
+
+                  training_position_bucket_averages[
+                      position
+                  ][
+                      draft_capital_bucket
+                  ] = average_weekly_ppr
+
+              held_out_prior_lookup = {}
+
+              for position, bucket_averages in (
+                  training_position_bucket_averages.items()
+              ):
+                  if not bucket_averages:
+                      continue
+
+                  position_minimum_ppr = min(
+                      bucket_averages.values()
+                  )
+
+                  position_maximum_ppr = max(
+                      bucket_averages.values()
+                  )
+
+                  for (
+                      draft_capital_bucket,
+                      average_ppr
+                  ) in bucket_averages.items():
+                      rookie_outcomes = (
+                          training_bucket_outcomes[
+                              (
+                                  position,
+                                  draft_capital_bucket
+                              )
+                          ]
+                      )
+
+                      sample_size = len(
+                          rookie_outcomes
+                      )
+
+                      if (
+                          position_maximum_ppr >
+                          position_minimum_ppr
+                      ):
+                          raw_prior_score = (
+                              25.0 +
+                              (
+                                  (
+                                      average_ppr -
+                                      position_minimum_ppr
+                                  ) /
+                                  (
+                                      position_maximum_ppr -
+                                      position_minimum_ppr
+                                  )
+                              ) * 75.0
+                          )
+                      else:
+                          raw_prior_score = 50.0
+
+                      sample_reliability = (
+                          sample_size /
+                          (
+                              sample_size +
+                              rookie_prior_shrinkage_constant
+                          )
+                      )
+
+                      shrunk_prior_score = (
+                          50.0 +
+                          (
+                              raw_prior_score - 50.0
+                          ) * sample_reliability
+                      )
+
+                      held_out_prior_lookup[
+                          (
+                              position,
+                              draft_capital_bucket
+                          )
+                      ] = {
+                          "score": round(
+                              shrunk_prior_score,
+                              2
+                          ),
+                          "sample_size": sample_size
+                      }
+
+              for rookie in test_rookies:
+                  lookup_key = (
+                      rookie["position"],
+                      rookie[
+                          "draft_capital_bucket"
+                      ]
+                  )
+
+                  prior_data = (
+                      held_out_prior_lookup.get(
+                          lookup_key
+                      )
+                  )
+
+                  if not prior_data:
+                      continue
+
+                  rookie_prior_backtest_results.append({
+                      "player_id":
+                          rookie["player_id"],
+                      "player_name":
+                          rookie["player_name"],
+                      "position":
+                          rookie["position"],
+                      "rookie_season":
+                          rookie["rookie_season"],
+                      "draft_capital_bucket":
+                          rookie[
+                              "draft_capital_bucket"
+                          ],
+                      "predicted_prior_score":
+                          prior_data["score"],
+                      "training_sample_size":
+                          prior_data["sample_size"],
+                      "actual_weekly_ppr_weeks_1_4":
+                          rookie[
+                              "average_weekly_ppr_weeks_1_4"
+                          ]
+                  })
+
+          invalid_rookie_prior_backtests = []
+
+          for result in rookie_prior_backtest_results:
+              if result["rookie_season"] not in (
+                  historical_rookie_seasons
+              ):
+                  invalid_rookie_prior_backtests.append({
+                      "player_id":
+                          result["player_id"],
+                      "reason":
+                          "invalid_held_out_season"
+                  })
+
+              if not (
+                  25.0 <=
+                  result["predicted_prior_score"] <=
+                  100.0
+              ):
+                  invalid_rookie_prior_backtests.append({
+                      "player_id":
+                          result["player_id"],
+                      "reason":
+                          "prior_score_out_of_range"
+                  })
+
+              if result["training_sample_size"] <= 0:
+                  invalid_rookie_prior_backtests.append({
+                      "player_id":
+                          result["player_id"],
+                      "reason":
+                          "invalid_training_sample_size"
+                  })
+
+          if invalid_rookie_prior_backtests:
+              raise RuntimeError(
+                  "Rookie prior backtest validation "
+                  "failed: "
+                  f"{invalid_rookie_prior_backtests[:10]}"
+              )
+
+          rookie_prior_backtest_by_position = defaultdict(
+              list
+          )
+
+          for result in rookie_prior_backtest_results:
+              rookie_prior_backtest_by_position[
+                  result["position"]
+              ].append(
+                  result
+              )
+
+          print(
+              "Rookie prior leave-one-season-out "
+              "backtest:"
+          )
+
+          for position, position_results in sorted(
+              rookie_prior_backtest_by_position.items()
+          ):
+              average_prior = sum(
+                  result["predicted_prior_score"]
+                  for result in position_results
+              ) / len(position_results)
+
+              average_actual_ppr = sum(
+                  result[
+                      "actual_weekly_ppr_weeks_1_4"
+                  ]
+                  for result in position_results
+              ) / len(position_results)
+
+              print(
+                  f"{position}: "
+                  f"n={len(position_results)}, "
+                  f"avg_prior={average_prior:.2f}, "
+                  f"avg_actual_ppr="
+                  f"{average_actual_ppr:.2f}."
+              )
+
+          print(
+              "Validated rookie prior "
+              "leave-one-season-out backtest for "
+              f"{len(rookie_prior_backtest_results)} "
+              "historical rookies."
+          )
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
