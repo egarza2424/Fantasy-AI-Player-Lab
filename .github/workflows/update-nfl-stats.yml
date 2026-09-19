@@ -2279,12 +2279,118 @@ jobs:
               f"{len(rostered_rookie_ids)} rookies."
           )
 
+          rookie_draft_source_mismatches = []
+
+          for player_id in rostered_rookie_ids:
+              player_metadata = player_metadata_by_id.get(
+                  player_id,
+                  {}
+              )
+
+              roster_player = roster_players_by_id.get(
+                  player_id,
+                  {}
+              )
+
+              metadata_draft_pick = str(
+                  player_metadata.get("draft_pick") or ""
+              ).strip()
+
+              roster_draft_pick = str(
+                  roster_player.get("draft_number") or ""
+              ).strip()
+
+              metadata_draft_team = str(
+                  player_metadata.get("draft_team") or ""
+              ).strip().upper()
+
+              roster_draft_team = str(
+                  roster_player.get("draft_club") or ""
+              ).strip().upper()
+
+              if metadata_draft_team == "LA":
+                  metadata_draft_team = "LAR"
+
+              if roster_draft_team == "LA":
+                  roster_draft_team = "LAR"
+
+              normalized_metadata_draft_pick = None
+              normalized_roster_draft_pick = None
+
+              if metadata_draft_pick:
+                  try:
+                      normalized_metadata_draft_pick = str(
+                          int(float(metadata_draft_pick))
+                      )
+                  except (TypeError, ValueError):
+                      normalized_metadata_draft_pick = (
+                          metadata_draft_pick
+                      )
+
+              if roster_draft_pick:
+                  try:
+                      normalized_roster_draft_pick = str(
+                          int(float(roster_draft_pick))
+                      )
+                  except (TypeError, ValueError):
+                      normalized_roster_draft_pick = (
+                          roster_draft_pick
+                      )
+
+              draft_pick_mismatch = (
+                  normalized_metadata_draft_pick is not None and
+                  normalized_roster_draft_pick is not None and
+                  normalized_metadata_draft_pick !=
+                  normalized_roster_draft_pick
+              )
+
+              draft_team_mismatch = (
+                  bool(metadata_draft_team) and
+                  bool(roster_draft_team) and
+                  metadata_draft_team != roster_draft_team
+              )
+
+              if (
+                  draft_pick_mismatch or
+                  draft_team_mismatch
+              ):
+                  rookie_draft_source_mismatches.append({
+                      "player_id": player_id,
+                      "player_name": (
+                          current_player_context.get(
+                              player_id,
+                              {}
+                          ).get("player_name")
+                      ),
+                      "metadata_draft_pick":
+                          normalized_metadata_draft_pick,
+                      "roster_draft_pick":
+                          normalized_roster_draft_pick,
+                      "metadata_draft_team":
+                          metadata_draft_team or None,
+                      "roster_draft_team":
+                          roster_draft_team or None,
+                      "draft_pick_mismatch":
+                          draft_pick_mismatch,
+                      "draft_team_mismatch":
+                          draft_team_mismatch
+                  })
+
+          print(
+              "Rookie dual-source draft mismatches: "
+              f"{len(rookie_draft_source_mismatches)}."
+          )
+
+          print(
+              "Rookie dual-source draft mismatch details: "
+              f"{rookie_draft_source_mismatches[:20]}"
+          )
+
           rookie_evidence_counts = {
               "established_nfl_evidence": 0,
               "early_rookie_evidence": 0,
               "zero_history_rookie": 0
           }
-
           for player_id in rostered_rookie_ids:
               player_context = current_player_context.get(
                   player_id,
