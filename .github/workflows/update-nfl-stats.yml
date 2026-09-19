@@ -2199,6 +2199,86 @@ jobs:
               "Validated canonical draft context for "
               f"{len(rostered_rookie_ids)} rookies."
           )
+
+          rookie_draft_source_counts = {
+              "draft_pick": {
+                  "player_metadata": 0,
+                  "roster": 0,
+                  "unavailable": 0
+              },
+              "draft_team": {
+                  "player_metadata": 0,
+                  "roster": 0,
+                  "unavailable": 0
+              }
+          }
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              draft_pick_source = player_context.get(
+                  "draft_pick_source",
+                  "unavailable"
+              )
+
+              draft_team_source = player_context.get(
+                  "draft_team_source",
+                  "unavailable"
+              )
+
+              rookie_draft_source_counts[
+                  "draft_pick"
+              ][draft_pick_source] += 1
+
+              rookie_draft_source_counts[
+                  "draft_team"
+              ][draft_team_source] += 1
+
+          print(
+              "Rookie draft source counts: "
+              f"{rookie_draft_source_counts}."
+          )
+
+          valid_draft_sources = {
+              "player_metadata",
+              "roster",
+              "unavailable"
+          }
+
+          for draft_field in {
+              "draft_pick",
+              "draft_team"
+          }:
+              source_counts = rookie_draft_source_counts.get(
+                  draft_field,
+                  {}
+              )
+
+              if set(source_counts.keys()) != valid_draft_sources:
+                  raise RuntimeError(
+                      "Invalid rookie draft source categories "
+                      f"for {draft_field}: "
+                      f"{sorted(source_counts.keys())}"
+                  )
+
+              if sum(source_counts.values()) != len(
+                  rostered_rookie_ids
+              ):
+                  raise RuntimeError(
+                      "Rookie draft source count mismatch for "
+                      f"{draft_field}. Expected "
+                      f"{len(rostered_rookie_ids)}, found "
+                      f"{sum(source_counts.values())}."
+                  )
+
+          print(
+              "Validated rookie draft source counts for "
+              f"{len(rostered_rookie_ids)} rookies."
+          )
+
           rookie_evidence_counts = {
               "established_nfl_evidence": 0,
               "early_rookie_evidence": 0,
