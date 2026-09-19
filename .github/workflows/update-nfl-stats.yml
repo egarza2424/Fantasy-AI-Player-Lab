@@ -1516,13 +1516,217 @@ jobs:
                   f"avg_actual_ppr="
                   f"{average_actual_ppr:.2f}."
               )
-
           print(
               "Validated rookie prior "
               "leave-one-season-out backtest for "
               f"{len(rookie_prior_backtest_results)} "
               "historical rookies."
           )
+          # -------------------------------------------------
+          # ROOKIE PRIOR RANKING HELPER
+          # Used for predictive-discrimination testing.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          def calculate_average_ranks(values):
+              sorted_indexes = sorted(
+                  range(len(values)),
+                  key=lambda index: values[index]
+              )
+
+              ranks = [0.0] * len(values)
+
+              current_index = 0
+
+              while current_index < len(
+                  sorted_indexes
+              ):
+                  tie_end_index = current_index
+
+                  current_value = values[
+                      sorted_indexes[current_index]
+                  ]
+
+                  while (
+                      tie_end_index + 1 <
+                      len(sorted_indexes) and
+                      values[
+                          sorted_indexes[
+                              tie_end_index + 1
+                          ]
+                      ] == current_value
+                  ):
+                      tie_end_index += 1
+
+                  average_rank = (
+                      current_index +
+                      tie_end_index +
+                      2
+                  ) / 2.0
+
+                  for rank_index in range(
+                      current_index,
+                      tie_end_index + 1
+                  ):
+                      ranks[
+                          sorted_indexes[rank_index]
+                      ] = average_rank
+
+                  current_index = tie_end_index + 1
+
+              return ranks
+          def calculate_spearman_rank_correlation(
+              paired_values
+          ):
+              if len(paired_values) < 2:
+                  return None
+
+              predicted_values = [
+                  pair[0]
+                  for pair in paired_values
+              ]
+
+              actual_values = [
+                  pair[1]
+                  for pair in paired_values
+              ]
+
+              predicted_ranks = calculate_average_ranks(
+                  predicted_values
+              )
+
+              actual_ranks = calculate_average_ranks(
+                  actual_values
+              )
+
+              predicted_average = (
+                  sum(predicted_ranks) /
+                  len(predicted_ranks)
+              )
+
+              actual_average = (
+                  sum(actual_ranks) /
+                  len(actual_ranks)
+              )
+
+              numerator = sum(
+                  (
+                      predicted_rank -
+                      predicted_average
+                  ) * (
+                      actual_rank -
+                      actual_average
+                  )
+                  for predicted_rank, actual_rank in zip(
+                      predicted_ranks,
+                      actual_ranks
+                  )
+              )
+
+              predicted_variance = sum(
+                  (
+                      predicted_rank -
+                      predicted_average
+                  ) ** 2
+                  for predicted_rank in predicted_ranks
+              )
+
+              actual_variance = sum(
+                  (
+                      actual_rank -
+                      actual_average
+                  ) ** 2
+                  for actual_rank in actual_ranks
+              )
+
+              denominator = (
+                  predicted_variance *
+                  actual_variance
+              ) ** 0.5
+
+              if denominator == 0:
+                  return None
+
+              return numerator / denominator 
+          rookie_prior_overall_pairs = [
+              (
+                  result["predicted_prior_score"],
+                  result[
+                      "actual_weekly_ppr_weeks_1_4"
+                  ]
+              )
+              for result in rookie_prior_backtest_results
+          ]
+
+          rookie_prior_overall_spearman = (
+              calculate_spearman_rank_correlation(
+                  rookie_prior_overall_pairs
+              )
+          )
+
+          rookie_prior_spearman_by_position = {}
+
+          for position, position_results in sorted(
+              rookie_prior_backtest_by_position.items()
+          ):
+              position_pairs = [
+                  (
+                      result["predicted_prior_score"],
+                      result[
+                          "actual_weekly_ppr_weeks_1_4"
+                      ]
+                  )
+                  for result in position_results
+              ]
+
+              position_spearman = (
+                  calculate_spearman_rank_correlation(
+                      position_pairs
+                  )
+              )
+
+              rookie_prior_spearman_by_position[
+                  position
+              ] = position_spearman
+
+          print(
+              "Rookie prior predictive-discrimination "
+              "Spearman correlations:"
+          )
+
+          if rookie_prior_overall_spearman is None:
+              print(
+                  "Overall: unavailable."
+              )
+          else:
+              print(
+                  "Overall: "
+                  f"n={len(rookie_prior_overall_pairs)}, "
+                  f"rho="
+                  f"{rookie_prior_overall_spearman:.3f}."
+              )
+
+          for position, position_results in sorted(
+              rookie_prior_backtest_by_position.items()
+          ):
+              position_spearman = (
+                  rookie_prior_spearman_by_position[
+                      position
+                  ]
+              )
+
+              if position_spearman is None:
+                  print(
+                      f"{position}: "
+                      f"n={len(position_results)}, "
+                      "rho=unavailable."
+                  )
+              else:
+                  print(
+                      f"{position}: "
+                      f"n={len(position_results)}, "
+                      f"rho={position_spearman:.3f}."
+                  )              
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
@@ -1534,6 +1738,7 @@ jobs:
               season = str(row.get("season") or "")
               offense_team = row.get("team")
               defense_team = row.get("opponent_team")
+
               if offense_team == "LA":
                   offense_team = "LAR"
 
@@ -1586,7 +1791,6 @@ jobs:
                   coaching_records_matched += 1
               else:
                   coaching_records_missing += 1
-
           print(
               "Attached coaching data to "
               f"{coaching_records_matched} "
