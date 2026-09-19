@@ -1027,7 +1027,223 @@ jobs:
               f"{len(historical_rookie_player_outcomes)} "
               "drafted rookies."
           )
-          
+          # -------------------------------------------------
+          # ROOKIE DRAFT-CAPITAL PRIOR CALIBRATION
+          # Position-normalized and sample-size shrunk.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_draft_capital_prior_lookup = {}
+
+          rookie_prior_shrinkage_constant = 10.0
+
+          for position in sorted(
+              valid_rookie_positions
+          ):
+              position_bucket_averages = {}
+
+              for (
+                  bucket_position,
+                  draft_capital_bucket
+              ), rookie_outcomes in (
+                  historical_rookie_bucket_outcomes.items()
+              ):
+                  if bucket_position != position:
+                      continue
+
+                  average_weekly_ppr = sum(
+                      rookie[
+                          "average_weekly_ppr_weeks_1_4"
+                      ]
+                      for rookie in rookie_outcomes
+                  ) / len(rookie_outcomes)
+
+                  position_bucket_averages[
+                      draft_capital_bucket
+                  ] = average_weekly_ppr
+
+              if not position_bucket_averages:
+                  continue
+
+              position_minimum_ppr = min(
+                  position_bucket_averages.values()
+              )
+
+              position_maximum_ppr = max(
+                  position_bucket_averages.values()
+              )
+
+              for draft_capital_bucket, average_ppr in (
+                  position_bucket_averages.items()
+              ):
+                  rookie_outcomes = (
+                      historical_rookie_bucket_outcomes[
+                          (
+                              position,
+                              draft_capital_bucket
+                          )
+                      ]
+                  )
+
+                  sample_size = len(
+                      rookie_outcomes
+                  )
+
+                  if (
+                      position_maximum_ppr >
+                      position_minimum_ppr
+                  ):
+                      raw_prior_score = (
+                          25.0 +
+                          (
+                              (
+                                  average_ppr -
+                                  position_minimum_ppr
+                              ) /
+                              (
+                                  position_maximum_ppr -
+                                  position_minimum_ppr
+                              )
+                          ) * 75.0
+                      )
+                  else:
+                      raw_prior_score = 50.0
+
+                  sample_reliability = (
+                      sample_size /
+                      (
+                          sample_size +
+                          rookie_prior_shrinkage_constant
+                      )
+                  )
+
+                  shrunk_prior_score = (
+                      50.0 +
+                      (
+                          raw_prior_score - 50.0
+                      ) * sample_reliability
+                  )
+
+                  lookup_key = (
+                      position,
+                      draft_capital_bucket
+                  )
+
+                  rookie_draft_capital_prior_lookup[
+                      lookup_key
+                  ] = {
+                      "position": position,
+                      "draft_capital_bucket":
+                          draft_capital_bucket,
+                      "sample_size": sample_size,
+                      "average_weekly_ppr_weeks_1_4":
+                          round(
+                              average_ppr,
+                              2
+                          ),
+                      "raw_prior_score": round(
+                          raw_prior_score,
+                          2
+                      ),
+                      "sample_reliability": round(
+                          sample_reliability,
+                          3
+                      ),
+                      "shrunk_prior_score": round(
+                          shrunk_prior_score,
+                          2
+                      )
+                  }
+
+          invalid_rookie_prior_calibrations = []
+
+          for (
+              position,
+              draft_capital_bucket
+          ), prior_data in (
+              rookie_draft_capital_prior_lookup.items()
+          ):
+              raw_prior_score = prior_data[
+                  "raw_prior_score"
+              ]
+
+              sample_reliability = prior_data[
+                  "sample_reliability"
+              ]
+
+              shrunk_prior_score = prior_data[
+                  "shrunk_prior_score"
+              ]
+
+              if not (
+                  25.0 <= raw_prior_score <= 100.0
+              ):
+                  invalid_rookie_prior_calibrations.append({
+                      "position": position,
+                      "bucket": draft_capital_bucket,
+                      "reason": "raw_score_out_of_range",
+                      "value": raw_prior_score
+                  })
+
+              if not (
+                  0.0 <= sample_reliability <= 1.0
+              ):
+                  invalid_rookie_prior_calibrations.append({
+                      "position": position,
+                      "bucket": draft_capital_bucket,
+                      "reason":
+                          "sample_reliability_out_of_range",
+                      "value": sample_reliability
+                  })
+
+              if not (
+                  25.0 <= shrunk_prior_score <= 100.0
+              ):
+                  invalid_rookie_prior_calibrations.append({
+                      "position": position,
+                      "bucket": draft_capital_bucket,
+                      "reason":
+                          "shrunk_score_out_of_range",
+                      "value": shrunk_prior_score
+                  })
+
+          if invalid_rookie_prior_calibrations:
+              raise RuntimeError(
+                  "Invalid rookie prior calibration: "
+                  f"{invalid_rookie_prior_calibrations[:10]}"
+              )
+
+          print(
+              "Historical rookie draft-capital prior "
+              "calibration:"
+          )
+
+          for (
+              position,
+              draft_capital_bucket
+          ), prior_data in sorted(
+              rookie_draft_capital_prior_lookup.items()
+          ):
+              print(
+                  f"{position} "
+                  f"{draft_capital_bucket}: "
+                  f"n={prior_data['sample_size']}, "
+                  f"avg_ppr="
+                  f"{prior_data['average_weekly_ppr_weeks_1_4']:.2f}, "
+                  f"raw_prior="
+                  f"{prior_data['raw_prior_score']:.2f}, "
+                  f"reliability="
+                  f"{prior_data['sample_reliability']:.3f}, "
+                  f"shrunk_prior="
+                  f"{prior_data['shrunk_prior_score']:.2f}."
+              )
+
+          print(
+              "Validated rookie draft-capital prior "
+              f"calibration for "
+              f"{len(rookie_draft_capital_prior_lookup)} "
+              "position/bucket combinations."
+          )          
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
