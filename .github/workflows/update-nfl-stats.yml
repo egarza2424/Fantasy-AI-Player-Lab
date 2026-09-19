@@ -732,63 +732,59 @@ jobs:
 
           # -------------------------------------------------
           # HISTORICAL ROOKIE DRAFT-CAPITAL OUTCOMES
-          # Diagnostic only. Does not affect model scoring.
+          # Weeks 1-4 diagnostic only.
+          # Seed from player metadata so drafted rookies with
+          # zero recorded stats remain in the sample.
+          # Does not affect model scoring.
           # -------------------------------------------------
 
           historical_rookie_player_outcomes = {}
 
-          for row in historical_rows:
-              player_id = row.get("player_id")
+          historical_rookie_seasons = {
+              "2022",
+              "2023",
+              "2024",
+              "2025"
+          }
 
-              if not player_id:
-                  continue
+          valid_rookie_positions = {
+              "QB",
+              "RB",
+              "WR",
+              "TE"
+          }
 
-              player_metadata = player_metadata_by_id.get(
-                  player_id,
-                  {}
-              )
-
+          for player_id, player_metadata in (
+              player_metadata_by_id.items()
+          ):
               rookie_season = str(
                   player_metadata.get("rookie_season") or ""
               ).strip()
 
-              row_season = str(
-                  row.get("season") or ""
+              draft_year = str(
+                  player_metadata.get("draft_year") or ""
               ).strip()
 
               position = str(
-                  row.get("position") or ""
-              ).strip()
-
-              if rookie_season not in {
-                  "2022",
-                  "2023",
-                  "2024",
-                  "2025"
-              }:
-                  continue
-
-              if row_season != rookie_season:
-                  continue
-
-              if position not in {
-                  "QB",
-                  "RB",
-                  "WR",
-                  "TE"
-              }:
-                  continue
-
-              draft_year = str(
-                  player_metadata.get("draft_year") or ""
+                  player_metadata.get("position") or ""
               ).strip()
 
               draft_pick = player_metadata.get(
                   "draft_pick"
               )
 
+              if rookie_season not in (
+                  historical_rookie_seasons
+              ):
+                  continue
+
+              if draft_year != rookie_season:
+                  continue
+
+              if position not in valid_rookie_positions:
+                  continue
+
               if (
-                  draft_year != rookie_season or
                   draft_pick is None or
                   str(draft_pick).strip() == ""
               ):
@@ -799,6 +795,9 @@ jobs:
                       float(draft_pick)
                   )
               except (TypeError, ValueError):
+                  continue
+
+              if normalized_draft_pick <= 0:
                   continue
 
               if normalized_draft_pick <= 32:
@@ -812,33 +811,66 @@ jobs:
               else:
                   draft_capital_bucket = "late_round"
 
-              if player_id not in (
-                  historical_rookie_player_outcomes
-              ):
-                  historical_rookie_player_outcomes[
+              historical_rookie_player_outcomes[
+                  player_id
+              ] = {
+                  "player_id": player_id,
+                  "player_name": (
+                      player_metadata.get("display_name") or
+                      player_metadata.get("full_name") or
+                      player_metadata.get("football_name") or
+                      player_metadata.get("short_name")
+                  ),
+                  "position": position,
+                  "rookie_season": rookie_season,
+                  "draft_pick": normalized_draft_pick,
+                  "draft_capital_bucket":
+                      draft_capital_bucket,
+                  "weeks_with_stats": set(),
+                  "first_four_weeks_ppr": 0.0
+              }
+
+          for row in historical_rows:
+              player_id = row.get("player_id")
+
+              rookie_outcome = (
+                  historical_rookie_player_outcomes.get(
                       player_id
-                  ] = {
-                      "player_id": player_id,
-                      "player_name": (
-                          row.get("player_display_name") or
-                          row.get("player_name")
-                      ),
-                      "position": position,
-                      "rookie_season": rookie_season,
-                      "draft_pick": normalized_draft_pick,
-                      "draft_capital_bucket":
-                          draft_capital_bucket,
-                      "games": 0,
-                      "total_ppr": 0.0
-                  }
+                  )
+              )
 
-              historical_rookie_player_outcomes[
-                  player_id
-              ]["games"] += 1
+              if not rookie_outcome:
+                  continue
 
-              historical_rookie_player_outcomes[
-                  player_id
-              ]["total_ppr"] += calculate_ppr_points(
+              row_season = str(
+                  row.get("season") or ""
+              ).strip()
+
+              if (
+                  row_season !=
+                  rookie_outcome["rookie_season"]
+              ):
+                  continue
+
+              try:
+                  row_week = int(
+                      float(row.get("week") or 0)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if row_week not in {1, 2, 3, 4}:
+                  continue
+
+              rookie_outcome[
+                  "weeks_with_stats"
+              ].add(
+                  row_week
+              )
+
+              rookie_outcome[
+                  "first_four_weeks_ppr"
+              ] += calculate_ppr_points(
                   row
               )
 
@@ -846,21 +878,61 @@ jobs:
               list
           )
 
+          invalid_historical_rookie_outcomes = []
+
           for rookie_outcome in (
               historical_rookie_player_outcomes.values()
           ):
-              games = rookie_outcome["games"]
-              total_ppr = rookie_outcome["total_ppr"]
+              weeks_with_stats = rookie_outcome[
+                  "weeks_with_stats"
+              ]
 
-              rookie_outcome["total_ppr"] = round(
-                  total_ppr,
+              if not weeks_with_stats.issubset(
+                  {1, 2, 3, 4}
+              ):
+                  invalid_historical_rookie_outcomes.append({
+                      "player_id":
+                          rookie_outcome["player_id"],
+                      "reason":
+                          "invalid_early_season_week",
+                      "weeks":
+                          sorted(weeks_with_stats)
+                  })
+
+              if (
+                  rookie_outcome["rookie_season"] ==
+                  "2026"
+              ):
+                  invalid_historical_rookie_outcomes.append({
+                      "player_id":
+                          rookie_outcome["player_id"],
+                      "reason":
+                          "2026_leakage"
+                  })
+
+              rookie_outcome[
+                  "first_four_weeks_ppr"
+              ] = round(
+                  rookie_outcome[
+                      "first_four_weeks_ppr"
+                  ],
                   2
               )
 
-              rookie_outcome["ppr_per_game"] = round(
-                  total_ppr / games,
+              rookie_outcome[
+                  "average_weekly_ppr_weeks_1_4"
+              ] = round(
+                  rookie_outcome[
+                      "first_four_weeks_ppr"
+                  ] / 4.0,
                   2
-              ) if games else 0.0
+              )
+
+              rookie_outcome[
+                  "weeks_with_stats"
+              ] = sorted(
+                  weeks_with_stats
+              )
 
               bucket_key = (
                   rookie_outcome["position"],
@@ -875,15 +947,43 @@ jobs:
                   rookie_outcome
               )
 
+          if invalid_historical_rookie_outcomes:
+              raise RuntimeError(
+                  "Historical rookie Weeks 1-4 "
+                  "validation failed: "
+                  f"{invalid_historical_rookie_outcomes[:10]}"
+              )
+
+          historical_rookie_bucket_player_count = sum(
+              len(rookie_outcomes)
+              for rookie_outcomes in (
+                  historical_rookie_bucket_outcomes.values()
+              )
+          )
+
+          if (
+              historical_rookie_bucket_player_count !=
+              len(historical_rookie_player_outcomes)
+          ):
+              raise RuntimeError(
+                  "Historical rookie bucket count "
+                  "validation failed: "
+                  f"{historical_rookie_bucket_player_count} "
+                  "bucketed vs "
+                  f"{len(historical_rookie_player_outcomes)} "
+                  "seeded."
+              )
+
           print(
-              "Historical drafted rookie outcomes: "
+              "Historical drafted rookie Weeks 1-4 "
+              "sample: "
               f"{len(historical_rookie_player_outcomes)} "
               "players."
           )
 
           print(
-              "Historical rookie draft-capital "
-              "samples by position:"
+              "Historical rookie Weeks 1-4 "
+              "draft-capital samples by position:"
           )
 
           for (
@@ -892,13 +992,21 @@ jobs:
           ), rookie_outcomes in sorted(
               historical_rookie_bucket_outcomes.items()
           ):
-              average_total_ppr = sum(
-                  rookie["total_ppr"]
+              players_with_stats = sum(
+                  1
+                  for rookie in rookie_outcomes
+                  if rookie["weeks_with_stats"]
+              )
+
+              average_weekly_ppr = sum(
+                  rookie[
+                      "average_weekly_ppr_weeks_1_4"
+                  ]
                   for rookie in rookie_outcomes
               ) / len(rookie_outcomes)
 
-              average_ppr_per_game = sum(
-                  rookie["ppr_per_game"]
+              average_total_ppr = sum(
+                  rookie["first_four_weeks_ppr"]
                   for rookie in rookie_outcomes
               ) / len(rookie_outcomes)
 
@@ -906,11 +1014,19 @@ jobs:
                   f"{position} "
                   f"{draft_capital_bucket}: "
                   f"n={len(rookie_outcomes)}, "
-                  f"avg_total_ppr="
-                  f"{average_total_ppr:.2f}, "
-                  f"avg_ppr_per_game="
-                  f"{average_ppr_per_game:.2f}."
+                  f"with_stats={players_with_stats}, "
+                  f"avg_weeks_1_4_ppr="
+                  f"{average_weekly_ppr:.2f}, "
+                  f"avg_total_weeks_1_4_ppr="
+                  f"{average_total_ppr:.2f}."
               )
+
+          print(
+              "Validated historical rookie Weeks 1-4 "
+              f"sample for "
+              f"{len(historical_rookie_player_outcomes)} "
+              "drafted rookies."
+          )
           
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
