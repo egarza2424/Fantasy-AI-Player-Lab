@@ -1726,11 +1726,134 @@ jobs:
                       f"{position}: "
                       f"n={len(position_results)}, "
                       f"rho={position_spearman:.3f}."
-                  )              
+                  )
+
+          # -------------------------------------------------
+          # ROOKIE PRIOR WEEK-BY-WEEK EVIDENCE TEST
+          # Build leakage-safe rookie game histories.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          historical_rookie_weekly_rows = defaultdict(
+              list
+          )
+
+          for row in historical_rows:
+              player_id = row.get("player_id")
+
+              rookie_outcome = (
+                  historical_rookie_player_outcomes.get(
+                      player_id
+                  )
+              )
+
+              if not rookie_outcome:
+                  continue
+
+              row_season = str(
+                  row.get("season") or ""
+              ).strip()
+
+              if (
+                  row_season !=
+                  rookie_outcome["rookie_season"]
+              ):
+                  continue
+
+              try:
+                  row_week = int(
+                      float(row.get("week") or 0)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if row_week <= 0:
+                  continue
+
+              historical_rookie_weekly_rows[
+                  player_id
+              ].append({
+                  "week": row_week,
+                  "ppr_points": round(
+                      calculate_ppr_points(row),
+                      2
+                  )
+              })
+
+          for player_id, weekly_rows in (
+              historical_rookie_weekly_rows.items()
+          ):
+              weekly_rows.sort(
+                  key=lambda game: game["week"]
+              )
+
+          print(
+              "Built week-by-week NFL evidence histories "
+              f"for {len(historical_rookie_weekly_rows)} "
+              "historical drafted rookies."
+          )
+
+          invalid_rookie_weekly_histories = []
+
+          for player_id, weekly_rows in (
+              historical_rookie_weekly_rows.items()
+          ):
+              rookie_outcome = (
+                  historical_rookie_player_outcomes.get(
+                      player_id
+                  )
+              )
+
+              if not rookie_outcome:
+                  invalid_rookie_weekly_histories.append({
+                      "player_id": player_id,
+                      "reason": "missing_rookie_outcome"
+                  })
+                  continue
+
+              previous_week = 0
+
+              for game in weekly_rows:
+                  game_week = game.get("week")
+
+                  if (
+                      not isinstance(game_week, int) or
+                      game_week <= 0
+                  ):
+                      invalid_rookie_weekly_histories.append({
+                          "player_id": player_id,
+                          "reason": "invalid_week",
+                          "week": game_week
+                      })
+                      continue
+
+                  if game_week <= previous_week:
+                      invalid_rookie_weekly_histories.append({
+                          "player_id": player_id,
+                          "reason":
+                              "non_increasing_or_duplicate_week",
+                          "week": game_week,
+                          "previous_week": previous_week
+                      })
+
+                  previous_week = game_week
+
+          if invalid_rookie_weekly_histories:
+              raise RuntimeError(
+                  "Historical rookie weekly-history "
+                  "validation failed: "
+                  f"{invalid_rookie_weekly_histories[:10]}"
+              )
+
+          print(
+              "Validated week-by-week NFL evidence histories "
+              f"for {len(historical_rookie_weekly_rows)} "
+              "historical drafted rookies with stats."
+          )
+
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
-
           coaching_records_matched = 0
           coaching_records_missing = 0
 
