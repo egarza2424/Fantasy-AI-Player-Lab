@@ -2675,10 +2675,31 @@ jobs:
                   )
               )
 
+              rookie_draft_capital_bucket = None
+
+              if rookie_prior_eligible:
+                  normalized_draft_pick = int(
+                      float(draft_pick)
+                  )
+
+                  if normalized_draft_pick <= 32:
+                      rookie_draft_capital_bucket = "round_1"
+                  elif normalized_draft_pick <= 64:
+                      rookie_draft_capital_bucket = "round_2"
+                  elif normalized_draft_pick <= 100:
+                      rookie_draft_capital_bucket = "round_3"
+                  elif normalized_draft_pick <= 150:
+                      rookie_draft_capital_bucket = "round_4_5"
+                  else:
+                      rookie_draft_capital_bucket = "late_round"
+
               player_context[
                   "rookie_prior_eligible"
               ] = rookie_prior_eligible
 
+              player_context[
+                  "rookie_draft_capital_bucket"
+              ] = rookie_draft_capital_bucket
               rookie_evidence_counts[
                   rookie_evidence_level
               ] += 1
@@ -2870,6 +2891,105 @@ jobs:
 
           print(
               "Validated rookie prior eligibility for "
+              f"{len(rostered_rookie_ids)} rookies."
+          )
+
+          invalid_rookie_draft_capital_buckets = []
+          rookie_draft_capital_bucket_counts = {
+              "round_1": 0,
+              "round_2": 0,
+              "round_3": 0,
+              "round_4_5": 0,
+              "late_round": 0,
+              "ineligible": 0
+          }
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              draft_pick = player_context.get(
+                  "draft_pick"
+              )
+
+              rookie_prior_eligible = player_context.get(
+                  "rookie_prior_eligible"
+              )
+
+              rookie_draft_capital_bucket = (
+                  player_context.get(
+                      "rookie_draft_capital_bucket"
+                  )
+              )
+
+              expected_bucket = None
+
+              if rookie_prior_eligible:
+                  normalized_draft_pick = int(
+                      float(draft_pick)
+                  )
+
+                  if normalized_draft_pick <= 32:
+                      expected_bucket = "round_1"
+                  elif normalized_draft_pick <= 64:
+                      expected_bucket = "round_2"
+                  elif normalized_draft_pick <= 100:
+                      expected_bucket = "round_3"
+                  elif normalized_draft_pick <= 150:
+                      expected_bucket = "round_4_5"
+                  else:
+                      expected_bucket = "late_round"
+
+              if (
+                  rookie_draft_capital_bucket !=
+                  expected_bucket
+              ):
+                  invalid_rookie_draft_capital_buckets.append({
+                      "player_id": player_id,
+                      "reason":
+                          "rookie_draft_capital_bucket_mismatch",
+                      "draft_pick": draft_pick,
+                      "rookie_prior_eligible":
+                          rookie_prior_eligible,
+                      "expected": expected_bucket,
+                      "actual":
+                          rookie_draft_capital_bucket
+                  })
+
+              if rookie_draft_capital_bucket is None:
+                  rookie_draft_capital_bucket_counts[
+                      "ineligible"
+                  ] += 1
+              else:
+                  rookie_draft_capital_bucket_counts[
+                      rookie_draft_capital_bucket
+                  ] += 1
+
+          if invalid_rookie_draft_capital_buckets:
+              raise RuntimeError(
+                  "Invalid rookie draft-capital buckets: "
+                  f"{invalid_rookie_draft_capital_buckets[:10]}"
+              )
+
+          if sum(
+              rookie_draft_capital_bucket_counts.values()
+          ) != len(rostered_rookie_ids):
+              raise RuntimeError(
+                  "Rookie draft-capital bucket count mismatch. "
+                  f"Expected {len(rostered_rookie_ids)}, "
+                  f"found "
+                  f"{sum(rookie_draft_capital_bucket_counts.values())}."
+              )
+
+          print(
+              "Rookie draft-capital buckets: "
+              f"{rookie_draft_capital_bucket_counts}."
+          )
+
+          print(
+              "Validated rookie draft-capital buckets for "
               f"{len(rostered_rookie_ids)} rookies."
           )
 
