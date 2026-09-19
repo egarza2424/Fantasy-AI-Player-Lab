@@ -2199,6 +2199,135 @@ jobs:
               "Validated canonical draft context for "
               f"{len(rostered_rookie_ids)} rookies."
           )
+          rookie_evidence_counts = {
+              "established_nfl_evidence": 0,
+              "early_rookie_evidence": 0,
+              "zero_history_rookie": 0
+          }
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              player_rows = [
+                  row
+                  for row in player_signal_source_rows
+                  if row.get("player_id") == player_id
+              ]
+
+              nfl_games_with_stats = len({
+                  (
+                      str(row.get("season") or ""),
+                      str(row.get("week") or "")
+                  )
+                  for row in player_rows
+                  if row.get("week")
+              })
+
+              if nfl_games_with_stats == 0:
+                  rookie_evidence_level = (
+                      "zero_history_rookie"
+                  )
+              elif nfl_games_with_stats < 4:
+                  rookie_evidence_level = (
+                      "early_rookie_evidence"
+                  )
+              else:
+                  rookie_evidence_level = (
+                      "established_nfl_evidence"
+                  )
+
+              player_context[
+                  "rookie_nfl_games_with_stats"
+              ] = nfl_games_with_stats
+
+              player_context[
+                  "rookie_evidence_level"
+              ] = rookie_evidence_level
+
+              rookie_evidence_counts[
+                  rookie_evidence_level
+              ] += 1
+
+          print(
+              "Rookie evidence levels: "
+              f"{rookie_evidence_counts}."
+          )
+
+          invalid_rookie_evidence_context = []
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              nfl_games_with_stats = player_context.get(
+                  "rookie_nfl_games_with_stats"
+              )
+
+              rookie_evidence_level = player_context.get(
+                  "rookie_evidence_level"
+              )
+
+              if (
+                  not isinstance(nfl_games_with_stats, int) or
+                  nfl_games_with_stats < 0
+              ):
+                  invalid_rookie_evidence_context.append({
+                      "player_id": player_id,
+                      "reason": "invalid_nfl_game_count",
+                      "value": nfl_games_with_stats
+                  })
+                  continue
+
+              if nfl_games_with_stats == 0:
+                  expected_evidence_level = (
+                      "zero_history_rookie"
+                  )
+              elif nfl_games_with_stats < 4:
+                  expected_evidence_level = (
+                      "early_rookie_evidence"
+                  )
+              else:
+                  expected_evidence_level = (
+                      "established_nfl_evidence"
+                  )
+
+              if (
+                  rookie_evidence_level !=
+                  expected_evidence_level
+              ):
+                  invalid_rookie_evidence_context.append({
+                      "player_id": player_id,
+                      "reason": "rookie_evidence_level_mismatch",
+                      "games": nfl_games_with_stats,
+                      "expected": expected_evidence_level,
+                      "actual": rookie_evidence_level
+                  })
+
+          if invalid_rookie_evidence_context:
+              raise RuntimeError(
+                  "Invalid rookie evidence context: "
+                  f"{invalid_rookie_evidence_context[:10]}"
+              )
+
+          if sum(rookie_evidence_counts.values()) != len(
+              rostered_rookie_ids
+          ):
+              raise RuntimeError(
+                  "Rookie evidence count mismatch. "
+                  f"Expected {len(rostered_rookie_ids)}, "
+                  f"found "
+                  f"{sum(rookie_evidence_counts.values())}."
+              )
+
+          print(
+              "Validated rookie evidence context for "
+              f"{len(rostered_rookie_ids)} rookies."
+          )
 
           print(
               "Validated roster-aware context for "
