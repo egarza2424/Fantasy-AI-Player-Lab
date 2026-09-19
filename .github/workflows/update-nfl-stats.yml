@@ -729,6 +729,188 @@ jobs:
               "player-week records for 2022-2026 "
               "(completed weeks only)."
           )
+
+          # -------------------------------------------------
+          # HISTORICAL ROOKIE DRAFT-CAPITAL OUTCOMES
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          historical_rookie_player_outcomes = {}
+
+          for row in historical_rows:
+              player_id = row.get("player_id")
+
+              if not player_id:
+                  continue
+
+              player_metadata = player_metadata_by_id.get(
+                  player_id,
+                  {}
+              )
+
+              rookie_season = str(
+                  player_metadata.get("rookie_season") or ""
+              ).strip()
+
+              row_season = str(
+                  row.get("season") or ""
+              ).strip()
+
+              position = str(
+                  row.get("position") or ""
+              ).strip()
+
+              if rookie_season not in {
+                  "2022",
+                  "2023",
+                  "2024",
+                  "2025"
+              }:
+                  continue
+
+              if row_season != rookie_season:
+                  continue
+
+              if position not in {
+                  "QB",
+                  "RB",
+                  "WR",
+                  "TE"
+              }:
+                  continue
+
+              draft_year = str(
+                  player_metadata.get("draft_year") or ""
+              ).strip()
+
+              draft_pick = player_metadata.get(
+                  "draft_pick"
+              )
+
+              if (
+                  draft_year != rookie_season or
+                  draft_pick is None or
+                  str(draft_pick).strip() == ""
+              ):
+                  continue
+
+              try:
+                  normalized_draft_pick = int(
+                      float(draft_pick)
+                  )
+              except (TypeError, ValueError):
+                  continue
+
+              if normalized_draft_pick <= 32:
+                  draft_capital_bucket = "round_1"
+              elif normalized_draft_pick <= 64:
+                  draft_capital_bucket = "round_2"
+              elif normalized_draft_pick <= 100:
+                  draft_capital_bucket = "round_3"
+              elif normalized_draft_pick <= 150:
+                  draft_capital_bucket = "round_4_5"
+              else:
+                  draft_capital_bucket = "late_round"
+
+              if player_id not in (
+                  historical_rookie_player_outcomes
+              ):
+                  historical_rookie_player_outcomes[
+                      player_id
+                  ] = {
+                      "player_id": player_id,
+                      "player_name": (
+                          row.get("player_display_name") or
+                          row.get("player_name")
+                      ),
+                      "position": position,
+                      "rookie_season": rookie_season,
+                      "draft_pick": normalized_draft_pick,
+                      "draft_capital_bucket":
+                          draft_capital_bucket,
+                      "games": 0,
+                      "total_ppr": 0.0
+                  }
+
+              historical_rookie_player_outcomes[
+                  player_id
+              ]["games"] += 1
+
+              historical_rookie_player_outcomes[
+                  player_id
+              ]["total_ppr"] += calculate_ppr_points(
+                  row
+              )
+
+          historical_rookie_bucket_outcomes = defaultdict(
+              list
+          )
+
+          for rookie_outcome in (
+              historical_rookie_player_outcomes.values()
+          ):
+              games = rookie_outcome["games"]
+              total_ppr = rookie_outcome["total_ppr"]
+
+              rookie_outcome["total_ppr"] = round(
+                  total_ppr,
+                  2
+              )
+
+              rookie_outcome["ppr_per_game"] = round(
+                  total_ppr / games,
+                  2
+              ) if games else 0.0
+
+              bucket_key = (
+                  rookie_outcome["position"],
+                  rookie_outcome[
+                      "draft_capital_bucket"
+                  ]
+              )
+
+              historical_rookie_bucket_outcomes[
+                  bucket_key
+              ].append(
+                  rookie_outcome
+              )
+
+          print(
+              "Historical drafted rookie outcomes: "
+              f"{len(historical_rookie_player_outcomes)} "
+              "players."
+          )
+
+          print(
+              "Historical rookie draft-capital "
+              "samples by position:"
+          )
+
+          for (
+              position,
+              draft_capital_bucket
+          ), rookie_outcomes in sorted(
+              historical_rookie_bucket_outcomes.items()
+          ):
+              average_total_ppr = sum(
+                  rookie["total_ppr"]
+                  for rookie in rookie_outcomes
+              ) / len(rookie_outcomes)
+
+              average_ppr_per_game = sum(
+                  rookie["ppr_per_game"]
+                  for rookie in rookie_outcomes
+              ) / len(rookie_outcomes)
+
+              print(
+                  f"{position} "
+                  f"{draft_capital_bucket}: "
+                  f"n={len(rookie_outcomes)}, "
+                  f"avg_total_ppr="
+                  f"{average_total_ppr:.2f}, "
+                  f"avg_ppr_per_game="
+                  f"{average_ppr_per_game:.2f}."
+              )
           
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
