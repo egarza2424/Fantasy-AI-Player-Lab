@@ -2658,6 +2658,27 @@ jobs:
                   2
               )
 
+              draft_pick = player_context.get(
+                  "draft_pick"
+              )
+
+              draft_pick_source = player_context.get(
+                  "draft_pick_source"
+              )
+
+              rookie_prior_eligible = (
+                  draft_pick is not None and
+                  str(draft_pick).strip() != "" and
+                  (
+                      target_week is None or
+                      draft_pick_source == "player_metadata"
+                  )
+              )
+
+              player_context[
+                  "rookie_prior_eligible"
+              ] = rookie_prior_eligible
+
               rookie_evidence_counts[
                   rookie_evidence_level
               ] += 1
@@ -2765,6 +2786,90 @@ jobs:
 
           print(
               "Validated rookie evidence context for "
+              f"{len(rostered_rookie_ids)} rookies."
+          )
+
+          invalid_rookie_prior_eligibility = []
+          rookie_prior_eligibility_counts = {
+              "eligible": 0,
+              "ineligible": 0
+          }
+
+          for player_id in rostered_rookie_ids:
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
+
+              draft_pick = player_context.get(
+                  "draft_pick"
+              )
+
+              draft_pick_source = player_context.get(
+                  "draft_pick_source"
+              )
+
+              rookie_prior_eligible = player_context.get(
+                  "rookie_prior_eligible"
+              )
+
+              expected_rookie_prior_eligible = (
+                  draft_pick is not None and
+                  str(draft_pick).strip() != "" and
+                  (
+                      target_week is None or
+                      draft_pick_source == "player_metadata"
+                  )
+              )
+
+              if (
+                  rookie_prior_eligible !=
+                  expected_rookie_prior_eligible
+              ):
+                  invalid_rookie_prior_eligibility.append({
+                      "player_id": player_id,
+                      "reason":
+                          "rookie_prior_eligibility_mismatch",
+                      "draft_pick": draft_pick,
+                      "draft_pick_source": draft_pick_source,
+                      "expected":
+                          expected_rookie_prior_eligible,
+                      "actual":
+                          rookie_prior_eligible
+                  })
+
+              if rookie_prior_eligible:
+                  rookie_prior_eligibility_counts[
+                      "eligible"
+                  ] += 1
+              else:
+                  rookie_prior_eligibility_counts[
+                      "ineligible"
+                  ] += 1
+
+          if invalid_rookie_prior_eligibility:
+              raise RuntimeError(
+                  "Invalid rookie prior eligibility: "
+                  f"{invalid_rookie_prior_eligibility[:10]}"
+              )
+
+          if sum(
+              rookie_prior_eligibility_counts.values()
+          ) != len(rostered_rookie_ids):
+              raise RuntimeError(
+                  "Rookie prior eligibility count mismatch. "
+                  f"Expected {len(rostered_rookie_ids)}, "
+                  f"found "
+                  f"{sum(rookie_prior_eligibility_counts.values())}."
+              )
+
+          print(
+              "Rookie prior eligibility: "
+              f"{rookie_prior_eligibility_counts}."
+          )
+
+          print(
+              "Validated rookie prior eligibility for "
               f"{len(rostered_rookie_ids)} rookies."
           )
 
