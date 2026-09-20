@@ -1860,6 +1860,172 @@ jobs:
               list
           )
 
+          rookie_prior_backtest_by_player_id = {
+              result["player_id"]: result
+              for result in rookie_prior_backtest_results
+          }
+
+          for player_id, rookie_outcome in (
+              historical_rookie_player_outcomes.items()
+          ):
+              prior_result = (
+                  rookie_prior_backtest_by_player_id.get(
+                      player_id
+                  )
+              )
+
+              if not prior_result:
+                  continue
+
+              rookie_prior_evidence_backtest_results[
+                  0
+              ].append({
+                  "player_id": player_id,
+                  "position": rookie_outcome["position"],
+                  "predicted_prior_score":
+                      prior_result["predicted_prior_score"],
+                  "future_ppr":
+                      rookie_outcome[
+                          "average_weekly_ppr_weeks_1_4"
+                      ]
+              })
+          zero_game_results = (
+              rookie_prior_evidence_backtest_results[0]
+          )
+
+          if len(zero_game_results) != len(
+              rookie_prior_backtest_results
+          ):
+              raise RuntimeError(
+                  "Rookie prior 0-game sample validation "
+                  "failed: "
+                  f"{len(zero_game_results)} evidence results "
+                  "vs "
+                  f"{len(rookie_prior_backtest_results)} "
+                  "leave-one-season-out results."
+              )
+
+          # Build leakage-safe future-performance samples
+          # after 1, 2, and 3 recorded statistical games.
+          for evidence_game_count in (1, 2, 3):
+              for player_id, weekly_rows in (
+                  historical_rookie_weekly_rows.items()
+              ):
+                  prior_result = (
+                      rookie_prior_backtest_by_player_id.get(
+                          player_id
+                      )
+                  )
+
+                  if not prior_result:
+                      continue
+
+                  if len(weekly_rows) <= evidence_game_count:
+                      continue
+
+                  evidence_rows = weekly_rows[
+                      :evidence_game_count
+                  ]
+
+                  future_rows = weekly_rows[
+                      evidence_game_count:
+                  ]
+
+                  if not evidence_rows or not future_rows:
+                      continue
+
+                  evidence_cutoff_week = evidence_rows[
+                      -1
+                  ]["week"]
+
+                  if any(
+                      future_row["week"] <=
+                      evidence_cutoff_week
+                      for future_row in future_rows
+                  ):
+                      raise RuntimeError(
+                          "Rookie evidence-cutoff leakage "
+                          "validation failed for "
+                          f"{player_id} at "
+                          f"{evidence_game_count} games."
+                      )
+
+                  future_average_ppr = (
+                      sum(
+                          future_row["ppr_points"]
+                          for future_row in future_rows
+                      ) /
+                      len(future_rows)
+                  )
+
+                  rookie_prior_evidence_backtest_results[
+                      evidence_game_count
+                  ].append({
+                      "player_id": player_id,
+                      "position":
+                          prior_result["position"],
+                      "predicted_prior_score":
+                          prior_result[
+                              "predicted_prior_score"
+                          ],
+                      "evidence_game_count":
+                          evidence_game_count,
+                      "evidence_cutoff_week":
+                          evidence_cutoff_week,
+                      "future_game_count":
+                          len(future_rows),
+                      "future_ppr":
+                          round(
+                              future_average_ppr,
+                              2
+                          )
+                  })
+
+          rookie_prior_evidence_spearman = {}
+
+          print(
+              "Rookie prior value by recorded "
+              "statistical-game evidence cutoff:"
+          )
+
+          for evidence_game_count in (0, 1, 2, 3):
+              cutoff_results = (
+                  rookie_prior_evidence_backtest_results[
+                      evidence_game_count
+                  ]
+              )
+
+              cutoff_pairs = [
+                  (
+                      result["predicted_prior_score"],
+                      result["future_ppr"]
+                  )
+                  for result in cutoff_results
+              ]
+
+              cutoff_spearman = (
+                  calculate_spearman_rank_correlation(
+                      cutoff_pairs
+                  )
+              )
+
+              rookie_prior_evidence_spearman[
+                  evidence_game_count
+              ] = cutoff_spearman
+
+              if cutoff_spearman is None:
+                  print(
+                      f"{evidence_game_count} games: "
+                      f"n={len(cutoff_results)}, "
+                      "rho=unavailable."
+                  )
+              else:
+                  print(
+                      f"{evidence_game_count} games: "
+                      f"n={len(cutoff_results)}, "
+                      f"rho={cutoff_spearman:.3f}."
+                  )
+
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
