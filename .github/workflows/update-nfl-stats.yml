@@ -2434,18 +2434,140 @@ jobs:
                               f"{position_blend_spearman:.3f}."
                           )
 
-          # -------------------------------------------------
-          # ROOKIE POSITION-SPECIFIC LEAVE-ONE-SEASON-OUT
-          # BLEND-WEIGHT VALIDATION
-          # Select the best blend weight using only the other
-          # historical seasons, then evaluate that weight on
-          # the held-out season.
+              # -------------------------------------------------
+          # ROOKIE POSITION-SPECIFIC NESTED
+          # LEAVE-ONE-SEASON-OUT BLEND VALIDATION
+          #
+          # The outer held-out season is excluded from:
+          # 1. rookie-prior calibration,
+          # 2. blend-weight selection, and
+          # 3. all inner training predictions.
+          #
           # Diagnostic only. Does not affect model scoring.
           # -------------------------------------------------
 
+          def build_nested_rookie_prior_lookup(
+              excluded_seasons
+          ):
+              nested_bucket_outcomes = defaultdict(list)
+
+              for rookie in (
+                  historical_rookie_player_outcomes.values()
+              ):
+                  if rookie["rookie_season"] in excluded_seasons:
+                      continue
+
+                  nested_bucket_outcomes[
+                      (
+                          rookie["position"],
+                          rookie["draft_capital_bucket"]
+                      )
+                  ].append(rookie)
+
+              nested_position_bucket_averages = defaultdict(
+                  dict
+              )
+
+              for (
+                  position,
+                  draft_capital_bucket
+              ), rookie_outcomes in (
+                  nested_bucket_outcomes.items()
+              ):
+                  average_weekly_ppr = sum(
+                      rookie[
+                          "average_weekly_ppr_weeks_1_4"
+                      ]
+                      for rookie in rookie_outcomes
+                  ) / len(rookie_outcomes)
+
+                  nested_position_bucket_averages[
+                      position
+                  ][
+                      draft_capital_bucket
+                  ] = average_weekly_ppr
+
+              nested_prior_lookup = {}
+
+              for position, bucket_averages in (
+                  nested_position_bucket_averages.items()
+              ):
+                  if not bucket_averages:
+                      continue
+
+                  position_minimum_ppr = min(
+                      bucket_averages.values()
+                  )
+
+                  position_maximum_ppr = max(
+                      bucket_averages.values()
+                  )
+
+                  for (
+                      draft_capital_bucket,
+                      average_ppr
+                  ) in bucket_averages.items():
+                      rookie_outcomes = (
+                          nested_bucket_outcomes[
+                              (
+                                  position,
+                                  draft_capital_bucket
+                              )
+                          ]
+                      )
+
+                      sample_size = len(rookie_outcomes)
+
+                      if (
+                          position_maximum_ppr >
+                          position_minimum_ppr
+                      ):
+                          raw_prior_score = (
+                              25.0 +
+                              (
+                                  (
+                                      average_ppr -
+                                      position_minimum_ppr
+                                  ) /
+                                  (
+                                      position_maximum_ppr -
+                                      position_minimum_ppr
+                                  )
+                              ) * 75.0
+                          )
+                      else:
+                          raw_prior_score = 50.0
+
+                      sample_reliability = (
+                          sample_size /
+                          (
+                              sample_size +
+                              rookie_prior_shrinkage_constant
+                          )
+                      )
+
+                      shrunk_prior_score = (
+                          50.0 +
+                          (
+                              raw_prior_score - 50.0
+                          ) * sample_reliability
+                      )
+
+                      nested_prior_lookup[
+                          (
+                              position,
+                              draft_capital_bucket
+                          )
+                      ] = round(
+                          shrunk_prior_score,
+                          2
+                      )
+
+              return nested_prior_lookup
+
           print(
-              "Rookie position-specific leave-one-season-out "
-              "blend-weight validation:"
+              "Rookie position-specific nested "
+              "leave-one-season-out blend validation:"
           )
 
           for evidence_game_count in (1, 2, 3):
@@ -2462,14 +2584,14 @@ jobs:
                       if result["position"] == position
                   ]
 
-                  validated_pairs = []
+                  fold_results = []
                   selected_weight_counts = defaultdict(int)
 
                   for held_out_season in sorted(
                       historical_rookie_seasons
                   ):
-                      training_results = []
-                      test_results = []
+                      outer_training_results = []
+                      outer_test_results = []
 
                       for result in position_results:
                           rookie_outcome = (
@@ -2486,24 +2608,85 @@ jobs:
                           ]
 
                           if result_season == held_out_season:
-                              test_results.append(result)
+                              outer_test_results.append(result)
                           else:
-                              training_results.append(result)
+                              outer_training_results.append(
+                                  result
+                              )
 
                       if (
-                          len(training_results) < 2 or
-                          not test_results
+                          len(outer_training_results) < 2 or
+                          len(outer_test_results) < 2
                       ):
                           continue
 
+                      nested_training_rows = []
+
+                      for result in outer_training_results:
+                          rookie_outcome = (
+                              historical_rookie_player_outcomes.get(
+                                  result["player_id"]
+                              )
+                          )
+
+                          if not rookie_outcome:
+                              continue
+
+                          training_result_season = (
+                              rookie_outcome["rookie_season"]
+                          )
+
+                          inner_prior_lookup = (
+                              build_nested_rookie_prior_lookup(
+                                  {
+                                      held_out_season,
+                                      training_result_season
+                                  }
+                              )
+                          )
+
+                          lookup_key = (
+                              rookie_outcome["position"],
+                              rookie_outcome[
+                                  "draft_capital_bucket"
+                              ]
+                          )
+
+                          nested_prior_score = (
+                              inner_prior_lookup.get(
+                                  lookup_key
+                              )
+                          )
+
+                          if nested_prior_score is None:
+                              continue
+
+                          nested_training_rows.append({
+                              "player_id":
+                                  result["player_id"],
+                              "prior_score":
+                                  nested_prior_score,
+                              "evidence_average_ppr":
+                                  result[
+                                      "evidence_average_ppr"
+                                  ],
+                              "future_average_ppr":
+                                  result[
+                                      "future_average_ppr"
+                                  ]
+                          })
+
+                      if len(nested_training_rows) < 2:
+                          continue
+
                       training_prior_values = [
-                          result["predicted_prior_score"]
-                          for result in training_results
+                          result["prior_score"]
+                          for result in nested_training_rows
                       ]
 
                       training_nfl_values = [
                           result["evidence_average_ppr"]
-                          for result in training_results
+                          for result in nested_training_rows
                       ]
 
                       training_prior_ranks = (
@@ -2526,8 +2709,11 @@ jobs:
 
                           training_blended_pairs = []
 
-                          for result_index, result in enumerate(
-                              training_results
+                          for (
+                              result_index,
+                              result
+                          ) in enumerate(
+                              nested_training_rows
                           ):
                               blended_rank_score = (
                                   training_prior_ranks[
@@ -2566,18 +2752,66 @@ jobs:
                       if best_nfl_weight is None:
                           continue
 
-                      selected_weight_counts[
-                          best_nfl_weight
-                      ] += 1
+                      outer_test_prior_lookup = (
+                          build_nested_rookie_prior_lookup(
+                              {held_out_season}
+                          )
+                      )
+
+                      nested_test_rows = []
+
+                      for result in outer_test_results:
+                          rookie_outcome = (
+                              historical_rookie_player_outcomes.get(
+                                  result["player_id"]
+                              )
+                          )
+
+                          if not rookie_outcome:
+                              continue
+
+                          lookup_key = (
+                              rookie_outcome["position"],
+                              rookie_outcome[
+                                  "draft_capital_bucket"
+                              ]
+                          )
+
+                          nested_prior_score = (
+                              outer_test_prior_lookup.get(
+                                  lookup_key
+                              )
+                          )
+
+                          if nested_prior_score is None:
+                              continue
+
+                          nested_test_rows.append({
+                              "player_id":
+                                  result["player_id"],
+                              "prior_score":
+                                  nested_prior_score,
+                              "evidence_average_ppr":
+                                  result[
+                                      "evidence_average_ppr"
+                                  ],
+                              "future_average_ppr":
+                                  result[
+                                      "future_average_ppr"
+                                  ]
+                          })
+
+                      if len(nested_test_rows) < 2:
+                          continue
 
                       test_prior_values = [
-                          result["predicted_prior_score"]
-                          for result in test_results
+                          result["prior_score"]
+                          for result in nested_test_rows
                       ]
 
                       test_nfl_values = [
                           result["evidence_average_ppr"]
-                          for result in test_results
+                          for result in nested_test_rows
                       ]
 
                       test_prior_ranks = calculate_average_ranks(
@@ -2592,8 +2826,10 @@ jobs:
                           1.0 - best_nfl_weight
                       )
 
+                      held_out_pairs = []
+
                       for result_index, result in enumerate(
-                          test_results
+                          nested_test_rows
                       ):
                           held_out_blended_rank = (
                               test_prior_ranks[
@@ -2604,7 +2840,7 @@ jobs:
                               ] * best_nfl_weight
                           )
 
-                          validated_pairs.append(
+                          held_out_pairs.append(
                               (
                                   held_out_blended_rank,
                                   result[
@@ -2613,11 +2849,48 @@ jobs:
                               )
                           )
 
-                  validated_rho = (
-                      calculate_spearman_rank_correlation(
-                          validated_pairs
+                      held_out_rho = (
+                          calculate_spearman_rank_correlation(
+                              held_out_pairs
+                          )
                       )
+
+                      if held_out_rho is None:
+                          continue
+
+                      selected_weight_counts[
+                          best_nfl_weight
+                      ] += 1
+
+                      fold_results.append({
+                          "season": held_out_season,
+                          "n": len(held_out_pairs),
+                          "rho": held_out_rho,
+                          "nfl_weight": best_nfl_weight
+                      })
+
+                      print(
+                          f"{evidence_game_count} games "
+                          f"{position} "
+                          f"held_out={held_out_season}: "
+                          f"n={len(held_out_pairs)}, "
+                          f"rho={held_out_rho:.3f}, "
+                          f"selected_nfl_weight="
+                          f"{best_nfl_weight:.2f}."
+                      )
+
+                  total_fold_players = sum(
+                      fold["n"]
+                      for fold in fold_results
                   )
+
+                  if total_fold_players > 0:
+                      weighted_fold_rho = sum(
+                          fold["rho"] * fold["n"]
+                          for fold in fold_results
+                      ) / total_fold_players
+                  else:
+                      weighted_fold_rho = None
 
                   weight_summary = ", ".join(
                       (
@@ -2625,14 +2898,15 @@ jobs:
                           f"{selected_weight_counts[nfl_weight]}"
                       )
                       for nfl_weight in rookie_blend_weights
-                      if selected_weight_counts[nfl_weight] > 0
+                      if selected_weight_counts[
+                          nfl_weight
+                      ] > 0
                   )
 
-                  if validated_rho is None:
+                  if weighted_fold_rho is None:
                       print(
                           f"{evidence_game_count} games "
-                          f"{position}: "
-                          f"n={len(validated_pairs)}, "
+                          f"{position} nested summary: "
                           "rho=unavailable, "
                           f"selected_nfl_weights="
                           f"{weight_summary}."
@@ -2640,13 +2914,13 @@ jobs:
                   else:
                       print(
                           f"{evidence_game_count} games "
-                          f"{position}: "
-                          f"n={len(validated_pairs)}, "
-                          f"rho={validated_rho:.3f}, "
+                          f"{position} nested summary: "
+                          f"n={total_fold_players}, "
+                          f"weighted_fold_rho="
+                          f"{weighted_fold_rho:.3f}, "
                           f"selected_nfl_weights="
                           f"{weight_summary}."
                       )
-
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
