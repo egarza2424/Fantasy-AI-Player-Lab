@@ -2289,8 +2289,151 @@ jobs:
                           f"rho={blend_spearman:.3f}."
                       )
 
+           # -------------------------------------------------
+          # ROOKIE POSITION-SPECIFIC BLEND TEST
+          # Compare prior + NFL production separately within
+          # QB, RB, WR, and TE at each evidence cutoff.
+          # Diagnostic only. Does not affect model scoring.
           # -------------------------------------------------
-          # ATTACH HISTORICAL COACHING /
+
+          print(
+              "Rookie position-specific prior + NFL "
+              "production blend test:"
+          )
+
+          for evidence_game_count in (1, 2, 3):
+              comparison_results = (
+                  rookie_signal_comparison_results[
+                      evidence_game_count
+                  ]
+              )
+
+              for position in ("QB", "RB", "WR", "TE"):
+                  position_results = [
+                      result
+                      for result in comparison_results
+                      if result["position"] == position
+                  ]
+
+                  if len(position_results) < 2:
+                      print(
+                          f"{evidence_game_count} games "
+                          f"{position}: "
+                          f"n={len(position_results)}, "
+                          "insufficient sample."
+                      )
+                      continue
+
+                  position_prior_values = [
+                      result["predicted_prior_score"]
+                      for result in position_results
+                  ]
+
+                  position_nfl_values = [
+                      result["evidence_average_ppr"]
+                      for result in position_results
+                  ]
+
+                  position_prior_ranks = (
+                      calculate_average_ranks(
+                          position_prior_values
+                      )
+                  )
+
+                  position_nfl_ranks = (
+                      calculate_average_ranks(
+                          position_nfl_values
+                      )
+                  )
+
+                  position_prior_pairs = [
+                      (
+                          result["predicted_prior_score"],
+                          result["future_average_ppr"]
+                      )
+                      for result in position_results
+                  ]
+
+                  position_nfl_pairs = [
+                      (
+                          result["evidence_average_ppr"],
+                          result["future_average_ppr"]
+                      )
+                      for result in position_results
+                  ]
+
+                  position_prior_spearman = (
+                      calculate_spearman_rank_correlation(
+                          position_prior_pairs
+                      )
+                  )
+
+                  position_nfl_spearman = (
+                      calculate_spearman_rank_correlation(
+                          position_nfl_pairs
+                      )
+                  )
+
+                  print(
+                      f"{evidence_game_count} games "
+                      f"{position}: "
+                      f"n={len(position_results)}, "
+                      f"prior_rho="
+                      f"{position_prior_spearman:.3f}, "
+                      f"nfl_rho="
+                      f"{position_nfl_spearman:.3f}."
+                  )
+
+                  for nfl_weight in rookie_blend_weights:
+                      prior_weight = 1.0 - nfl_weight
+
+                      position_blended_pairs = []
+
+                      for result_index, result in enumerate(
+                          position_results
+                      ):
+                          blended_rank_score = (
+                              position_prior_ranks[
+                                  result_index
+                              ] * prior_weight +
+                              position_nfl_ranks[
+                                  result_index
+                              ] * nfl_weight
+                          )
+
+                          position_blended_pairs.append(
+                              (
+                                  blended_rank_score,
+                                  result[
+                                      "future_average_ppr"
+                                  ]
+                              )
+                          )
+
+                      position_blend_spearman = (
+                          calculate_spearman_rank_correlation(
+                              position_blended_pairs
+                          )
+                      )
+
+                      if position_blend_spearman is None:
+                          print(
+                              f"  prior_weight="
+                              f"{prior_weight:.2f}, "
+                              f"nfl_weight="
+                              f"{nfl_weight:.2f}, "
+                              "rho=unavailable."
+                          )
+                      else:
+                          print(
+                              f"  prior_weight="
+                              f"{prior_weight:.2f}, "
+                              f"nfl_weight="
+                              f"{nfl_weight:.2f}, "
+                              f"rho="
+                              f"{position_blend_spearman:.3f}."
+                          )
+
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
