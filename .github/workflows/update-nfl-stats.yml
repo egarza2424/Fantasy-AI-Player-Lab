@@ -2179,7 +2179,118 @@ jobs:
                       f"nfl_production_rho="
                       f"{nfl_production_spearman:.3f}."
                   )
+          # -------------------------------------------------
+          # ROOKIE PRIOR + NFL PRODUCTION BLEND TEST
+          # Test multiple blends against the exact same
+          # future-performance sample at each evidence cutoff.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
 
+          rookie_blend_weights = (
+              0.00,
+              0.25,
+              0.50,
+              0.75,
+              1.00
+          )
+
+          print(
+              "Rookie prior + NFL production blend test:"
+          )
+
+          for evidence_game_count in (1, 2, 3):
+              comparison_results = (
+                  rookie_signal_comparison_results[
+                      evidence_game_count
+                  ]
+              )
+
+              if not comparison_results:
+                  print(
+                      f"{evidence_game_count} games: "
+                      "no comparison sample."
+                  )
+                  continue
+
+              prior_values = [
+                  result["predicted_prior_score"]
+                  for result in comparison_results
+              ]
+
+              nfl_values = [
+                  result["evidence_average_ppr"]
+                  for result in comparison_results
+              ]
+
+              prior_ranks = calculate_average_ranks(
+                  prior_values
+              )
+
+              nfl_ranks = calculate_average_ranks(
+                  nfl_values
+              )
+
+              if (
+                  len(prior_ranks) !=
+                  len(comparison_results) or
+                  len(nfl_ranks) !=
+                  len(comparison_results)
+              ):
+                  raise RuntimeError(
+                      "Rookie blend rank validation "
+                      "failed at "
+                      f"{evidence_game_count} games."
+                  )
+
+              for nfl_weight in rookie_blend_weights:
+                  prior_weight = 1.0 - nfl_weight
+
+                  blended_pairs = []
+
+                  for result_index, result in enumerate(
+                      comparison_results
+                  ):
+                      blended_rank_score = (
+                          prior_ranks[result_index] *
+                          prior_weight +
+                          nfl_ranks[result_index] *
+                          nfl_weight
+                      )
+
+                      blended_pairs.append(
+                          (
+                              blended_rank_score,
+                              result[
+                                  "future_average_ppr"
+                              ]
+                          )
+                      )
+
+                  blend_spearman = (
+                      calculate_spearman_rank_correlation(
+                          blended_pairs
+                      )
+                  )
+
+                  if blend_spearman is None:
+                      print(
+                          f"{evidence_game_count} games: "
+                          f"prior_weight="
+                          f"{prior_weight:.2f}, "
+                          f"nfl_weight={nfl_weight:.2f}, "
+                          "rho=unavailable."
+                      )
+                  else:
+                      print(
+                          f"{evidence_game_count} games: "
+                          f"prior_weight="
+                          f"{prior_weight:.2f}, "
+                          f"nfl_weight={nfl_weight:.2f}, "
+                          f"rho={blend_spearman:.3f}."
+                      )
+
+          # -------------------------------------------------
+          # ATTACH HISTORICAL COACHING /
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
