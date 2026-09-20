@@ -2289,7 +2289,7 @@ jobs:
                           f"rho={blend_spearman:.3f}."
                       )
 
-           # -------------------------------------------------
+          # -------------------------------------------------
           # ROOKIE POSITION-SPECIFIC BLEND TEST
           # Compare prior + NFL production separately within
           # QB, RB, WR, and TE at each evidence cutoff.
