@@ -2435,6 +2435,219 @@ jobs:
                           )
 
           # -------------------------------------------------
+          # ROOKIE POSITION-SPECIFIC LEAVE-ONE-SEASON-OUT
+          # BLEND-WEIGHT VALIDATION
+          # Select the best blend weight using only the other
+          # historical seasons, then evaluate that weight on
+          # the held-out season.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          print(
+              "Rookie position-specific leave-one-season-out "
+              "blend-weight validation:"
+          )
+
+          for evidence_game_count in (1, 2, 3):
+              comparison_results = (
+                  rookie_signal_comparison_results[
+                      evidence_game_count
+                  ]
+              )
+
+              for position in ("QB", "RB", "WR", "TE"):
+                  position_results = [
+                      result
+                      for result in comparison_results
+                      if result["position"] == position
+                  ]
+
+                  validated_pairs = []
+                  selected_weight_counts = defaultdict(int)
+
+                  for held_out_season in sorted(
+                      historical_rookie_seasons
+                  ):
+                      training_results = []
+                      test_results = []
+
+                      for result in position_results:
+                          rookie_outcome = (
+                              historical_rookie_player_outcomes.get(
+                                  result["player_id"]
+                              )
+                          )
+
+                          if not rookie_outcome:
+                              continue
+
+                          result_season = rookie_outcome[
+                              "rookie_season"
+                          ]
+
+                          if result_season == held_out_season:
+                              test_results.append(result)
+                          else:
+                              training_results.append(result)
+
+                      if (
+                          len(training_results) < 2 or
+                          not test_results
+                      ):
+                          continue
+
+                      training_prior_values = [
+                          result["predicted_prior_score"]
+                          for result in training_results
+                      ]
+
+                      training_nfl_values = [
+                          result["evidence_average_ppr"]
+                          for result in training_results
+                      ]
+
+                      training_prior_ranks = (
+                          calculate_average_ranks(
+                              training_prior_values
+                          )
+                      )
+
+                      training_nfl_ranks = (
+                          calculate_average_ranks(
+                              training_nfl_values
+                          )
+                      )
+
+                      best_nfl_weight = None
+                      best_training_rho = None
+
+                      for nfl_weight in rookie_blend_weights:
+                          prior_weight = 1.0 - nfl_weight
+
+                          training_blended_pairs = []
+
+                          for result_index, result in enumerate(
+                              training_results
+                          ):
+                              blended_rank_score = (
+                                  training_prior_ranks[
+                                      result_index
+                                  ] * prior_weight +
+                                  training_nfl_ranks[
+                                      result_index
+                                  ] * nfl_weight
+                              )
+
+                              training_blended_pairs.append(
+                                  (
+                                      blended_rank_score,
+                                      result[
+                                          "future_average_ppr"
+                                      ]
+                                  )
+                              )
+
+                          training_rho = (
+                              calculate_spearman_rank_correlation(
+                                  training_blended_pairs
+                              )
+                          )
+
+                          if training_rho is None:
+                              continue
+
+                          if (
+                              best_training_rho is None or
+                              training_rho > best_training_rho
+                          ):
+                              best_training_rho = training_rho
+                              best_nfl_weight = nfl_weight
+
+                      if best_nfl_weight is None:
+                          continue
+
+                      selected_weight_counts[
+                          best_nfl_weight
+                      ] += 1
+
+                      test_prior_values = [
+                          result["predicted_prior_score"]
+                          for result in test_results
+                      ]
+
+                      test_nfl_values = [
+                          result["evidence_average_ppr"]
+                          for result in test_results
+                      ]
+
+                      test_prior_ranks = calculate_average_ranks(
+                          test_prior_values
+                      )
+
+                      test_nfl_ranks = calculate_average_ranks(
+                          test_nfl_values
+                      )
+
+                      held_out_prior_weight = (
+                          1.0 - best_nfl_weight
+                      )
+
+                      for result_index, result in enumerate(
+                          test_results
+                      ):
+                          held_out_blended_rank = (
+                              test_prior_ranks[
+                                  result_index
+                              ] * held_out_prior_weight +
+                              test_nfl_ranks[
+                                  result_index
+                              ] * best_nfl_weight
+                          )
+
+                          validated_pairs.append(
+                              (
+                                  held_out_blended_rank,
+                                  result[
+                                      "future_average_ppr"
+                                  ]
+                              )
+                          )
+
+                  validated_rho = (
+                      calculate_spearman_rank_correlation(
+                          validated_pairs
+                      )
+                  )
+
+                  weight_summary = ", ".join(
+                      (
+                          f"{nfl_weight:.2f}:"
+                          f"{selected_weight_counts[nfl_weight]}"
+                      )
+                      for nfl_weight in rookie_blend_weights
+                      if selected_weight_counts[nfl_weight] > 0
+                  )
+
+                  if validated_rho is None:
+                      print(
+                          f"{evidence_game_count} games "
+                          f"{position}: "
+                          f"n={len(validated_pairs)}, "
+                          "rho=unavailable, "
+                          f"selected_nfl_weights="
+                          f"{weight_summary}."
+                      )
+                  else:
+                      print(
+                          f"{evidence_game_count} games "
+                          f"{position}: "
+                          f"n={len(validated_pairs)}, "
+                          f"rho={validated_rho:.3f}, "
+                          f"selected_nfl_weights="
+                          f"{weight_summary}."
+                      )
+
+          # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
           # -------------------------------------------------
           coaching_records_matched = 0
