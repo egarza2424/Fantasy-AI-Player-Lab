@@ -1850,6 +1850,15 @@ jobs:
               f"for {len(historical_rookie_weekly_rows)} "
               "historical drafted rookies with stats."
           )
+          # -------------------------------------------------
+          # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
+          # Test prior value after 0, 1, 2, and 3 NFL games.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_prior_evidence_backtest_results = defaultdict(
+              list
+          )
 
           # -------------------------------------------------
           # ATTACH HISTORICAL COACHING / PLAY-CALLER DATA
