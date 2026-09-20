@@ -2019,11 +2019,165 @@ jobs:
                       f"n={len(cutoff_results)}, "
                       "rho=unavailable."
                   )
-              else:
+               else:
                   print(
                       f"{evidence_game_count} games: "
                       f"n={len(cutoff_results)}, "
                       f"rho={cutoff_spearman:.3f}."
+                  )
+
+          # -------------------------------------------------
+          # ROOKIE NFL PRODUCTION VS DRAFT-CAPITAL PRIOR
+          # Compare early NFL production and the rookie prior
+          # against the exact same future-performance sample.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_signal_comparison_results = defaultdict(
+              list
+          )
+
+          for evidence_game_count in (1, 2, 3):
+              for player_id, weekly_rows in (
+                  historical_rookie_weekly_rows.items()
+              ):
+                  prior_result = (
+                      rookie_prior_backtest_by_player_id.get(
+                          player_id
+                      )
+                  )
+
+                  if not prior_result:
+                      continue
+
+                  if len(weekly_rows) <= evidence_game_count:
+                      continue
+
+                  evidence_rows = weekly_rows[
+                      :evidence_game_count
+                  ]
+
+                  future_rows = weekly_rows[
+                      evidence_game_count:
+                  ]
+
+                  if not evidence_rows or not future_rows:
+                      continue
+
+                  evidence_cutoff_week = evidence_rows[
+                      -1
+                  ]["week"]
+
+                  if any(
+                      future_row["week"] <=
+                      evidence_cutoff_week
+                      for future_row in future_rows
+                  ):
+                      raise RuntimeError(
+                          "Rookie signal-comparison leakage "
+                          "validation failed for "
+                          f"{player_id} at "
+                          f"{evidence_game_count} games."
+                      )
+
+                  evidence_average_ppr = (
+                      sum(
+                          evidence_row["ppr_points"]
+                          for evidence_row in evidence_rows
+                      ) /
+                      len(evidence_rows)
+                  )
+
+                  future_average_ppr = (
+                      sum(
+                          future_row["ppr_points"]
+                          for future_row in future_rows
+                      ) /
+                      len(future_rows)
+                  )
+
+                  rookie_signal_comparison_results[
+                      evidence_game_count
+                  ].append({
+                      "player_id": player_id,
+                      "position":
+                          prior_result["position"],
+                      "predicted_prior_score":
+                          prior_result[
+                              "predicted_prior_score"
+                          ],
+                      "evidence_average_ppr":
+                          round(
+                              evidence_average_ppr,
+                              2
+                          ),
+                      "future_average_ppr":
+                          round(
+                              future_average_ppr,
+                              2
+                          ),
+                      "evidence_game_count":
+                          evidence_game_count,
+                      "future_game_count":
+                          len(future_rows)
+                  })
+
+          print(
+              "Rookie signal comparison against identical "
+              "future-performance samples:"
+          )
+
+          for evidence_game_count in (1, 2, 3):
+              comparison_results = (
+                  rookie_signal_comparison_results[
+                      evidence_game_count
+                  ]
+              )
+
+              prior_pairs = [
+                  (
+                      result["predicted_prior_score"],
+                      result["future_average_ppr"]
+                  )
+                  for result in comparison_results
+              ]
+
+              nfl_production_pairs = [
+                  (
+                      result["evidence_average_ppr"],
+                      result["future_average_ppr"]
+                  )
+                  for result in comparison_results
+              ]
+
+              prior_spearman = (
+                  calculate_spearman_rank_correlation(
+                      prior_pairs
+                  )
+              )
+
+              nfl_production_spearman = (
+                  calculate_spearman_rank_correlation(
+                      nfl_production_pairs
+                  )
+              )
+
+              if (
+                  prior_spearman is None or
+                  nfl_production_spearman is None
+              ):
+                  print(
+                      f"{evidence_game_count} games: "
+                      f"n={len(comparison_results)}, "
+                      "comparison unavailable."
+                  )
+              else:
+                  print(
+                      f"{evidence_game_count} games: "
+                      f"n={len(comparison_results)}, "
+                      f"prior_rho={prior_spearman:.3f}, "
+                      f"nfl_production_rho="
+                      f"{nfl_production_spearman:.3f}."
                   )
 
           # -------------------------------------------------
