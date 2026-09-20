@@ -2019,7 +2019,7 @@ jobs:
                       f"n={len(cutoff_results)}, "
                       "rho=unavailable."
                   )
-               else:
+              else:
                   print(
                       f"{evidence_game_count} games: "
                       f"n={len(cutoff_results)}, "
