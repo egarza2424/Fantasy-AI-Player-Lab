@@ -9783,6 +9783,42 @@ jobs:
           # CALCULATE CURRENT FANTASY AI SCORES
           # ---------------------------------------------
 
+           eligible_zero_stat_rookie_ids = {
+              player_id
+              for player_id, player_context in (
+                  current_player_context.items()
+              )
+              if (
+                  player_context.get("is_rookie", False) and
+                  player_context.get(
+                      "rookie_prior_eligible",
+                      False
+                  ) and
+                  not player_context.get(
+                      "has_stat_history",
+                      False
+                  ) and
+                  (
+                      player_context.get(
+                          "rookie_draft_capital_bucket"
+                      ) is not None
+                  )
+              )
+          }
+
+          fantasy_ai_player_ids = (
+              current_player_ids |
+              eligible_zero_stat_rookie_ids
+          )
+
+          print(
+              "Fantasy AI scoring pool: "
+              f"{len(fantasy_ai_player_ids)} players "
+              f"({len(current_player_ids)} stats-based + "
+              f"{len(eligible_zero_stat_rookie_ids)} "
+              "eligible zero-stat rookies)."
+          )
+
           current_fantasy_ai_scores = {}
 
           expert_rankings_by_player_id = {}
@@ -9797,7 +9833,7 @@ jobs:
                       nflverse_player_id
                   ] = expert_ranking
 
-          for player_id in current_player_ids:
+          for player_id in fantasy_ai_player_ids:
               recent_signal = (
                   current_recent_performance.get(
                       player_id,
@@ -10082,16 +10118,15 @@ jobs:
 
           if (
               len(current_fantasy_ai_scores) !=
-              len(current_player_ids)
+              len(fantasy_ai_player_ids)
           ):
               raise RuntimeError(
                   "Fantasy AI score count does not match "
-                  "current player pool. Scores: "
+                  "Fantasy AI player pool. Scores: "
                   f"{len(current_fantasy_ai_scores)}, "
                   "players: "
-                  f"{len(current_player_ids)}."
+                  f"{len(fantasy_ai_player_ids)}."
               )
-
           for (
               player_id,
               fantasy_ai_result
@@ -10178,15 +10213,20 @@ jobs:
                       False
                   )
               }
+              expected_recent_available = (
+                  current_recent_performance.get(
+                      player_id,
+                      {}
+                  ).get(
+                      "available",
+                      False
+                  ) or
+                  player_id in eligible_zero_stat_rookie_ids
+              )
+
               signal_availability_checks = {
                   "recent_performance": (
-                      current_recent_performance.get(
-                          player_id,
-                          {}
-                      ).get(
-                          "available",
-                          False
-                      )
+                      expected_recent_available
                   ),
                   "opportunity_volume": (
                       current_player_opportunity.get(
@@ -10207,7 +10247,6 @@ jobs:
                       )
                   )
               }
-
               for (
                   component_name,
                   expected_available
