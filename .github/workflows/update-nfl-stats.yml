@@ -2607,13 +2607,13 @@ jobs:
                   )
               )
 
-              print(
-                  f"  nested summary: "
-                  f"n={total_nested_sample}, "
-                  f"weighted_fold_rho={weighted_rho_text}, "
-                  f"selected_prior/nfl_weights="
-                  f"{selected_weight_text}"
-              )
+            print(
+                f"  nested summary: "
+                f"n={total_nested_sample}, "
+                f"weighted_fold_rho={weighted_rho_text}, "
+                f"selected_prior/nfl_weights="
+                f"{selected_weight_text}"
+            )
 
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
