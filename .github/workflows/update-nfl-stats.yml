@@ -2185,7 +2185,115 @@ jobs:
                       f"nfl={nfl_evidence_weight:.2f}, "
                       f"rho={blend_rho_text}"
                   )
+          # -------------------------------------------------
+          # ROOKIE CALENDAR-WEEK SCALE-ALIGNED BLEND TEST
+          # Convert draft prior and NFL evidence to comparable
+          # within-week percentile-rank scales before blending.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
 
+          print(
+              "Rookie calendar-week scale-aligned prior + "
+              "NFL evidence blend test:"
+          )
+
+          for prediction_week in (2, 3, 4):
+              week_results = (
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ]
+              )
+
+              prior_values = [
+                  result["predicted_prior_score"]
+                  for result in week_results
+              ]
+
+              nfl_evidence_values = [
+                  result["nfl_evidence_ppr"]
+                  for result in week_results
+              ]
+
+              prior_ranks = calculate_average_ranks(
+                  prior_values
+              )
+
+              nfl_evidence_ranks = calculate_average_ranks(
+                  nfl_evidence_values
+              )
+
+              sample_size = len(week_results)
+
+              if sample_size <= 1:
+                  raise RuntimeError(
+                      "Scale-aligned rookie blend test "
+                      f"requires at least 2 players for "
+                      f"Week {prediction_week}."
+                  )
+
+              prior_percentile_scores = [
+                  (
+                      (rank - 1.0) /
+                      (sample_size - 1.0)
+                  ) * 100.0
+                  for rank in prior_ranks
+              ]
+
+              nfl_percentile_scores = [
+                  (
+                      (rank - 1.0) /
+                      (sample_size - 1.0)
+                  ) * 100.0
+                  for rank in nfl_evidence_ranks
+              ]
+
+              print(
+                  f"Week {prediction_week}: "
+                  f"n={sample_size}"
+              )
+
+              for (
+                  prior_weight,
+                  nfl_evidence_weight
+              ) in rookie_calendar_week_blend_weights:
+                  blend_pairs = [
+                      (
+                          (
+                              prior_percentile_scores[
+                                  result_index
+                              ] * prior_weight
+                          ) +
+                          (
+                              nfl_percentile_scores[
+                                  result_index
+                              ] * nfl_evidence_weight
+                          ),
+                          result[
+                              "actual_prediction_week_ppr"
+                          ]
+                      )
+                      for result_index, result in enumerate(
+                          week_results
+                      )
+                  ]
+
+                  blend_spearman = (
+                      calculate_spearman_rank_correlation(
+                          blend_pairs
+                      )
+                  )
+
+                  blend_rho_text = (
+                      f"{blend_spearman:.3f}"
+                      if blend_spearman is not None
+                      else "unavailable"
+                  )
+
+                  print(
+                      f"  prior={prior_weight:.2f}, "
+                      f"nfl={nfl_evidence_weight:.2f}, "
+                      f"rho={blend_rho_text}"
+                  )
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
