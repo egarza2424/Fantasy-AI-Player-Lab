@@ -2555,13 +2555,43 @@ jobs:
                       f"{selected_nfl_weight:.2f}"
                   )
 
-              valid_nested_results = [
-                  result
-                  for result in nested_week_results
-                  if result["rho"] is not None
-              ]
+              weighted_rho_text = (
+                  f"{weighted_nested_rho:.3f}"
+                  if weighted_nested_rho is not None
+                  else "unavailable"
+              )
 
-              total_nested_sample = sum(
+              selected_weight_counts = defaultdict(int)
+
+              for result in nested_week_results:
+                  selected_weight_counts[
+                      (
+                          result["prior_weight"],
+                          result["nfl_weight"]
+                      )
+                  ] += 1
+
+              selected_weight_text = ", ".join(
+                  (
+                      f"{prior_weight:.2f}/"
+                      f"{nfl_weight:.2f}:"
+                      f"{count}"
+                  )
+                  for (
+                      prior_weight,
+                      nfl_weight
+                  ), count in sorted(
+                      selected_weight_counts.items()
+                  )
+              )
+
+              print(
+                  f"  nested summary: "
+                  f"n={total_nested_sample}, "
+                  f"weighted_fold_rho={weighted_rho_text}, "
+                  f"selected_prior/nfl_weights="
+                  f"{selected_weight_text}"
+              )
                   result["sample_size"]
                   for result in valid_nested_results
               )
@@ -2607,14 +2637,13 @@ jobs:
                   )
               )
 
-            print(
-                f"  nested summary: "
-                f"n={total_nested_sample}, "
-                f"weighted_fold_rho={weighted_rho_text}, "
-                f"selected_prior/nfl_weights="
-                f"{selected_weight_text}"
-            )
-
+              print(
+                  f"  nested summary: "
+                  f"n={total_nested_sample}, "
+                  f"weighted_fold_rho={weighted_rho_text}, "
+                  f"selected_prior/nfl_weights="
+                  f"{selected_weight_text}"
+              )
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
