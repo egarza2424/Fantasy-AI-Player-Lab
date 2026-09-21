@@ -2289,11 +2289,332 @@ jobs:
                       else "unavailable"
                   )
 
-                  print(
+                   print(
                       f"  prior={prior_weight:.2f}, "
                       f"nfl={nfl_evidence_weight:.2f}, "
                       f"rho={blend_rho_text}"
                   )
+
+          # -------------------------------------------------
+          # ROOKIE CALENDAR-WEEK NESTED LOYO VALIDATION
+          # Select the scale-aligned blend using only the other
+          # rookie seasons, then evaluate the held-out season.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          print(
+              "Rookie calendar-week nested leave-one-season-out "
+              "blend validation:"
+          )
+
+          for prediction_week in (2, 3, 4):
+              week_results = (
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ]
+              )
+
+              print(
+                  f"Week {prediction_week}:"
+              )
+
+              nested_week_results = []
+
+              for held_out_season in sorted(
+                  historical_rookie_seasons
+              ):
+                  training_results = [
+                      result
+                      for result in week_results
+                      if result["rookie_season"] !=
+                      held_out_season
+                  ]
+
+                  test_results = [
+                      result
+                      for result in week_results
+                      if result["rookie_season"] ==
+                      held_out_season
+                  ]
+
+                  if (
+                      len(training_results) <= 1 or
+                      len(test_results) <= 1
+                  ):
+                      raise RuntimeError(
+                          "Nested calendar-week rookie validation "
+                          f"has insufficient sample for Week "
+                          f"{prediction_week}, season "
+                          f"{held_out_season}."
+                      )
+
+                  training_prior_values = [
+                      result["predicted_prior_score"]
+                      for result in training_results
+                  ]
+
+                  training_nfl_values = [
+                      result["nfl_evidence_ppr"]
+                      for result in training_results
+                  ]
+
+                  training_prior_ranks = (
+                      calculate_average_ranks(
+                          training_prior_values
+                      )
+                  )
+
+                  training_nfl_ranks = (
+                      calculate_average_ranks(
+                          training_nfl_values
+                      )
+                  )
+
+                  training_sample_size = len(
+                      training_results
+                  )
+
+                  training_prior_percentiles = [
+                      (
+                          (rank - 1.0) /
+                          (training_sample_size - 1.0)
+                      ) * 100.0
+                      for rank in training_prior_ranks
+                  ]
+
+                  training_nfl_percentiles = [
+                      (
+                          (rank - 1.0) /
+                          (training_sample_size - 1.0)
+                      ) * 100.0
+                      for rank in training_nfl_ranks
+                  ]
+
+                  best_training_rho = None
+                  selected_prior_weight = None
+                  selected_nfl_weight = None
+
+                  for (
+                      prior_weight,
+                      nfl_evidence_weight
+                  ) in rookie_calendar_week_blend_weights:
+                      training_blend_pairs = [
+                          (
+                              (
+                                  training_prior_percentiles[
+                                      result_index
+                                  ] * prior_weight
+                              ) +
+                              (
+                                  training_nfl_percentiles[
+                                      result_index
+                                  ] * nfl_evidence_weight
+                              ),
+                              result[
+                                  "actual_prediction_week_ppr"
+                              ]
+                          )
+                          for result_index, result in enumerate(
+                              training_results
+                          )
+                      ]
+
+                      training_rho = (
+                          calculate_spearman_rank_correlation(
+                              training_blend_pairs
+                          )
+                      )
+
+                      if training_rho is None:
+                          continue
+
+                      if (
+                          best_training_rho is None or
+                          training_rho > best_training_rho
+                      ):
+                          best_training_rho = training_rho
+                          selected_prior_weight = prior_weight
+                          selected_nfl_weight = (
+                              nfl_evidence_weight
+                          )
+
+                  if selected_prior_weight is None:
+                      raise RuntimeError(
+                          "Nested calendar-week rookie validation "
+                          "could not select a blend for Week "
+                          f"{prediction_week}, season "
+                          f"{held_out_season}."
+                      )
+
+                  combined_results = (
+                      training_results + test_results
+                  )
+
+                  combined_prior_values = [
+                      result["predicted_prior_score"]
+                      for result in combined_results
+                  ]
+
+                  combined_nfl_values = [
+                      result["nfl_evidence_ppr"]
+                      for result in combined_results
+                  ]
+
+                  combined_prior_ranks = (
+                      calculate_average_ranks(
+                          combined_prior_values
+                      )
+                  )
+
+                  combined_nfl_ranks = (
+                      calculate_average_ranks(
+                          combined_nfl_values
+                      )
+                  )
+
+                  combined_sample_size = len(
+                      combined_results
+                  )
+
+                  combined_prior_percentiles = [
+                      (
+                          (rank - 1.0) /
+                          (combined_sample_size - 1.0)
+                      ) * 100.0
+                      for rank in combined_prior_ranks
+                  ]
+
+                  combined_nfl_percentiles = [
+                      (
+                          (rank - 1.0) /
+                          (combined_sample_size - 1.0)
+                      ) * 100.0
+                      for rank in combined_nfl_ranks
+                  ]
+
+                  test_start_index = len(
+                      training_results
+                  )
+
+                  test_blend_pairs = []
+
+                  for test_offset, result in enumerate(
+                      test_results
+                  ):
+                      combined_index = (
+                          test_start_index + test_offset
+                      )
+
+                      test_blend_score = (
+                          combined_prior_percentiles[
+                              combined_index
+                          ] * selected_prior_weight +
+                          combined_nfl_percentiles[
+                              combined_index
+                          ] * selected_nfl_weight
+                      )
+
+                      test_blend_pairs.append(
+                          (
+                              test_blend_score,
+                              result[
+                                  "actual_prediction_week_ppr"
+                              ]
+                          )
+                      )
+
+                  held_out_rho = (
+                      calculate_spearman_rank_correlation(
+                          test_blend_pairs
+                      )
+                  )
+
+                  nested_week_results.append({
+                      "season": held_out_season,
+                      "sample_size": len(test_results),
+                      "rho": held_out_rho,
+                      "prior_weight":
+                          selected_prior_weight,
+                      "nfl_weight":
+                          selected_nfl_weight
+                  })
+
+                  held_out_rho_text = (
+                      f"{held_out_rho:.3f}"
+                      if held_out_rho is not None
+                      else "unavailable"
+                  )
+
+                  print(
+                      f"  held_out={held_out_season}: "
+                      f"n={len(test_results)}, "
+                      f"rho={held_out_rho_text}, "
+                      f"selected_prior_weight="
+                      f"{selected_prior_weight:.2f}, "
+                      f"selected_nfl_weight="
+                      f"{selected_nfl_weight:.2f}"
+                  )
+
+              valid_nested_results = [
+                  result
+                  for result in nested_week_results
+                  if result["rho"] is not None
+              ]
+
+              total_nested_sample = sum(
+                  result["sample_size"]
+                  for result in valid_nested_results
+              )
+
+              weighted_nested_rho = (
+                  sum(
+                      result["rho"] *
+                      result["sample_size"]
+                      for result in valid_nested_results
+                  ) /
+                  total_nested_sample
+                  if total_nested_sample > 0
+                  else None
+              )
+
+              weighted_rho_text = (
+                  f"{weighted_nested_rho:.3f}"
+                  if weighted_nested_rho is not None
+                  else "unavailable"
+              )
+
+              selected_weight_counts = defaultdict(int)
+
+              for result in nested_week_results:
+                  selected_weight_counts[
+                      (
+                          result["prior_weight"],
+                          result["nfl_weight"]
+                      )
+                  ] += 1
+
+              selected_weight_text = ", ".join(
+                  (
+                      f"{prior_weight:.2f}/"
+                      f"{nfl_weight:.2f}:"
+                      f"{count}"
+                  )
+                  for (
+                      prior_weight,
+                      nfl_weight
+                  ), count in sorted(
+                      selected_weight_counts.items()
+                  )
+              )
+
+              print(
+                  f"  nested summary: "
+                  f"n={total_nested_sample}, "
+                  f"weighted_fold_rho={weighted_rho_text}, "
+                  f"selected_prior/nfl_weights="
+                  f"{selected_weight_text}"
+              )
+
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
