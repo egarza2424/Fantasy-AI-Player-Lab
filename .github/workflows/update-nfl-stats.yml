@@ -1970,15 +1970,14 @@ jobs:
               for player_id, rookie_outcome in (
                   historical_rookie_player_outcomes.items()
               ):
-              prior_result = next(
-                  (
-                      result
-                      for result in rookie_prior_backtest_results
-                      if result["player_id"] == player_id
-                  ),
-                  None
-              )
-
+                  prior_result = next(
+                      (
+                          result
+                          for result in rookie_prior_backtest_results
+                          if result["player_id"] == player_id
+                      ),
+                      None
+                  )
                   if not prior_result:
                       continue
 
