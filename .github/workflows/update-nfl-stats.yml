@@ -2555,32 +2555,32 @@ jobs:
                       f"{selected_nfl_weight:.2f}"
                   )
 
-            valid_nested_results = [
-                result
-                for result in nested_week_results
-                if result["rho"] is not None
-            ]
+              valid_nested_results = [
+                  result
+                  for result in nested_week_results
+                  if result["rho"] is not None
+              ]
 
-            total_nested_sample = sum(
-                result["sample_size"]
-                for result in valid_nested_results
-            )
+              total_nested_sample = sum(
+                  result["sample_size"]
+                  for result in valid_nested_results
+              )
 
-            weighted_nested_rho = (
-                sum(
-                    result["rho"] * result["sample_size"]
-                    for result in valid_nested_results
-                ) /
-                total_nested_sample
-                if total_nested_sample > 0
-                else None
-            )
+              weighted_nested_rho = (
+                  sum(
+                      result["rho"] * result["sample_size"]
+                      for result in valid_nested_results
+                  ) /
+                  total_nested_sample
+                  if total_nested_sample > 0
+                  else None
+              )
 
-            weighted_rho_text = (
-                f"{weighted_nested_rho:.3f}"
-                if weighted_nested_rho is not None
-                else "unavailable"
-            )
+              weighted_rho_text = (
+                  f"{weighted_nested_rho:.3f}"
+                  if weighted_nested_rho is not None
+                  else "unavailable"
+              )
               selected_weight_counts = defaultdict(int)
 
               for result in nested_week_results:
