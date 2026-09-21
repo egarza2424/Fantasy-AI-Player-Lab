@@ -1850,6 +1850,45 @@ jobs:
               f"for {len(historical_rookie_weekly_rows)} "
               "historical drafted rookies with stats."
           )
+
+          # -------------------------------------------------
+          # ROOKIE CALENDAR-WEEK PPR LOOKUP
+          # Preserve zero-stat weeks as zero fantasy points.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          historical_rookie_calendar_week_ppr = {}
+
+          for player_id, rookie_outcome in (
+              historical_rookie_player_outcomes.items()
+          ):
+              weekly_ppr_lookup = {
+                  game["week"]: game["ppr_points"]
+                  for game in (
+                      historical_rookie_weekly_rows.get(
+                          player_id,
+                          []
+                      )
+                  )
+              }
+
+              historical_rookie_calendar_week_ppr[
+                  player_id
+              ] = {
+                  week: weekly_ppr_lookup.get(
+                      week,
+                      0.0
+                  )
+                  for week in (1, 2, 3, 4)
+              }
+
+          print(
+              "Built calendar-week rookie PPR histories "
+              f"for "
+              f"{len(historical_rookie_calendar_week_ppr)} "
+              "historical drafted rookies."
+          )
+
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
