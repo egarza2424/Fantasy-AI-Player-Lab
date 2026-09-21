@@ -9077,7 +9077,68 @@ jobs:
                       player_id
                   )
               )
+              player_context = current_player_context.get(
+                  player_id,
+                  {}
+              )
 
+              rookie_prior_score = None
+              rookie_prior_weight = 0.0
+
+              if (
+                  player_context.get("is_rookie", False) and
+                  player_context.get(
+                      "rookie_prior_eligible",
+                      False
+                  )
+              ):
+                  rookie_position = player_context.get(
+                      "position"
+                  )
+
+                  rookie_draft_capital_bucket = (
+                      player_context.get(
+                          "rookie_draft_capital_bucket"
+                      )
+                  )
+
+                  rookie_prior_data = (
+                      rookie_draft_capital_prior_lookup.get(
+                          (
+                              rookie_position,
+                              rookie_draft_capital_bucket
+                          ),
+                          {}
+                      )
+                  )
+
+                  rookie_prior_score = (
+                      rookie_prior_data.get(
+                          "shrunk_prior_score"
+                      )
+                  )
+
+                  rookie_games_with_stats = int(
+                      player_context.get(
+                          "rookie_nfl_games_with_stats",
+                          0
+                      ) or 0
+                  )
+
+                  rookie_weight_game_count = min(
+                      rookie_games_with_stats,
+                      3
+                  )
+
+                  rookie_prior_weight = (
+                      rookie_prior_production_weights.get(
+                          rookie_position,
+                          {}
+                      ).get(
+                          rookie_weight_game_count,
+                          0.0
+                      )
+                  )
               recent_available = (
                   recent_signal.get(
                       "available",
