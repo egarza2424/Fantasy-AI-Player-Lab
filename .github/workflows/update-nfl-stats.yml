@@ -1889,6 +1889,67 @@ jobs:
               "historical drafted rookies."
           )
 
+          invalid_rookie_calendar_week_histories = []
+
+          if (
+              len(historical_rookie_calendar_week_ppr) !=
+              len(historical_rookie_player_outcomes)
+          ):
+              raise RuntimeError(
+                  "Calendar-week rookie history count "
+                  "validation failed: "
+                  f"{len(historical_rookie_calendar_week_ppr)} "
+                  "calendar histories vs "
+                  f"{len(historical_rookie_player_outcomes)} "
+                  "historical rookies."
+              )
+
+          for player_id, calendar_week_ppr in (
+              historical_rookie_calendar_week_ppr.items()
+          ):
+              if set(calendar_week_ppr.keys()) != {
+                  1,
+                  2,
+                  3,
+                  4
+              }:
+                  invalid_rookie_calendar_week_histories.append({
+                      "player_id": player_id,
+                      "reason": "invalid_calendar_weeks",
+                      "weeks": sorted(
+                          calendar_week_ppr.keys()
+                      )
+                  })
+                  continue
+
+              for week, ppr_points in (
+                  calendar_week_ppr.items()
+              ):
+                  if not isinstance(
+                      ppr_points,
+                      (int, float)
+                  ):
+                      invalid_rookie_calendar_week_histories.append({
+                          "player_id": player_id,
+                          "reason": "non_numeric_ppr",
+                          "week": week,
+                          "value": ppr_points
+                      })
+
+          if invalid_rookie_calendar_week_histories:
+              raise RuntimeError(
+                  "Calendar-week rookie history validation "
+                  "failed: "
+                  f"{invalid_rookie_calendar_week_histories[:10]}"
+              )
+
+          print(
+              "Validated calendar-week rookie PPR histories "
+              f"for "
+              f"{len(historical_rookie_calendar_week_ppr)} "
+              "historical drafted rookies."
+          )
+
           # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
