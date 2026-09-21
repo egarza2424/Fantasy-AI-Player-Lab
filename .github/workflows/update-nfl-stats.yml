@@ -8898,6 +8898,33 @@ jobs:
               "fantasypros_ecr": 0.10
           }
 
+          rookie_prior_production_weights = {
+              "QB": {
+                  0: 1.00,
+                  1: 0.75,
+                  2: 0.50,
+                  3: 0.50
+              },
+              "RB": {
+                  0: 1.00,
+                  1: 0.50,
+                  2: 0.25,
+                  3: 0.25
+              },
+              "WR": {
+                  0: 1.00,
+                  1: 0.50,
+                  2: 0.25,
+                  3: 0.25
+              },
+              "TE": {
+                  0: 1.00,
+                  1: 0.50,
+                  2: 0.50,
+                  3: 0.50
+              }
+          }
+
           if round(
               sum(fantasy_ai_base_weights.values()),
               10
