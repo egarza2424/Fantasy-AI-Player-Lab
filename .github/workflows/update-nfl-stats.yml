@@ -2114,6 +2114,79 @@ jobs:
               )
 
           # -------------------------------------------------
+          # ROOKIE CALENDAR-WEEK BLEND TEST
+          # Test draft prior + NFL evidence on the corrected
+          # 321-player calendar-week sample.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_calendar_week_blend_weights = [
+              (1.00, 0.00),
+              (0.75, 0.25),
+              (0.50, 0.50),
+              (0.25, 0.75),
+              (0.00, 1.00)
+          ]
+
+          print(
+              "Rookie calendar-week prior + NFL evidence "
+              "blend test:"
+          )
+
+          for prediction_week in (2, 3, 4):
+              week_results = (
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ]
+              )
+
+              print(
+                  f"Week {prediction_week}: "
+                  f"n={len(week_results)}"
+              )
+
+              for (
+                  prior_weight,
+                  nfl_evidence_weight
+              ) in rookie_calendar_week_blend_weights:
+                  blend_pairs = [
+                      (
+                          (
+                              result[
+                                  "predicted_prior_score"
+                              ] * prior_weight
+                          ) +
+                          (
+                              result[
+                                  "nfl_evidence_ppr"
+                              ] * nfl_evidence_weight
+                          ),
+                          result[
+                              "actual_prediction_week_ppr"
+                          ]
+                      )
+                      for result in week_results
+                  ]
+
+                  blend_spearman = (
+                      calculate_spearman_rank_correlation(
+                          blend_pairs
+                      )
+                  )
+
+                  blend_rho_text = (
+                      f"{blend_spearman:.3f}"
+                      if blend_spearman is not None
+                      else "unavailable"
+                  )
+
+                  print(
+                      f"  prior={prior_weight:.2f}, "
+                      f"nfl={nfl_evidence_weight:.2f}, "
+                      f"rho={blend_rho_text}"
+                  )
+
+          # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
           # Diagnostic only. Does not affect model scoring.
