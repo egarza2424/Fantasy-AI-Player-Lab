@@ -1951,11 +1951,171 @@ jobs:
           )
 
           # -------------------------------------------------
+          # ROOKIE CALENDAR-WEEK PREDICTION TEST
+          # At the start of Weeks 2-4, compare the draft prior
+          # with NFL production available before that week.
+          # Zero-stat calendar weeks remain zero production.
+          # Diagnostic only. Does not affect model scoring.
+          # -------------------------------------------------
+
+          rookie_calendar_week_prediction_results = defaultdict(
+              list
+          )
+
+          for prediction_week in (2, 3, 4):
+              evidence_weeks = list(
+                  range(1, prediction_week)
+              )
+
+              for player_id, rookie_outcome in (
+                  historical_rookie_player_outcomes.items()
+              ):
+                  prior_result = (
+                      rookie_prior_backtest_by_player_id.get(
+                          player_id
+                      )
+                  )
+
+                  if not prior_result:
+                      continue
+
+                  calendar_week_ppr = (
+                      historical_rookie_calendar_week_ppr.get(
+                          player_id
+                      )
+                  )
+
+                  if not calendar_week_ppr:
+                      continue
+
+                  nfl_evidence_ppr = (
+                      sum(
+                          calendar_week_ppr[week]
+                          for week in evidence_weeks
+                      ) /
+                      len(evidence_weeks)
+                  )
+
+                  actual_prediction_week_ppr = (
+                      calendar_week_ppr[
+                          prediction_week
+                      ]
+                  )
+
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ].append({
+                      "player_id": player_id,
+                      "position": rookie_outcome["position"],
+                      "rookie_season":
+                          rookie_outcome["rookie_season"],
+                      "prediction_week": prediction_week,
+                      "evidence_week_count":
+                          len(evidence_weeks),
+                      "predicted_prior_score":
+                          prior_result[
+                              "predicted_prior_score"
+                          ],
+                      "nfl_evidence_ppr": round(
+                          nfl_evidence_ppr,
+                          2
+                      ),
+                      "actual_prediction_week_ppr":
+                          actual_prediction_week_ppr
+                  })
+
+          expected_calendar_prediction_sample_size = len(
+              rookie_prior_backtest_results
+          )
+
+          for prediction_week in (2, 3, 4):
+              week_results = (
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ]
+              )
+
+              if (
+                  len(week_results) !=
+                  expected_calendar_prediction_sample_size
+              ):
+                  raise RuntimeError(
+                      "Rookie calendar-week prediction sample "
+                      "validation failed for Week "
+                      f"{prediction_week}: "
+                      f"{len(week_results)} results vs "
+                      f"{expected_calendar_prediction_sample_size} "
+                      "expected."
+                  )
+
+          print(
+              "Rookie calendar-week prediction signal "
+              "comparison:"
+          )
+
+          for prediction_week in (2, 3, 4):
+              week_results = (
+                  rookie_calendar_week_prediction_results[
+                      prediction_week
+                  ]
+              )
+
+              prior_pairs = [
+                  (
+                      result["predicted_prior_score"],
+                      result[
+                          "actual_prediction_week_ppr"
+                      ]
+                  )
+                  for result in week_results
+              ]
+
+              nfl_evidence_pairs = [
+                  (
+                      result["nfl_evidence_ppr"],
+                      result[
+                          "actual_prediction_week_ppr"
+                      ]
+                  )
+                  for result in week_results
+              ]
+
+              prior_spearman = (
+                  calculate_spearman_rank_correlation(
+                      prior_pairs
+                  )
+              )
+
+              nfl_evidence_spearman = (
+                  calculate_spearman_rank_correlation(
+                      nfl_evidence_pairs
+                  )
+              )
+
+              prior_rho_text = (
+                  f"{prior_spearman:.3f}"
+                  if prior_spearman is not None
+                  else "unavailable"
+              )
+
+              nfl_rho_text = (
+                  f"{nfl_evidence_spearman:.3f}"
+                  if nfl_evidence_spearman is not None
+                  else "unavailable"
+              )
+
+              print(
+                  f"Week {prediction_week}: "
+                  f"n={len(week_results)}, "
+                  f"prior_rho={prior_rho_text}, "
+                  f"nfl_evidence_rho={nfl_rho_text}."
+              )
+
+          # -------------------------------------------------
           # ROOKIE PRIOR EVIDENCE-CUTOFF BACKTEST
           # Test prior value after 0, 1, 2, and 3 NFL games.
           # Diagnostic only. Does not affect model scoring.
           # -------------------------------------------------
-
           rookie_prior_evidence_backtest_results = defaultdict(
               list
           )
