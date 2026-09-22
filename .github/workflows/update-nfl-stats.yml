@@ -1,4 +1,4 @@
-fname: Update NFL Stats
+name: Update NFL Stats
 
 on:
   workflow_dispatch:
