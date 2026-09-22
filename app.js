@@ -1790,11 +1790,13 @@ const relevantPlayers = players.filter((player) => {
 
 if (
   injury === "OUT" ||
+  injury === "PUP" ||
+  injury === "IR" ||
+  injury === "INJURED_RESERVE" ||
   unavailableRosterStatuses.includes(rosterStatus)
 ) {
   return false;
 }
-
   const hasStats =
     getPlayerWeeklyStats(player).length > 0;
     const depthOrder =
