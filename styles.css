@@ -440,12 +440,9 @@ button {
 
 select {
   padding: 0 12px;
-
-  background: white;
-
-  color: var(--ink);
+  background: #ffffff;
+  color: #111827;
 }
-
 .primary-btn {
   background: var(--accent);
 
