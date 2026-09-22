@@ -1302,3 +1302,15 @@ footer a {
 .player-status strong {
   color: #111827;
 }                                                                                                
+/* Data Daddy website banner */
+.brand-banner {
+  width: 100%;
+  background: #050709;
+  overflow: hidden;
+}
+
+.brand-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
