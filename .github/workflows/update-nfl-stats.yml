@@ -10024,6 +10024,70 @@ jobs:
                   )
               )
 
+              base_fantasy_ai_score = (
+                  fantasy_ai_result.get("score")
+              )
+
+              rookie_prior_applied = (
+                  rookie_prior_score is not None and
+                  rookie_prior_weight > 0.0
+              )
+
+              if rookie_prior_applied:
+                  adjusted_fantasy_ai_score = round(
+                      (
+                          base_fantasy_ai_score *
+                          (1.0 - rookie_prior_weight)
+                      ) +
+                      (
+                          rookie_prior_score *
+                          rookie_prior_weight
+                      ),
+                      1
+                  )
+
+                  fantasy_ai_result["score"] = max(
+                      0.0,
+                      min(
+                          100.0,
+                          adjusted_fantasy_ai_score
+                      )
+                  )
+
+              fantasy_ai_result[
+                  "base_score"
+              ] = base_fantasy_ai_score
+
+              fantasy_ai_result[
+                  "rookie_prior_adjustment"
+              ] = {
+                  "eligible": (
+                      player_context.get(
+                          "rookie_prior_eligible",
+                          False
+                      )
+                  ),
+                  "applied": rookie_prior_applied,
+                  "prior_score": rookie_prior_score,
+                  "weight": rookie_prior_weight,
+                  "nfl_games_with_stats": (
+                      player_context.get(
+                          "rookie_nfl_games_with_stats",
+                          0
+                      )
+                  ),
+                  "draft_capital_bucket": (
+                      player_context.get(
+                          "rookie_draft_capital_bucket"
+                      )
+                  ),
+                  "draft_capital_source": (
+                      player_context.get(
+                          "rookie_draft_capital_source"
+                      )
+                  )
+              }
+
               transparent_components = {}
 
               for (
