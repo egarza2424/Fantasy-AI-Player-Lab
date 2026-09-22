@@ -10338,9 +10338,19 @@ jobs:
                   )
                   continue
 
-              active_components = dict(components)
+              active_components = {
+                  component_name: component
+                  for component_name, component
+                  in components.items()
+                  if component.get("available", False)
+              }
 
-              unavailable_components = {}
+              unavailable_components = {
+                  component_name: component
+                  for component_name, component
+                  in components.items()
+                  if not component.get("available", False)
+              }
               expected_recent_available = (
                   current_recent_performance.get(
                       player_id,
@@ -10378,8 +10388,12 @@ jobs:
                   component_name,
                   expected_available
               ) in signal_availability_checks.items():
-                  actual_available = (
-                      component_name in active_components
+                  actual_available = components.get(
+                      component_name,
+                      {}
+                  ).get(
+                      "available",
+                      False
                   )
                   if actual_available != expected_available:
                       invalid_fantasy_ai_scores.append(
@@ -10575,7 +10589,10 @@ jobs:
               if (
                   target_week is not None and
                   (
-                      "fantasypros_ecr" in active_components or
+                      historical_ecr_component.get(
+                          "available",
+                          False
+                      ) or
                       abs(
                           float(
                               historical_ecr_component.get(
