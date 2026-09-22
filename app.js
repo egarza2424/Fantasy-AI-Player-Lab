@@ -2571,16 +2571,7 @@ async function initializeApp() {
 
   // Refresh rankings when risk tolerance changes.
   riskSelect.addEventListener("change", renderPositionRankings);
+  }
 }
 
 initializeApp();
-/* Data Daddy — player information badges */
-.player-result-card .player-meta span {
-  background: #29384b;
-  color: #dce6f3;
-  border: 1px solid #40536b;
-}
-
-.player-result-card .player-meta span strong {
-  color: #ffffff;
-}
