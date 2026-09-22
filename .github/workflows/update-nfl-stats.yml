@@ -9789,6 +9789,8 @@ jobs:
                   current_player_context.items()
               )
               if (
+              if (
+                  target_week is None and
                   player_context.get("is_rookie", False) and
                   player_context.get(
                       "rookie_prior_eligible",
@@ -10221,9 +10223,25 @@ jobs:
               )
 
               if (
-                  actual_component_names !=
+              prior_only_result = (
+                  fantasy_ai_result.get(
+                      "rookie_prior_adjustment",
+                      {}
+                  ).get(
+                      "prior_only",
+                      False
+                  )
+              )
+
+              valid_component_structure = (
+                  actual_component_names ==
                   expected_component_names
-              ):
+              ) or (
+                  prior_only_result and
+                  not actual_component_names
+              )
+
+              if not valid_component_structure:
                   invalid_fantasy_ai_scores.append(
                       (
                           player_id,
@@ -10233,7 +10251,63 @@ jobs:
                       )
                   )
                   continue
+              rookie_adjustment = fantasy_ai_result.get(
+                  "rookie_prior_adjustment",
+                  {}
+              )
 
+              prior_only = rookie_adjustment.get(
+                  "prior_only",
+                  False
+              )
+
+              prior_applied = rookie_adjustment.get(
+                  "applied",
+                  False
+              )
+
+              base_available = fantasy_ai_result.get(
+                  "base_available",
+                  False
+              )
+
+              prior_weight = float(
+                  rookie_adjustment.get(
+                      "weight",
+                      0.0
+                  ) or 0.0
+              )
+
+              prior_score = rookie_adjustment.get(
+                  "prior_score"
+              )
+
+              if prior_only and not (
+                  rookie_adjustment.get("eligible", False)
+                  and prior_applied
+                  and not base_available
+                  and prior_weight == 1.0
+                  and prior_score is not None
+                  and score_available
+              ):
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "invalid_prior_only_configuration"
+                      )
+                  )
+
+              if (
+                  prior_applied
+                  and not base_available
+                  and not prior_only
+              ):
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "prior_applied_without_base"
+                      )
+                  )                  
               active_weight_total = float(
                   fantasy_ai_result.get(
                       "active_weight_total",
@@ -10370,46 +10444,123 @@ jobs:
                           invalid_unavailable_weights
                       )
                   )
+              base_available = fantasy_ai_result.get(
+                  "base_available",
+                  False
+              )
+
+              expected_weight_sum = (
+                  1.0 if base_available else 0.0
+              )
+
               if abs(
-                  effective_weight_sum - 1.0
+                  effective_weight_sum - expected_weight_sum
               ) > 0.001:
                   invalid_fantasy_ai_scores.append(
                       (
                           player_id,
-                          "effective_weights_do_not_sum_to_1",
-                          round(effective_weight_sum, 6)
+                          "effective_weights_do_not_match_base",
+                          round(effective_weight_sum, 6),
+                          expected_weight_sum
+                      )
+                  )
+               base_score = fantasy_ai_result.get(
+                  "base_score"
+              )
+
+              rookie_adjustment = fantasy_ai_result.get(
+                  "rookie_prior_adjustment",
+                  {}
+              )
+
+              if base_available:
+                  independently_rebuilt_score = round(
+                      sum(
+                          float(component.get("score") or 0.0) *
+                          (
+                              float(
+                                  component.get(
+                                      "base_weight",
+                                      0.0
+                                  ) or 0.0
+                              ) /
+                              active_weight_total
+                          )
+                          for component in active_components.values()
+                      ),
+                      1
+                  )
+              else:
+                  independently_rebuilt_score = 50.0
+
+              if abs(
+                  float(base_score) -
+                  independently_rebuilt_score
+              ) > 0.11:
+                  invalid_fantasy_ai_scores.append(
+                      (
+                          player_id,
+                          "base_score_math_mismatch",
+                          base_score,
+                          independently_rebuilt_score
                       )
                   )
 
-              independently_rebuilt_score = sum(
-                  float(component.get("score") or 0.0) *
-                  (
-                      float(
-                          component.get(
-                              "base_weight",
-                              0.0
-                          ) or 0.0
-                      ) /
-                      active_weight_total
-                  )
-                  for component in active_components.values()
+              prior_applied = rookie_adjustment.get(
+                  "applied",
+                  False
               )
+
+              prior_only = rookie_adjustment.get(
+                  "prior_only",
+                  False
+              )
+
+              prior_score = rookie_adjustment.get(
+                  "prior_score"
+              )
+
+              prior_weight = float(
+                  rookie_adjustment.get(
+                      "weight",
+                      0.0
+                  ) or 0.0
+              )
+
+              if prior_only:
+                  expected_final_score = round(
+                      float(prior_score),
+                      1
+                  )
+              elif prior_applied and base_available:
+                  expected_final_score = round(
+                      (
+                          independently_rebuilt_score *
+                          (1.0 - prior_weight)
+                      ) +
+                      (
+                          float(prior_score) *
+                          prior_weight
+                      ),
+                      1
+                  )
+              else:
+                  expected_final_score = (
+                      independently_rebuilt_score
+                  )
+
               if abs(
                   float(final_score) -
-                  round(independently_rebuilt_score, 1)
+                  expected_final_score
               ) > 0.11:
                   invalid_fantasy_ai_scores.append(
                       (
                           player_id,
                           "final_score_math_mismatch",
                           final_score,
-                          round(
-                              independently_rebuilt_score,
-                              1
-                          )
+                          expected_final_score
                       )
                   )
-
               expected_active_weight_total = sum(
                   float(
                       component.get(
