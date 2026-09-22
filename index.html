@@ -348,3 +348,52 @@
 
 </body>
 </html>
+
+/* DATA DADDY — HOMEPAGE BUTTONS */
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.hero-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 14px 26px;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.hero-actions .primary-btn {
+  background: linear-gradient(135deg, #ffe08a, #f5b82e);
+  color: #10151d;
+  border: 1px solid #ffcf57;
+}
+
+.hero-actions .secondary-btn {
+  background: #1a2432;
+  color: #f5c451;
+  border: 1px solid #f5c451;
+}
+
+.hero-actions a:hover {
+  transform: translateY(-2px);
+}
+
+.hero-actions a:focus-visible {
+  outline: 3px solid #3285ff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .hero-actions a {
+    width: 100%;
+  }
+}
