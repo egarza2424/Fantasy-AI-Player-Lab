@@ -1756,14 +1756,30 @@ function getPositionRankings(position, profile) {
     return rankingCache[cacheKey];
   }
 
-  const relevantPlayers = players.filter((player) => {
-    if (player.position !== position) {
-      return false;
-    }
+const relevantPlayers = players.filter((player) => {
+  if (player.position !== position) {
+    return false;
+  }
 
-    const hasStats =
-      getPlayerWeeklyStats(player).length > 0;
+  const injury = String(player.injuryStatus || "")
+    .trim()
+    .toUpperCase();
 
+  const rosterStatus = String(player.status || "")
+    .trim()
+    .toUpperCase();
+
+  if (
+    injury === "OUT" ||
+    rosterStatus === "INACTIVE" ||
+    rosterStatus === "INJURED_RESERVE" ||
+    rosterStatus === "SUSPENDED"
+  ) {
+    return false;
+  }
+
+  const hasStats =
+    getPlayerWeeklyStats(player).length > 0;
     const depthOrder =
       Number(player.depthChartOrder || 0);
 
@@ -1825,7 +1841,28 @@ function getPlayerPositionRank(player, profile) {
 }
 
 function getRecommendation(player, positionRank) {
-  if (!player || !positionRank) {
+  if (!player) {
+    return "SIT";
+  }
+
+  const injury = String(player.injuryStatus || "")
+    .trim()
+    .toUpperCase();
+
+  const rosterStatus = String(player.status || "")
+    .trim()
+    .toUpperCase();
+
+  if (
+    injury === "OUT" ||
+    rosterStatus === "INACTIVE" ||
+    rosterStatus === "INJURED_RESERVE" ||
+    rosterStatus === "SUSPENDED"
+  ) {
+    return "OUT";
+  }
+
+  if (!positionRank) {
     return "SIT";
   }
 
