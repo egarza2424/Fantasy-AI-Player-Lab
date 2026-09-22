@@ -1461,3 +1461,17 @@ footer a {
 #compare {
   scroll-margin-top: 110px;
 }
+/* Data Daddy — comparison card contrast */
+.results .player-result-card {
+  background: #17212f !important;
+  color: #f5f7fb !important;
+  border: 1px solid #344256;
+}
+
+.results .player-result-card h3,
+.results .player-result-card strong,
+.results .player-result-card p,
+.results .player-result-card .metric-row,
+.results .player-result-card .metric-label-row {
+  color: #f5f7fb;
+}
