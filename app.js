@@ -998,9 +998,13 @@ function getPlayCallerMatchupDetails(player) {
       teamSignal.opponent_defensive_play_caller ||
       "Unknown",
 
-    opponent:
-      teamSignal.opponent ||
-      "Unknown",
+opponent:
+  (
+    teamNextOpponent[player.team] ||
+    teamNextOpponent[
+      player.team === "LAR" ? "LA" : "LAR"
+    ]
+  )?.opponent || "Unknown",
 
     averagePpr:
       positionSignal.average_ppr,
