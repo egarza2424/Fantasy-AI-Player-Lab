@@ -1475,3 +1475,18 @@ footer a {
 .results .player-result-card .metric-label-row {
   color: #f5f7fb;
 }
+/* Data Daddy — comparison score bars */
+.results .metric-track {
+  background: #344256;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.results .metric-fill {
+  background: linear-gradient(
+    90deg,
+    #2478ff,
+    #55b5ff
+  );
+  border-radius: 999px;
+}
