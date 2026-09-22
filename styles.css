@@ -1459,3 +1459,7 @@ footer a {
   color: #f5c451;
   border: 1px solid #f5c451;
 }
+/* Keep comparison controls visible below sticky navigation */
+#compare {
+  scroll-margin-top: 110px;
+}
