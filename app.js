@@ -1777,14 +1777,23 @@ const relevantPlayers = players.filter((player) => {
     .trim()
     .toUpperCase();
 
-  if (
-    injury === "OUT" ||
-    rosterStatus === "INACTIVE" ||
-    rosterStatus === "INJURED_RESERVE" ||
-    rosterStatus === "SUSPENDED"
-  ) {
-    return false;
-  }
+ const unavailableRosterStatuses = [
+  "INACTIVE",
+  "INJURED_RESERVE",
+  "IR",
+  "SUSPENDED",
+  "PUP",
+  "PHYSICALLY_UNABLE_TO_PERFORM",
+  "NON_FOOTBALL_INJURY",
+  "NON_FOOTBALL_ILLNESS"
+];
+
+if (
+  injury === "OUT" ||
+  unavailableRosterStatuses.includes(rosterStatus)
+) {
+  return false;
+}
 
   const hasStats =
     getPlayerWeeklyStats(player).length > 0;
