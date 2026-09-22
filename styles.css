@@ -1314,3 +1314,104 @@ footer a {
   width: 100%;
   height: auto;
 }
+
+/* DATA DADDY — HEADER AND NAVIGATION */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #090d12;
+  border-bottom: 1px solid #b88a2b;
+}
+
+.site-header .nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.site-brand {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+}
+
+.brand-name {
+  color: #fff;
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.brand-gold {
+  color: #ffca55;
+}
+
+.brand-subtitle {
+  color: #aab4c2;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+
+.main-nav a {
+  color: #e8edf4;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.main-nav a:hover,
+.main-nav a:focus-visible {
+  color: #ffca55;
+}
+
+/* COMPACT BANNER */
+
+.brand-banner {
+  max-height: 340px;
+  overflow: hidden;
+  background: #050709;
+}
+
+.brand-banner img {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+  object-position: center;
+}
+
+@media (max-width: 768px) {
+  .site-header .nav {
+    justify-content: center;
+  }
+
+  .main-nav {
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .main-nav a {
+    font-size: 12px;
+  }
+
+  .brand-banner {
+    max-height: 190px;
+  }
+
+  .brand-banner img {
+    height: 190px;
+  }
+}
