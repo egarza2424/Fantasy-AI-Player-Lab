@@ -2474,6 +2474,60 @@ function exportModelSnapshot() {
       : `Live model snapshot exported: ${snapshot.length} players`
   );
 }
+
+function renderPositionRankings() {
+  const positionSelect = document.getElementById("rankingPosition");
+  const searchInput = document.getElementById("rankingSearch");
+  const tableBody = document.getElementById("rankingTableBody");
+  const weekLabel = document.getElementById("rankingWeek");
+
+  if (!positionSelect || !tableBody) return;
+
+  const position = positionSelect.value;
+  const profile = riskSelect.value;
+  const query = (searchInput?.value || "").trim().toLowerCase();
+
+  if (weekLabel) {
+    weekLabel.textContent = snapshotWeek
+      ? `2026 Week ${snapshotWeek} rankings`
+      : "Live positional rankings";
+  }
+
+  const rankings = getPositionRankings(position, profile)
+    .filter(({ player }) =>
+      player.name.toLowerCase().includes(query)
+    );
+
+  tableBody.innerHTML = "";
+
+  if (rankings.length === 0) {
+    tableBody.innerHTML =
+      '<tr><td colspan="5">No ranked players found.</td></tr>';
+    return;
+  }
+
+  rankings.forEach(({ player, score }) => {
+    const rank = getPlayerPositionRank(player, profile);
+    const matchup = teamNextOpponent[player.team];
+    const opponent = matchup?.opponent || "TBD";
+
+    const row = document.createElement("tr");
+
+    [
+      `${player.position}${rank}`,
+      player.name,
+      opponent,
+      score.toFixed(1),
+      player.injuryStatus || "Available"
+    ].forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+
+    tableBody.appendChild(row);
+  });
+}
 compareButton.addEventListener("click", comparePlayers);
 
 async function initializeApp() {
@@ -2483,8 +2537,21 @@ async function initializeApp() {
   // Load weekly stats separately
   await loadWeeklyStats();
 
-  // Do not auto-run the full positional ranking calculation.
-  // Wait until the user chooses players.
+  // Display rankings after both data sources load.
+  renderPositionRankings();
+
+  // Update rankings when the selected position changes.
+  document
+    .getElementById("rankingPosition")
+    ?.addEventListener("change", renderPositionRankings);
+
+  // Filter rankings as the user searches.
+  document
+    .getElementById("rankingSearch")
+    ?.addEventListener("input", renderPositionRankings);
+
+  // Refresh rankings when risk tolerance changes.
+  riskSelect.addEventListener("change", renderPositionRankings);
 }
 
 initializeApp();
