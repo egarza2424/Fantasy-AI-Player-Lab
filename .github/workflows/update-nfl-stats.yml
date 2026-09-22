@@ -9783,7 +9783,7 @@ jobs:
           # CALCULATE CURRENT FANTASY AI SCORES
           # ---------------------------------------------
 
-           eligible_zero_stat_rookie_ids = {
+          eligible_zero_stat_rookie_ids = {
               player_id
               for player_id, player_context in (
                   current_player_context.items()
@@ -9943,33 +9943,6 @@ jobs:
                   ) and
                   recent_signal.get("score") is not None
               )
-
-              rookie_recent_score = None
-
-              if (
-                  rookie_prior_score is not None and
-                  rookie_prior_weight > 0.0
-              ):
-                  if recent_available:
-                      rookie_recent_score = round(
-                          (
-                              rookie_prior_score *
-                              rookie_prior_weight
-                          ) +
-                          (
-                              recent_signal.get("score") *
-                              (1.0 - rookie_prior_weight)
-                          ),
-                          2
-                      )
-                  else:
-                      rookie_recent_score = round(
-                          rookie_prior_score,
-                          2
-                      )
-
-                  recent_available = True
-
               opportunity_available = (
                   opportunity_signal.get(
                       "available",
@@ -10016,11 +9989,7 @@ jobs:
 
               component_scores = {
                   "recent_performance": {
-                      "score": (
-                          rookie_recent_score
-                          if rookie_recent_score is not None
-                          else recent_signal.get("score")
-                      ),
+                      "score": recent_signal.get("score"),
                       "available": recent_available
                   },
                   "opportunity_volume": {
