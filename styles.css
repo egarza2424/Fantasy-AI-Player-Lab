@@ -1430,3 +1430,32 @@ footer a {
   height: auto;
   object-fit: contain;
 }
+
+/* Ensure homepage links display as full buttons */
+.hero-actions a.primary-btn,
+.hero-actions a.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 800;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.hero-actions a.primary-btn,
+.hero-actions a.primary-btn:visited {
+  background: #f5c451;
+  color: #10151d;
+  border: 1px solid #f5c451;
+}
+
+.hero-actions a.secondary-btn,
+.hero-actions a.secondary-btn:visited {
+  background: #1a2432;
+  color: #f5c451;
+  border: 1px solid #f5c451;
+}
