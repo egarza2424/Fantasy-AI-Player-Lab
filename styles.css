@@ -1418,3 +1418,15 @@ footer a {
     height: 190px;
   }
 }
+/* Display the complete Data Daddy banner */
+.brand-banner {
+  max-height: none;
+  overflow: hidden;
+}
+
+.brand-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
