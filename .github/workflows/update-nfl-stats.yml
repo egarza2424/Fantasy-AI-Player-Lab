@@ -10028,12 +10028,28 @@ jobs:
                   fantasy_ai_result.get("score")
               )
 
+              base_fantasy_ai_available = (
+                  fantasy_ai_result.get(
+                      "available",
+                      False
+                  )
+              )
+
               rookie_prior_applied = (
                   rookie_prior_score is not None and
                   rookie_prior_weight > 0.0
               )
 
-              if rookie_prior_applied:
+              rookie_prior_only = (
+                  rookie_prior_applied and
+                  not base_fantasy_ai_available and
+                  rookie_prior_weight == 1.0
+              )
+
+              if (
+                  rookie_prior_applied and
+                  base_fantasy_ai_available
+              ):
                   adjusted_fantasy_ai_score = round(
                       (
                           base_fantasy_ai_score *
@@ -10054,9 +10070,29 @@ jobs:
                       )
                   )
 
+              elif rookie_prior_only:
+                  fantasy_ai_result["score"] = round(
+                      max(
+                          0.0,
+                          min(
+                              100.0,
+                              float(rookie_prior_score)
+                          )
+                      ),
+                      1
+                  )
+
+                  fantasy_ai_result[
+                      "available"
+                  ] = True
+
               fantasy_ai_result[
                   "base_score"
               ] = base_fantasy_ai_score
+
+              fantasy_ai_result[
+                  "base_available"
+              ] = base_fantasy_ai_available
 
               fantasy_ai_result[
                   "rookie_prior_adjustment"
@@ -10068,6 +10104,7 @@ jobs:
                       )
                   ),
                   "applied": rookie_prior_applied,
+                  "prior_only": rookie_prior_only,
                   "prior_score": rookie_prior_score,
                   "weight": rookie_prior_weight,
                   "nfl_games_with_stats": (
