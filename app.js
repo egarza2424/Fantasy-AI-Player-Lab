@@ -1046,9 +1046,13 @@ function getPlayerVsDefensiveCallerDetails(player) {
       matchingEntry.defensive_play_caller ||
       "Unknown",
 
-    opponent:
-      matchingEntry.opponent ||
-      "Unknown",
+opponent:
+  (
+    teamNextOpponent[player.team] ||
+    teamNextOpponent[
+      player.team === "LAR" ? "LA" : "LAR"
+    ]
+  )?.opponent || "Unknown",
 
     averagePpr:
       matchingEntry.average_ppr,
