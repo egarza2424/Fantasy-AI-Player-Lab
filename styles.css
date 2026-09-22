@@ -2,20 +2,23 @@
   box-sizing: border-box;
 }
 
+
 :root {
-  --bg: #f5f7fb;
-  --surface: #ffffff;
-  --ink: #111827;
-  --muted: #667085;
-  --line: #e4e7ec;
-  --accent: #111827;
-  --good: #087443;
-  --good-bg: #ecfdf3;
-  --warn: #b54708;
-  --warn-bg: #fffaeb;
-  --bad: #b42318;
-  --bad-bg: #fef3f2;
-  --shadow: 0 14px 40px rgba(16, 24, 40, .08);
+  --bg: #0b1017;
+  --surface: #17212f;
+  --ink: #f5f7fb;
+  --muted: #b4c0d0;
+  --line: #344256;
+  --accent: #f5c451;
+
+  --good: #49e2ae;
+  --good-bg: #173d35;
+  --warn: #ffca55;
+  --warn-bg: #44371d;
+  --bad: #ff7285;
+  --bad-bg: #462733;
+
+  --shadow: 0 14px 40px rgba(0, 0, 0, .28);
 }
 
 body {
