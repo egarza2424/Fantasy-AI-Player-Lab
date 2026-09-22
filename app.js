@@ -1768,7 +1768,13 @@ const relevantPlayers = players.filter((player) => {
   if (player.position !== position) {
     return false;
   }
-
+// Week 3 availability override
+if (
+  snapshotWeek === "3" &&
+  player.name === "Josh Jacobs"
+) {
+  return false;
+}  
   const injury = String(player.injuryStatus || "")
     .trim()
     .toUpperCase();
