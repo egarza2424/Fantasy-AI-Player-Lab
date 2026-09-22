@@ -2504,6 +2504,8 @@ function renderPositionRankings() {
       : "Live positional rankings";
   }
 
+  delete rankingCache[`${profile}-${position}`];
+  
   const rankings = getPositionRankings(position, profile)
     .filter(({ player }) =>
       player.name.toLowerCase().includes(query)
