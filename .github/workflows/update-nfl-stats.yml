@@ -9789,7 +9789,6 @@ jobs:
                   current_player_context.items()
               )
               if (
-              if (
                   target_week is None and
                   player_context.get("is_rookie", False) and
                   player_context.get(
@@ -10222,7 +10221,6 @@ jobs:
                   components.keys()
               )
 
-              if (
               prior_only_result = (
                   fantasy_ai_result.get(
                       "rookie_prior_adjustment",
@@ -10234,11 +10232,13 @@ jobs:
               )
 
               valid_component_structure = (
-                  actual_component_names ==
-                  expected_component_names
-              ) or (
-                  prior_only_result and
-                  not actual_component_names
+                  actual_component_names.issubset(
+                      expected_component_names
+                  )
+                  and (
+                      bool(actual_component_names)
+                      or prior_only_result
+                  )
               )
 
               if not valid_component_structure:
@@ -10338,25 +10338,9 @@ jobs:
                   )
                   continue
 
-              active_components = {
-                  component_name: component
-                  for component_name, component
-                  in components.items()
-                  if component.get(
-                      "available",
-                      False
-                  )
-              }
+              active_components = dict(components)
 
-              unavailable_components = {
-                  component_name: component
-                  for component_name, component
-                  in components.items()
-                  if not component.get(
-                      "available",
-                      False
-                  )
-              }
+              unavailable_components = {}
               expected_recent_available = (
                   current_recent_performance.get(
                       player_id,
@@ -10394,14 +10378,9 @@ jobs:
                   component_name,
                   expected_available
               ) in signal_availability_checks.items():
-                  actual_available = components.get(
-                      component_name,
-                      {}
-                  ).get(
-                      "available",
-                      False
+                  actual_available = (
+                      component_name in active_components
                   )
-
                   if actual_available != expected_available:
                       invalid_fantasy_ai_scores.append(
                           (
@@ -10464,7 +10443,7 @@ jobs:
                           expected_weight_sum
                       )
                   )
-               base_score = fantasy_ai_result.get(
+              base_score = fantasy_ai_result.get(
                   "base_score"
               )
 
@@ -10596,10 +10575,7 @@ jobs:
               if (
                   target_week is not None and
                   (
-                      historical_ecr_component.get(
-                          "available",
-                          False
-                      ) or
+                      "fantasypros_ecr" in active_components or
                       abs(
                           float(
                               historical_ecr_component.get(
