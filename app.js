@@ -734,9 +734,9 @@ function calculateRedZoneScore(player) {
       teamGameRedZoneOpportunities;
   });
 
-  if (teamRedZoneOpportunities <= 0) {
-    return 50;
-  }
+if (teamRedZoneOpportunities < 5) {
+  return 50;
+}
 
   const share =
     playerRedZoneOpportunities /
