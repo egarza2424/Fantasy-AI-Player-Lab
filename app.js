@@ -179,6 +179,27 @@ function normalizeName(name) {
 
 const playerWeeklyStatsCache = new Map();
 
+const teamGameStatsCache = new Map();
+
+function getTeamGameRows(season, week, team) {
+  const key = `${season}-${week}-${team}`;
+
+  if (teamGameStatsCache.has(key)) {
+    return teamGameStatsCache.get(key);
+  }
+
+  const rows = weeklyStats.filter(
+    row =>
+      Number(row.season) === season &&
+      row.team === team &&
+      Number(row.week) === week
+  );
+
+  teamGameStatsCache.set(key, rows);
+
+  return rows;
+}
+
 function getPlayerWeeklyStats(player) {
   if (
     !player ||
@@ -442,12 +463,9 @@ function calculateUsageScore(player) {
 
   // Find everyone from the same team
   // in the same season and game.
-  const teamGameRows = weeklyStats.filter(
-    (row) =>
-      Number(row.season) === season &&
-      row.team === team &&
-      Number(row.week) === week
-  );
+ 
+const teamGameRows =
+  getTeamGameRows(season, week, team);
     // WR and TE:
     // Player targets / total team targets.
     if (
