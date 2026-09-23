@@ -1510,3 +1510,15 @@ footer a {
 .results .metric-explanation .confidence-breakdown {
   border-top-color: #43536b;
 }
+/* Data Daddy — force signal explanations to be readable */
+.results .player-result-card .metric-explanation.active {
+  background: #263346 !important;
+  border: 1px solid #43536b !important;
+  color: #f5f7fb !important;
+  opacity: 1 !important;
+}
+
+.results .player-result-card .metric-explanation.active * {
+  color: #f5f7fb !important;
+  opacity: 1 !important;
+}
