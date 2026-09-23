@@ -692,52 +692,46 @@ function calculateRedZoneScore(player) {
     );
   }
 
-  let playerRedZoneOpportunities = 0;
-  let teamRedZoneOpportunities = 0;
 
-  games.forEach((game) => {
-  const season = Number(game.season);
-  const week = Number(game.week);
-  const team = game.team;
+  const validGames = games.filter(
+    game =>
+      Number.isFinite(Number(game.season)) &&
+      Number.isFinite(Number(game.week))
+  );
 
-  if (!season || !team || !week) {
-    return;
+  if (validGames.length === 0) {
+    return 50;
   }
 
-  const playerCarries = Number(
-    game.red_zone_carries || 0
+  const totalOpportunities = validGames.reduce(
+    (total, game) => {
+      if (player.position === "RB") {
+        return total +
+          Number(game.red_zone_carries || 0);
+      }
+
+      return total +
+        Number(game.red_zone_targets || 0);
+    },
+    0
   );
 
-  const playerTargets = Number(
-    game.red_zone_targets || 0
+  const opportunitiesPerGame =
+    totalOpportunities / validGames.length;
+
+  const benchmark =
+    player.position === "RB" ? 4 : 2;
+
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        (opportunitiesPerGame / benchmark) * 100
+      )
+    )
   );
-
-  playerRedZoneOpportunities +=
-    playerCarries + playerTargets;
-
-  const teamGameRows = weeklyStats.filter(
-    (row) =>
-      Number(row.season) === season &&
-      row.team === team &&
-      Number(row.week) === week
-  );
-    const teamGameRedZoneOpportunities =
-      teamGameRows.reduce(
-        (total, row) =>
-          total +
-          Number(row.red_zone_carries || 0) +
-          Number(row.red_zone_targets || 0),
-        0
-      );
-
-    teamRedZoneOpportunities +=
-      teamGameRedZoneOpportunities;
-  });
-
-if (teamRedZoneOpportunities < 5) {
-  return 50;
 }
-
   const share =
     playerRedZoneOpportunities /
     teamRedZoneOpportunities;
