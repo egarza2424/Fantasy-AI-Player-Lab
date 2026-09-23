@@ -964,10 +964,7 @@ function getPlayCallerMatchupDetails(player) {
     return null;
   }
 
-const teamCode =
-  player.team === "LAR"
-    ? "LA"
-    : player.team;
+const teamCode = player.team;
 
 const teamSignal =
   currentPlayCallerSignals[teamCode] ||
