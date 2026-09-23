@@ -176,16 +176,32 @@ function normalizeName(name) {
     .trim();
 }
 
+
+const playerWeeklyStatsCache = new Map();
+
 function getPlayerWeeklyStats(player) {
-  if (!player || !Array.isArray(weeklyStats) || weeklyStats.length === 0) {
+  if (
+    !player ||
+    !Array.isArray(weeklyStats) ||
+    weeklyStats.length === 0
+  ) {
     return [];
   }
 
   const playerName = normalizeName(player.name);
 
+  if (playerWeeklyStatsCache.has(playerName)) {
+    return playerWeeklyStatsCache.get(playerName);
+  }
+
   const matches = weeklyStats.filter((row) => {
-    const fullName = normalizeName(row.player_display_name);
-    const shortName = normalizeName(row.player_name);
+    const fullName = normalizeName(
+      row.player_display_name
+    );
+
+    const shortName = normalizeName(
+      row.player_name
+    );
 
     return (
       fullName === playerName ||
@@ -195,10 +211,10 @@ function getPlayerWeeklyStats(player) {
     );
   });
 
+  playerWeeklyStatsCache.set(playerName, matches);
 
   return matches;
 }
-
 function calculateProductionScore(player) {
   const games = getPlayerWeeklyStats(player);
 
