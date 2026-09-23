@@ -1491,3 +1491,22 @@ footer a {
   );
   border-radius: 999px;
 }
+/* Data Daddy — readable metric explanations */
+.results .metric-explanation {
+  background: #263346;
+  color: #e8edf5;
+  border: 1px solid #43536b;
+}
+
+.results .metric-explanation .metric-explanation-heading strong,
+.results .metric-explanation .metric-explanation-heading span,
+.results .metric-explanation p,
+.results .metric-explanation .confidence-breakdown,
+.results .metric-explanation .confidence-breakdown strong,
+.results .metric-explanation .confidence-breakdown span {
+  color: #f5f7fb !important;
+}
+
+.results .metric-explanation .confidence-breakdown {
+  border-top-color: #43536b;
+}
