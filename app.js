@@ -1710,7 +1710,14 @@ function calculatePlayerRisk(player) {
   return Math.max(0, Math.min(100, Math.round(risk)));
 }
 
+
+const playerMetricsCache = new Map();
+
 function getMetrics(player) {
+  if (playerMetricsCache.has(player.id)) {
+    return playerMetricsCache.get(player.id);
+  }
+
   const production =
     calculateProductionScore(player);
 
@@ -1738,7 +1745,7 @@ function getMetrics(player) {
   const risk =
     calculatePlayerRisk(player);
 
-  return {
+  const metrics = {
     opportunity,
     production,
     usage,
@@ -1749,6 +1756,10 @@ function getMetrics(player) {
     expert,
     risk
   };
+
+  playerMetricsCache.set(player.id, metrics);
+
+  return metrics;
 }
 function calculateScore(player, profile) {
   const metrics = getMetrics(player);
