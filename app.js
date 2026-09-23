@@ -2572,6 +2572,5 @@ async function initializeApp() {
   // Refresh rankings when risk tolerance changes.
   riskSelect.addEventListener("change", renderPositionRankings);
   }
-}
 
 initializeApp();
