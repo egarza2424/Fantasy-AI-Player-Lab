@@ -1009,12 +1009,12 @@ footer a {
 }
 
 .metric-explanation-heading strong {
-  color: #111827;
+  color: #f5f7fb;
   font-size: 13px;
 }
 
 .metric-explanation-heading span {
-  color: #667085;
+  color: #f5f7fb;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -1022,7 +1022,7 @@ footer a {
 
 .metric-explanation p {
   margin: 0;
-  color: #667085;
+  color: #f5f7fb;
 }
 
 .confidence-breakdown {
