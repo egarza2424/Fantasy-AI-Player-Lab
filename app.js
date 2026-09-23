@@ -732,18 +732,6 @@ function calculateRedZoneScore(player) {
     )
   );
 }
-  const share =
-    playerRedZoneOpportunities /
-    teamRedZoneOpportunities;
-
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(share * 100)
-    )
-  );
-}
 function calculateMatchupScore(player) {
   if (
     !player ||
