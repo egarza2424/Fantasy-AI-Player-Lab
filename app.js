@@ -129,6 +129,10 @@ const response = await fetch(
     const data = await response.json();
 
     weeklyStats = data.players || [];
+
+    playerWeeklyStatsCache.clear();
+    teamGameStatsCache.clear();
+    playerMetricsCache.clear();
     defensePositionAllowed =
       data.defense_position_allowed || {};
     teamNextOpponent =
