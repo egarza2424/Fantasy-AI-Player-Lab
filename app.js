@@ -990,9 +990,12 @@ function getPlayCallerMatchupDetails(player) {
   }
 
   return {
-    offensivePlayCaller:
-      teamSignal.offensive_play_caller ||
-      "Unknown",
+offensivePlayCaller:
+  teamSignal.offensive_play_caller ||
+  getPlayerWeeklyStats(player)
+    .find(game => game.offensive_play_caller)
+    ?.offensive_play_caller ||
+  "Unknown",
 
     defensivePlayCaller:
       teamSignal.opponent_defensive_play_caller ||
