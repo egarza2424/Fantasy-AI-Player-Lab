@@ -967,13 +967,14 @@ function getPlayCallerMatchupDetails(player) {
     return null;
   }
 
-  const teamCode =
-    player.team === "LAR"
-      ? "LA"
-      : player.team;
+const teamCode =
+  player.team === "LAR"
+    ? "LA"
+    : player.team;
 
-  const teamSignal =
-    currentPlayCallerSignals[teamCode];
+const teamSignal =
+  currentPlayCallerSignals[teamCode] ||
+  currentPlayCallerSignals[player.team];
 
   if (
     !teamSignal ||
