@@ -2579,12 +2579,12 @@ function renderPositionRankings() {
 compareButton.addEventListener("click", comparePlayers);
 
 async function initializeApp() {
-  // Load players first so search works immediately
-  await loadPlayers();
 
-  // Load weekly stats separately
-  await loadWeeklyStats();
-
+  // Download players and weekly stats simultaneously.
+  await Promise.all([
+    loadPlayers(),
+    loadWeeklyStats()
+  ]);
   // Display rankings after both data sources load.
   renderPositionRankings();
 
