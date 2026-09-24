@@ -1,0 +1,48 @@
+
+name: Backtest Signal 10 (public trench data)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trench-backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pandas pyarrow numpy scipy scikit-learn
+
+      - name: Download public 2025 NFL data
+        run: |
+          curl --fail --location --retry 3 -o play_by_play_2025.parquet \
+            https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2025.parquet
+          curl --fail --location --retry 3 -o schedules.csv \
+            https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv
+
+      - name: Generate pregame metrics and test Signal 10
+        run: |
+          python build_trench_pregame.py --pbp play_by_play_2025.parquet --schedule schedules.csv --output trench_2025_pregame_metrics.csv
+          python test_trench_incremental_2025.py --baseline 2025_defense_walkforward_predictions.csv --metrics trench_2025_pregame_metrics.csv --output-prefix 2025_trench_walkforward
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trench-backtest-2025
+          path: |
+            trench_2025_pregame_metrics.csv
+            2025_trench_walkforward_predictions.csv
+            2025_trench_walkforward_weekly.csv
+          if-no-files-found: warn
