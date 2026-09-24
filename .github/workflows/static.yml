@@ -29,11 +29,39 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+   
+      - name: Version website assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path("index.html")
+          html = path.read_text(encoding="utf-8")
+          version = os.environ["GITHUB_SHA"][:12]
+
+          html = re.sub(
+              r'styles\.css\?v=[^"]+',
+              f'styles.css?v={version}',
+              html
+          )
+
+          html = re.sub(
+              r'app\.js\?v=[^"]+',
+              f'app.js?v={version}',
+              html
+          )
+
+          path.write_text(html, encoding="utf-8")
+          print(f"Website asset version: {version}")
+          PY
+
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
-
+          
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
