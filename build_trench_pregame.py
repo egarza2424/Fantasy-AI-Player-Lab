@@ -56,12 +56,18 @@ def build(pbp,schedule,prior_games=3,publication_lag_hours=48):
     schedule=schedule.copy()
     required={'game_id','season','week','game_type','home_team','away_team','gameday','gametime'}
     if required-set(schedule.columns):raise ValueError(f'Schedule missing {sorted(required-set(schedule.columns))}')
-    schedule=schedule[
+   
+    schedule = schedule[
         (schedule.season == 2025)
         & (schedule.game_type == 'REG')
         & schedule.gameday.notna()
         & schedule.gametime.notna()
-    ].copy()    schedule['kickoff']=schedule.apply(lambda r:kickoff_utc(r.gameday,r.gametime),axis=1)
+    ].copy()
+
+    schedule['kickoff'] = schedule.apply(
+        lambda r: kickoff_utc(r.gameday, r.gametime),
+        axis=1
+    )
     schedule=schedule.sort_values(['kickoff','game_id'])
     counts=aggregate(pbp)
     histories=defaultdict(list);rows=[]
