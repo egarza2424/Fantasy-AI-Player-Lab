@@ -1772,7 +1772,9 @@ function getMetrics(player) {
 
   return metrics;
 }
-
+  playerMetricsCache.set(player.id, metrics);
+  return metrics;
+}
 function getTrenchMatchup(player) {
 
   const matchup = teamNextOpponent[player.team];
