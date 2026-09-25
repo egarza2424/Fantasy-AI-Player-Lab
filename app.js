@@ -1768,8 +1768,13 @@ function getMetrics(player) {
     risk
   };
 
+  playerMetricsCache.set(player.id, metrics);
+
+  return metrics;
+}
 
 function getTrenchMatchup(player) {
+
   const matchup = teamNextOpponent[player.team];
   const opponent = matchup?.opponent;
 
@@ -1816,11 +1821,14 @@ function getTrenchMatchup(player) {
     score: Math.max(0, Math.min(100, score)),
     confidence: record.confidence || "team_metrics_only",
     injuryAdjusted: record.injury_adjusted === true,
+
     opponent: record.defense_team
   };
 }
-  
+
+function calculateScore(player, profile) {
   const metrics = getMetrics(player);
+
   const weights = riskProfiles[profile] || BASE_WEIGHTS;
 
   const score =
