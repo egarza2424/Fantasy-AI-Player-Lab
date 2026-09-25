@@ -28,6 +28,10 @@ jobs:
 
       - name: Install trench data dependencies
         run: python -m pip install pandas pyarrow
+      - name: Verify trench modules
+        run: |
+          python -m py_compile build_trench_pregame.py public_trench_signal.py
+          python -c "from build_trench_pregame import build; from public_trench_signal import compute; print('Trench modules ready')"
 
       - name: Download and convert NFL stats
         run: |
