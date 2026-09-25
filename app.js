@@ -1599,8 +1599,15 @@ async function loadPlayers() {
         players.find((player) => player.name === "Christian Watson")?.id ||
         players[1].id;
 
+      
+      playerCSelect.value =
+        players.find((player) => player.name === "Ja'Marr Chase")?.id ||
+        players[2].id;
+
       const defaultA = getPlayer(playerASelect.value);
       const defaultB = getPlayer(playerBSelect.value);
+      const defaultC = getPlayer(playerCSelect.value);
+
 
       if (defaultA) {
         playerASearch.value =
@@ -1612,6 +1619,10 @@ async function loadPlayers() {
           `${defaultB.name} — ${defaultB.position} — ${defaultB.team}`;
       }
 
+      if (defaultC) {
+        playerCSearch.value =
+          `${defaultC.name} — ${defaultC.position} — ${defaultC.team}`;
+      }
 
     }
   } catch (error) {
@@ -2419,37 +2430,29 @@ function renderPlayerCard(
 } 
 
 function comparePlayers() {
+  
   const playerA = getPlayer(playerASelect.value);
   const playerB = getPlayer(playerBSelect.value);
+  const playerC = getPlayer(playerCSelect.value);
 
-  if (!playerA || !playerB) {
-    return;
+  if (!playerA || !playerB || !playerC) return;
+
   }
+
 
   const profile = riskSelect.value;
 
-const scoreA =
-  calculateScore(playerA, profile);
+  const scoreA = calculateScore(playerA, profile);
+  const scoreB = calculateScore(playerB, profile);
+  const scoreC = calculateScore(playerC, profile);
 
-const scoreB =
-  calculateScore(playerB, profile);
+  const positionRankA = getPlayerPositionRank(playerA, profile);
+  const positionRankB = getPlayerPositionRank(playerB, profile);
+  const positionRankC = getPlayerPositionRank(playerC, profile);
 
-const positionRankA =
-  getPlayerPositionRank(playerA, profile);
-
-const positionRankB =
-  getPlayerPositionRank(playerB, profile);
-
-const recommendationA =
-  getRecommendation(
-    playerA,
-    positionRankA
-  );
-
-const recommendationB =
-  getRecommendation(
-    playerB,
-    positionRankB
+  const recommendationA = getRecommendation(playerA, positionRankA);
+  const recommendationB = getRecommendation(playerB, positionRankB);
+  const recommendationC = getRecommendation(playerC, positionRankC);
   );
 
   const profileName =
@@ -2459,10 +2462,11 @@ const recommendationB =
   <section class="comparison-results">
     <div class="comparison-heading">
       <p class="eyebrow">PLAYER COMPARISON</p>
-      <h2>${playerA.name} vs. ${playerB.name}</h2>
+      <h2>${playerA.name} vs. ${playerB.name} vs. ${playerC.name}</h2>
       <p>${profileName} risk profile</p>
     </div>
 
+    
     <div class="player-results-grid">
       ${renderPlayerCard(
         playerA,
@@ -2477,29 +2481,39 @@ const recommendationB =
         recommendationB,
         positionRankB
       )}
+
+      ${renderPlayerCard(
+        playerC,
+        scoreC,
+        recommendationC,
+        positionRankC
+      )}
     </div>
 
+    
     <div class="verdict-card">
-      <p class="eyebrow">VERDICT</p>
+      <p class="eyebrow">THREE-PLAYER COMPARISON</p>
 
       <h3>
         ${
-          scoreA > scoreB
-            ? `${playerA.name} gets the edge`
-            : scoreB > scoreA
-            ? `${playerB.name} gets the edge`
-            : `This matchup is essentially even`
+          (() => {
+            const topScore = Math.max(scoreA, scoreB, scoreC);
+            const leaders = [
+              [playerA, scoreA],
+              [playerB, scoreB],
+              [playerC, scoreC]
+            ].filter(([, score]) => score === topScore);
+
+            return leaders.length === 1
+              ? `${leaders[0][0].name} has the highest model score`
+              : `${leaders.map(([player]) => player.name).join(" and ")} are tied`;
+          })()
         }
       </h3>
 
       <p>
-        ${
-          scoreA > scoreB
-            ? `${playerA.name} leads by ${(scoreA - scoreB).toFixed(1)} points in the current ${profileName.toLowerCase()} model.`
-            : scoreB > scoreA
-            ? `${playerB.name} leads by ${(scoreB - scoreA).toFixed(1)} points in the current ${profileName.toLowerCase()} model.`
-            : `Both players currently score the same in the ${profileName.toLowerCase()} model.`
-        }
+        Scores reflect the current ${profileName.toLowerCase()}
+        risk profile, including Signal 10 when available.
       </p>
 
       <div class="verdict-scores">
@@ -2511,6 +2525,11 @@ const recommendationB =
         <div>
           <span>${playerB.name}</span>
           <strong>${scoreB}</strong>
+        </div>
+
+        <div>
+          <span>${playerC.name}</span>
+          <strong>${scoreC}</strong>
         </div>
       </div>
     </div>
