@@ -11084,7 +11084,77 @@ jobs:
               f"from the {season_used} season."
           )
           PY
-          
+      - name: Add current trench signals
+        if: ${{ github.event.inputs.target_week == '' || github.event.inputs.target_week == null }}
+        run: |
+          python <<'PY'
+          import csv
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from public_trench_signal import compute, stamp
+
+          output_file = Path("nfl-stats.json")
+          metrics_file = Path("trench_2026_pregame_metrics.csv")
+
+          if not output_file.exists():
+              raise RuntimeError("nfl-stats.json is missing")
+
+          with output_file.open(encoding="utf-8") as f:
+              data = json.load(f)
+
+          signals = {}
+          now = datetime.now(timezone.utc)
+
+          if metrics_file.exists():
+              with metrics_file.open(newline="") as f:
+                  rows = csv.DictReader(f)
+
+                  for row in rows:
+                      team = row["offense_team"]
+                      opponent = row["defense_team"]
+
+                      if team == "LA":
+                          team = "LAR"
+                      if opponent == "LA":
+                          opponent = "LAR"
+
+                      matchup = data.get(
+                          "team_next_opponent", {}
+                      ).get(team, {})
+
+                      if matchup.get("opponent") != opponent:
+                          continue
+
+                      if int(row["week"]) != int(
+                          matchup.get("week", -1)
+                      ):
+                          continue
+
+                      if not (
+                          stamp(row["metric_published_utc"])
+                          <= now
+                          < stamp(row["kickoff_utc"])
+                      ):
+                          continue
+
+                      result = compute(row)
+
+                      if result["available"]:
+                          result["offense_team"] = team
+                          result["defense_team"] = opponent
+                          signals[team] = result
+
+          data["current_trench_signals"] = signals
+
+          with output_file.open("w", encoding="utf-8") as f:
+              json.dump(data, f, indent=2)
+
+          print(
+              f"Added {len(signals)} current "
+              "pregame trench signals."
+          )
+          PY          
       - name: Commit updated stats
         run: |
           git config user.name "github-actions[bot]"
