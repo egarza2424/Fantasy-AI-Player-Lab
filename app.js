@@ -110,8 +110,11 @@ const compareButton = document.getElementById("compareBtn");
 const resultsContainer = document.getElementById("result");
 const playerASearch = document.getElementById("playerASearch");
 const playerBSearch = document.getElementById("playerBSearch");
+const playerCSearch = document.getElementById("playerCSearch");
 const playerAResults = document.getElementById("playerAResults");
 const playerBResults = document.getElementById("playerBResults");
+const playerCResults = document.getElementById("playerCResults");
+const playerCSelect = document.getElementById("playerC");
 const urlParams = new URLSearchParams(window.location.search);
 const snapshotWeek = urlParams.get("snapshotWeek");
 
