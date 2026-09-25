@@ -1689,3 +1689,24 @@ footer a {
     white-space: nowrap;
   }
 }
+
+/* DATA DADDY — SHOW COMPLETE BANNER ON MOBILE */
+
+@media (max-width: 768px) {
+  .brand-banner {
+    width: 100%;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  .brand-banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
+    object-position: center;
+  }
+}
+
