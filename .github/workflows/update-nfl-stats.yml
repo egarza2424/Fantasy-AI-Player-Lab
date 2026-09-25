@@ -97,7 +97,20 @@ jobs:
                   .size()
                   .to_string()
               )
+              schedule_teams = set(
+                  schedule.loc[
+                      schedule["season"] == 2026,
+                      ["home_team", "away_team"]
+                  ].stack().dropna().astype(str)
+              )
+              pbp_teams = set(
+                  pbp["posteam"].dropna().astype(str)
+              )
 
+              print("Schedule teams missing from PBP:",
+                    sorted(schedule_teams - pbp_teams))
+              print("PBP teams missing from schedule:",
+                    sorted(pbp_teams - schedule_teams))
               print("Building pregame trench metrics...")
               rows = build(pbp, schedule)
 
