@@ -85,9 +85,30 @@ jobs:
                         and c["offense_rushes"] > 0
                     ))
 
-              print("Building pregame trench metrics...")
-              rows = build(pbp, schedule)
+          matched = schedule[
+              schedule["game_id"].astype(str).isin(
+                  pbp["game_id"].dropna().astype(str)
+              )
+          ]
 
+          print("Matched games by week:")
+          print(
+              matched.groupby(["season", "week"])
+              .size()
+              .to_string()
+          )
+
+          print("Building pregame trench metrics...")
+          rows = build(pbp, schedule)
+
+          if rows:
+              pd.DataFrame(rows).to_csv(
+                  "trench_2026_pregame_metrics.csv",
+                  index=False
+              )
+              print(f"Generated {len(rows)} pregame matchup records.")
+          else:
+              print("No eligible pregame trench data yet.")
               if rows:
                   pd.DataFrame(rows).to_csv(
                       "trench_2026_pregame_metrics.csv",
