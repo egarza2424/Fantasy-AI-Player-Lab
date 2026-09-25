@@ -1852,26 +1852,48 @@ function isPlayerMatchupCompleted(player) {
     normalize(row.team) === normalize(player.team)
   );
 }
+
 function calculateScore(player, profile) {
   const metrics = getMetrics(player);
-
   const weights = riskProfiles[profile] || BASE_WEIGHTS;
+  const trench = getTrenchMatchup(player);
 
-  const score =
-  metrics.opportunity * weights.opportunity +
-  metrics.production * weights.production +
-  metrics.usage * weights.usage +
-  metrics.playCallerMatchup *
+  const trenchWeight = 0.07;
+  const originalWeightScale = 1 - trenchWeight;
+
+  const baseScore =
+    metrics.opportunity * weights.opportunity +
+    metrics.production * weights.production +
+    metrics.usage * weights.usage +
+    metrics.playCallerMatchup * weights.playCallerMatchup +
+    metrics.playerVsDefensiveCaller * weights.playerVsDefensiveCaller +
+    metrics.redzone * weights.redzone +
+    metrics.matchup * weights.matchup +
+    metrics.expert * weights.expert +
+    (100 - metrics.risk) * weights.risk;
+
+  const originalWeightTotal =
+    weights.opportunity +
+    weights.production +
+    weights.usage +
     weights.playCallerMatchup +
-  metrics.playerVsDefensiveCaller *
     weights.playerVsDefensiveCaller +
-  metrics.redzone * weights.redzone +
-  metrics.matchup * weights.matchup +
-  metrics.expert * weights.expert +
-  (100 - metrics.risk) * weights.risk;
+    weights.redzone +
+    weights.matchup +
+    weights.expert +
+    weights.risk;
+
+  const normalizedBaseScore =
+    baseScore / originalWeightTotal;
+
+  const score = trench
+    ? normalizedBaseScore * originalWeightScale +
+      trench.score * trenchWeight
+    : normalizedBaseScore;
 
   return Number(score.toFixed(1));
 }
+
 const rankingCache = {};
 
 function getPositionRankings(position, profile) {
