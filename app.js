@@ -1635,11 +1635,11 @@ async function loadPlayers() {
       </div>
     `;
   }
+
 }
 
-clearRankingCaches();
-
 async function refreshPlayerInjuries() {
+
   try {
     const positions = ["QB", "RB", "WR", "TE"];
 
