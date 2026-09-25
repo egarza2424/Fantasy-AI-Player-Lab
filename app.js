@@ -97,6 +97,8 @@ let weeklyStats = [];
 let defensePositionAllowed = {};
 let teamNextOpponent = {};
 let currentPlayCallerSignals = {};
+let currentTrenchSignals = {};
+let trenchSignalWeek = null;
 let currentPlayerVsDefensiveCaller = {};
 const playerASelect = document.getElementById("playerA");
 const playerBSelect = document.getElementById("playerB");
@@ -137,12 +139,17 @@ const response = await fetch(
       data.defense_position_allowed || {};
     teamNextOpponent =
       data.team_next_opponent || {};
+ 
     currentPlayCallerSignals =
       data.current_play_caller_signals || {};
+    currentTrenchSignals =
+      data.current_trench_signals || {};
+    trenchSignalWeek =
+      data.target_week || null;
 
     currentPlayerVsDefensiveCaller =
       data.current_player_vs_defensive_caller || {};
-
+  
   console.log(
   `NFL stats loaded: ${data.season}, ${weeklyStats.length} rows`
 );
@@ -1761,11 +1768,58 @@ function getMetrics(player) {
     risk
   };
 
-  playerMetricsCache.set(player.id, metrics);
 
-  return metrics;
+function getTrenchMatchup(player) {
+  const matchup = teamNextOpponent[player.team];
+  const opponent = matchup?.opponent;
+
+  if (!opponent) return null;
+
+  const normalize = team =>
+    team === "LAR" ? "LA" : team;
+
+  const record =
+    currentTrenchSignals[player.team] ||
+    currentTrenchSignals[normalize(player.team)];
+
+  if (
+    !record ||
+    normalize(record.defense_team) !== normalize(opponent) ||
+    record.available !== true
+  ) {
+    return null;
+  }
+
+  if (
+    trenchSignalWeek !== null &&
+    snapshotWeek &&
+    Number(trenchSignalWeek) !== Number(snapshotWeek)
+  ) {
+    return null;
+  }
+
+  const pass = Number(record.pass_score);
+  const run = Number(record.run_score);
+
+  if (![pass, run].every(Number.isFinite)) {
+    return null;
+  }
+
+  const score =
+    player.position === "RB"
+      ? run
+      : player.position === "TE"
+        ? (pass + run) / 2
+        : pass;
+
+  return {
+    score: Math.max(0, Math.min(100, score)),
+    confidence: record.confidence || "team_metrics_only",
+    injuryAdjusted: record.injury_adjusted === true,
+    opponent: record.defense_team
+  };
 }
-function calculateScore(player, profile) {
+  
   const metrics = getMetrics(player);
   const weights = riskProfiles[profile] || BASE_WEIGHTS;
 
@@ -2162,10 +2216,13 @@ function renderPlayerCard(
   getModelConfidenceBreakdown(player);
   const playCallerDetails =
   getPlayCallerMatchupDetails(player);
+ 
   const playerVsCallerDetails =
   getPlayerVsDefensiveCallerDetails(player);
+  const trench = getTrenchMatchup(player);
 
   return `
+
     <article class="player-result-card">
       <div class="player-result-top">
         <div>
@@ -2254,6 +2311,35 @@ function renderPlayerCard(
           confidenceBreakdown
         )}
         ${metricRow("Risk Adjustment", riskAdjustment, true)}
+
+        <div class="metric-row trench-signal">
+          <div class="metric-label-row">
+            <span class="metric-name">
+              Signal 10 · Trench Matchup
+            </span>
+            <strong>
+              ${trench
+                ? trench.score.toFixed(1) + "/100"
+                : "Data unavailable"}
+            </strong>
+          </div>
+          ${trench
+            ? `<div class="metric-track">
+                 <div class="metric-fill"
+                   style="width:${trench.score}%">
+                 </div>
+               </div>`
+            : ""}
+          <p class="trench-note">
+            ${trench
+              ? `Offensive line vs. ${trench.opponent} defensive front.
+                 ${trench.injuryAdjusted
+                   ? "Pregame OL availability adjusted."
+                   : "Team-level matchup only; OL injury adjustment unavailable."}`
+              : "No verified pregame trench matchup data for this opponent."}
+            Experimental context; 0% model weight.
+          </p>
+        </div>
       </div>
     </article>
   `;
