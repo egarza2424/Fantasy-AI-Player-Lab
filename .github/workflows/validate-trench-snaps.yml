@@ -1,0 +1,52 @@
+name: Validate Signal 10 depth charts against 2025 snaps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-snaps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: python -m pip install 'pandas>=2,<3'
+      - name: Test snap validator
+        run: python test_validate_2025_trench_snaps.py
+      - name: Download public 2025 depth charts schedules and snap counts
+        run: |
+          curl --fail --location --retry 3 -o depth_charts_2025.csv \
+            https://github.com/nflverse/nflverse-data/releases/download/depth_charts/depth_charts_2025.csv
+          curl --fail --location --retry 3 -o schedules.csv \
+            https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv
+          curl --fail --location --retry 3 -o snap_counts_2025.csv \
+            https://github.com/nflverse/nflverse-data/releases/download/snap_counts/snap_counts_2025.csv
+      - name: Reproduce pregame candidate records
+        run: |
+          python audit_2025_trench_lineups.py \
+            --depth depth_charts_2025.csv \
+            --schedule schedules.csv \
+            --output-prefix trench_lineup_audit_2025
+      - name: Validate depth-chart candidates against game snaps
+        run: |
+          python validate_2025_trench_snaps.py \
+            --candidates trench_lineup_audit_2025_candidates.csv \
+            --snaps snap_counts_2025.csv \
+            --output-prefix trench_snap_validation_2025
+      - name: Upload validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: signal10-snap-validation-2025
+          path: |
+            trench_snap_validation_2025_*.csv
+            trench_lineup_audit_2025_coverage.csv
+          if-no-files-found: warn
