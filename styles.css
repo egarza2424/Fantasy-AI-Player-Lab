@@ -1556,3 +1556,85 @@ footer a {
   line-height: 1.5;
 }
   
+
+/* DATA DADDY — THREE-PLAYER COMPARISON LAYOUT */
+
+/* Give the comparison section more room */
+.container:has(#compare) {
+  width: min(1600px, calc(100% - 32px));
+  max-width: none;
+}
+
+/* Arrange all three player searches on one row */
+#compare.controls {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr) 32px
+    minmax(0, 1fr) 32px
+    minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+}
+
+#compare .player-search-control {
+  min-width: 0;
+}
+
+#compare .vs {
+  align-self: end;
+  padding-bottom: 12px;
+}
+
+#compare .control:has(#riskTolerance) {
+  grid-column: 1 / 3;
+}
+
+#compare #compareBtn {
+  grid-column: 3 / 6;
+  width: 100%;
+  color: #111827;
+}
+
+/* Display three comparison cards side by side */
+.results .player-results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.results .player-result-card {
+  min-width: 0;
+}
+
+/* Match the three-player verdict layout */
+.results .verdict-scores {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .results .player-results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  #compare.controls {
+    grid-template-columns: 1fr;
+  }
+
+  #compare .vs {
+    display: none;
+  }
+
+  #compare .control:has(#riskTolerance),
+  #compare #compareBtn {
+    grid-column: 1;
+  }
+
+  .results .player-results-grid,
+  .results .verdict-scores {
+    grid-template-columns: 1fr;
+  }
+}
