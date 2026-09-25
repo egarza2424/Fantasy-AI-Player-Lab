@@ -11154,7 +11154,8 @@ jobs:
               f"Added {len(signals)} current "
               "pregame trench signals."
           )
-          PY          
+          PY
+          
       - name: Commit updated stats
         run: |
           git config user.name "github-actions[bot]"
