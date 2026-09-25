@@ -1768,14 +1768,14 @@ function getMetrics(player) {
     risk
   };
 
+ 
   playerMetricsCache.set(player.id, metrics);
 
   return metrics;
 }
-  playerMetricsCache.set(player.id, metrics);
-  return metrics;
-}
+
 function getTrenchMatchup(player) {
+
 
   const matchup = teamNextOpponent[player.team];
   const opponent = matchup?.opponent;
