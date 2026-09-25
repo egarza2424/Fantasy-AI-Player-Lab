@@ -63,6 +63,17 @@ jobs:
               print("Downloading NFL schedules...")
               schedule = pd.read_csv(schedule_url)
 
+              print("Checking trench data coverage...")
+              print("PBP games:", pbp["game_id"].nunique())
+              print("Schedule 2026 regular-season games:",
+                    len(schedule[
+                        (schedule["season"] == 2026)
+                        & (schedule["game_type"] == "REG")
+                    ]))
+              print("Matching game IDs:",
+                    len(set(pbp["game_id"].dropna().astype(str))
+                        & set(schedule["game_id"].dropna().astype(str))))
+
               print("Building pregame trench metrics...")
               rows = build(pbp, schedule)
 
