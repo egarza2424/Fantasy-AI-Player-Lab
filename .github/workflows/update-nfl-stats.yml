@@ -11122,6 +11122,17 @@ jobs:
                       matchup = data.get(
                           "team_next_opponent", {}
                       ).get(team, {})
+                      if team in ("GB", "ATL"):
+                          print(
+                              "TRENCH DEBUG:",
+                              team,
+                              "CSV opponent:", opponent,
+                              "CSV week:", row["week"],
+                              "Expected matchup:", matchup,
+                              "Published:", row["metric_published_utc"],
+                              "Kickoff:", row["kickoff_utc"],
+                              "Current time:", now.isoformat()
+                          )
 
                       if matchup.get("opponent") != opponent:
                           continue
