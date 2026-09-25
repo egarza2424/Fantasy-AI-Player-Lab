@@ -1585,9 +1585,10 @@ async function loadPlayers() {
     });
 
     populatePlayerSelectors();
-
+    
     setupPlayerSearch(playerASearch, playerAResults, playerASelect);
     setupPlayerSearch(playerBSearch, playerBResults, playerBSelect);
+    setupPlayerSearch(playerCSearch, playerCResults, playerCSelect);
 
     if (players.length >= 2) {
       playerASelect.value =
