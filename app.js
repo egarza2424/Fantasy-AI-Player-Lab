@@ -1626,9 +1626,11 @@ async function loadPlayers() {
   }
 }
 
+
 function populatePlayerSelectors() {
   playerASelect.innerHTML = "";
   playerBSelect.innerHTML = "";
+  playerCSelect.innerHTML = "";
 
   players.forEach((player) => {
     const label = `${player.name} — ${player.position} — ${player.team}`;
@@ -1641,15 +1643,22 @@ function populatePlayerSelectors() {
     optionB.value = player.id;
     optionB.textContent = label;
 
+    const optionC = document.createElement("option");
+    optionC.value = player.id;
+    optionC.textContent = label;
+
     playerASelect.appendChild(optionA);
     playerBSelect.appendChild(optionB);
+    playerCSelect.appendChild(optionC);
   });
 
-  if (players.length > 1) {
+  if (players.length > 2) {
     playerASelect.value = players[0].id;
     playerBSelect.value = players[1].id;
+    playerCSelect.value = players[2].id;
   }
 }
+
 
 function getPlayer(id) {
   return players.find((player) => player.id === id);
