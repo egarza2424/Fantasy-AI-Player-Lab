@@ -32,7 +32,53 @@ jobs:
         run: |
           python -m py_compile build_trench_pregame.py public_trench_signal.py
           python -c "from build_trench_pregame import build; from public_trench_signal import compute; print('Trench modules ready')"
+      - name: Build 2026 pregame trench data
+        run: |
+          python <<'PY'
+          import urllib.request
+          import pandas as pd
+          from build_trench_pregame import build
 
+          pbp_url = (
+              "https://github.com/nflverse/nflverse-data/"
+              "releases/download/pbp/play_by_play_2026.csv.gz"
+          )
+          schedule_url = (
+              "https://raw.githubusercontent.com/"
+              "nflverse/nfldata/master/data/games.csv"
+          )
+
+          try:
+              print("Downloading 2026 play-by-play data...")
+              pbp = pd.read_csv(
+                  pbp_url,
+                  compression="gzip",
+                  usecols=[
+                      "game_id", "posteam", "defteam",
+                      "play_type", "sack", "qb_hit", "success"
+                  ],
+                  low_memory=False
+              )
+
+              print("Downloading NFL schedules...")
+              schedule = pd.read_csv(schedule_url)
+
+              print("Building pregame trench metrics...")
+              rows = build(pbp, schedule)
+
+              if rows:
+                  pd.DataFrame(rows).to_csv(
+                      "trench_2026_pregame_metrics.csv",
+                      index=False
+                  )
+                  print(f"Generated {len(rows)} pregame matchup records.")
+              else:
+                  print("No eligible pregame trench data yet.")
+
+          except Exception as error:
+              print(f"Trench data unavailable: {error}")
+              print("Continuing without Signal 10 data.")
+          PY
       - name: Download and convert NFL stats
         run: |
           python <<'PY'
