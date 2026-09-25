@@ -74,6 +74,17 @@ jobs:
                     len(set(pbp["game_id"].dropna().astype(str))
                         & set(schedule["game_id"].dropna().astype(str))))
 
+              from build_trench_pregame import aggregate
+
+              counts = aggregate(pbp)
+              print("Team-game records:", len(counts))
+              print("Records with pass and rush data:",
+                    sum(
+                        1 for c in counts.values()
+                        if c["offense_pass_plays"] > 0
+                        and c["offense_rushes"] > 0
+                    ))
+
               print("Building pregame trench metrics...")
               rows = build(pbp, schedule)
 
