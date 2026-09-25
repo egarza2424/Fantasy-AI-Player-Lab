@@ -1,14 +1,17 @@
+
 const BASE_WEIGHTS = {
-  opportunity: 0.18,
-  production: 0.22,
-  usage: 0.15,
-  playCallerMatchup: 0.07,
-  playerVsDefensiveCaller: 0.07,
-  redzone: 0.10,
-  matchup: 0.10,
-  expert: 0.06,
-  risk: 0.05
+  opportunity: 0.1674,
+  production: 0.2046,
+  usage: 0.1395,
+  playCallerMatchup: 0.0651,
+  playerVsDefensiveCaller: 0.0651,
+  redzone: 0.093,
+  matchup: 0.093,
+  expert: 0.0558,
+  risk: 0.0465,
+  trench: 0.07
 };
+
 
 const riskProfiles = {
   conservative: {
@@ -1827,7 +1830,28 @@ function getTrenchMatchup(player) {
     opponent: record.defense_team
   };
 }
+function isPlayerMatchupCompleted(player) {
+  if (!player || !player.team) {
+    return false;
+  }
 
+  const normalize = team =>
+    team === "LAR" ? "LA" : team;
+
+  const matchup =
+    teamNextOpponent[player.team] ||
+    teamNextOpponent[normalize(player.team)];
+
+  if (!matchup || !matchup.week) {
+    return false;
+  }
+
+  return weeklyStats.some(row =>
+    Number(row.season) === 2026 &&
+    Number(row.week) === Number(matchup.week) &&
+    normalize(row.team) === normalize(player.team)
+  );
+}
 function calculateScore(player, profile) {
   const metrics = getMetrics(player);
 
@@ -2230,7 +2254,7 @@ function renderPlayerCard(
   const playerVsCallerDetails =
   getPlayerVsDefensiveCallerDetails(player);
   const trench = getTrenchMatchup(player);
-
+  const gameCompleted = isPlayerMatchupCompleted(player);
   return `
 
     <article class="player-result-card">
@@ -2328,9 +2352,11 @@ function renderPlayerCard(
               Signal 10 · Trench Matchup
             </span>
             <strong>
-              ${trench
+                ${trench
                 ? trench.score.toFixed(1) + "/100"
-                : "Data unavailable"}
+                : gameCompleted
+                  ? "Game completed"
+                  : "Data unavailable"}
             </strong>
           </div>
           ${trench
@@ -2346,7 +2372,9 @@ function renderPlayerCard(
                  ${trench.injuryAdjusted
                    ? "Pregame OL availability adjusted."
                    : "Team-level matchup only; OL injury adjustment unavailable."}`
-              : "No verified pregame trench matchup data for this opponent."}
+              : gameCompleted
+                ? "This matchup has recorded game statistics; the pregame trench signal is no longer applicable."
+                : "No verified pregame trench matchup data for this opponent."}
             Experimental context; 0% model weight.
           </p>
         </div>
