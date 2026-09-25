@@ -42,55 +42,55 @@ const riskProfiles = {
 };
 const metricDescriptions = {
   Opportunity: {
-    weight: "18%",
+    weight: "16.74%",
     description:
       "Measures how often a player has the chance to produce compared with others at the same position. QB: pass attempts + carries. RB: carries + targets. WR/TE: targets + carries."
   },
 
   "Recent Production": {
-  weight: "22%",
+  weight: "20.46%",
   description:
     "Measures average PPR fantasy production over the player's four most recent games compared with other players at the same position. The highest-scoring player at each position receives 100, with all other players scored proportionally."
 },
   
   Usage: {
-    weight: "15%",
+    weight: "13.95%",
     description:
       "Measures how heavily a player is involved in the offense. WR/TE uses team target share, RB uses team rushing-attempt share, and QB uses passing + rushing attempts."
   },
 
   Matchup: {
-    weight: "10%",
+    weight: "9.30%",
     description:
       "Evaluates the player's next opponent using PPR fantasy points that defense allowed to the player's position last season. Easier matchups receive higher scores."
   },
 
   "Red-Zone Usage": {
-    weight: "10%",
+    weight: "9.30%",
     description:
       "Measures involvement inside the opponent's 20-yard line. QB uses red-zone pass attempts + carries. RB/WR/TE use their share of team red-zone carries + targets."
   },
 
   "Model Confidence": {
-    weight: "6%",
+    weight: "5.58%",
     description:
       "Measures how dependable the player's projection appears based on recent production consistency, opportunity stability, usage stability and availability."
   },
   
   "Play Caller Matchup": {
-    weight: "7%",
+    weight: "6.51%",
     description:
       "Measures how the player's current offensive play caller has historically produced at this position against the upcoming opponent's defensive play caller. Uses up to the four most recent applicable meetings. No direct history receives a neutral score of 50."
   },
   
   "Player vs Defensive Play Caller": {
-    weight: "7%",
+    weight: "6.51%",
     description:
       "Measures how this individual player has historically performed in PPR scoring against defenses called by the upcoming opponent's current defensive play caller. Uses up to the four most recent applicable games. No direct history receives a neutral score of 50."
 },  
   
   "Risk Adjustment": {
-    weight: "5%",
+    weight: "4.65%",
     description:
       "Measures player reliability using injury status, practice participation, roster status, depth-chart role, experience and age. A higher score means lower risk."
   }
@@ -2397,7 +2397,7 @@ function renderPlayerCard(
               : gameCompleted
                 ? "This matchup has recorded game statistics; the pregame trench signal is no longer applicable."
                 : "No verified pregame trench matchup data for this opponent."}
-            Experimental context; 0% model weight.
+            Experimental team-level signal; 7% model weight when available.
           </p>
         </div>
       </div>
