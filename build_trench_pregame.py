@@ -58,12 +58,11 @@ def build(pbp,schedule,prior_games=3,publication_lag_hours=48):
     if required-set(schedule.columns):raise ValueError(f'Schedule missing {sorted(required-set(schedule.columns))}')
    
     schedule = schedule[
-        (schedule.season == 2025)
+        (schedule.season == 2026)
         & (schedule.game_type == 'REG')
         & schedule.gameday.notna()
         & schedule.gametime.notna()
     ].copy()
-
     schedule['kickoff'] = schedule.apply(
         lambda r: kickoff_utc(r.gameday, r.gametime),
         axis=1
