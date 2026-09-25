@@ -1637,6 +1637,64 @@ async function loadPlayers() {
   }
 }
 
+clearRankingCaches();
+
+async function refreshPlayerInjuries() {
+  try {
+    const positions = ["QB", "RB", "WR", "TE"];
+
+    const responses = await Promise.all(
+      positions.map(async (position) => {
+        const response = await fetch(
+          `https://api.sleeper.app/v1/players/nfl?position=${position}&active=true`,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Injury refresh failed: ${position}`);
+        }
+
+        return response.json();
+      })
+    );
+
+    const updates = new Map();
+
+    responses.forEach((playerMap) => {
+      Object.values(playerMap).forEach((player) => {
+        if (player.player_id) {
+          updates.set(String(player.player_id), player);
+        }
+      });
+    });
+
+    players.forEach((player) => {
+      const latest = updates.get(String(player.id));
+      if (!latest) return;
+
+      player.status = latest.status || "Unknown";
+      player.injuryStatus = latest.injury_status || null;
+      player.practiceParticipation =
+        latest.practice_participation || null;
+      player.depthChartPosition =
+        latest.depth_chart_position ?? null;
+      player.depthChartOrder =
+        latest.depth_chart_order ?? null;
+    });
+
+    clearRankingCaches();
+    renderPositionRankings();
+
+    if (resultsContainer.querySelector(".comparison-results")) {
+      comparePlayers();
+    }
+
+    console.log("Player injury statuses refreshed.");
+  } catch (error) {
+    console.error("Injury refresh failed:", error);
+  }
+}
+
 
 function populatePlayerSelectors() {
   playerASelect.innerHTML = "";
@@ -1918,7 +1976,16 @@ function calculateScore(player, profile) {
   return Number(score.toFixed(1));
 }
 
+
 const rankingCache = {};
+
+function clearRankingCaches() {
+  Object.keys(rankingCache).forEach((key) => {
+    delete rankingCache[key];
+  });
+
+  playerMetricsCache.clear();
+}
 
 function getPositionRankings(position, profile) {
   const cacheKey = `${profile}-${position}`;
@@ -2460,7 +2527,9 @@ function comparePlayers() {
   <section class="comparison-results">
     <div class="comparison-heading">
       <p class="eyebrow">PLAYER COMPARISON</p>
-      <h2>${playerA.name} vs. ${playerB.name} vs. ${playerC.name}</h2>
+      
+      <h2>3-Player Comparison</h2>
+      <p>${playerA.name} vs. ${playerB.name} vs. ${playerC.name}</p>
       <p>${profileName} risk profile</p>
     </div>
 
@@ -2774,8 +2843,13 @@ async function initializeApp() {
     .getElementById("rankingSearch")
     ?.addEventListener("input", renderPositionRankings);
 
+  
   // Refresh rankings when risk tolerance changes.
   riskSelect.addEventListener("change", renderPositionRankings);
-  }
+
+  // Refresh injury designations every five minutes.
+  setInterval(refreshPlayerInjuries, 5 * 60 * 1000);
+}
 
 initializeApp();
+
