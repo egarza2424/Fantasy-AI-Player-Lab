@@ -2437,7 +2437,6 @@ function comparePlayers() {
 
   if (!playerA || !playerB || !playerC) return;
 
-  }
 
 
   const profile = riskSelect.value;
@@ -2453,7 +2452,6 @@ function comparePlayers() {
   const recommendationA = getRecommendation(playerA, positionRankA);
   const recommendationB = getRecommendation(playerB, positionRankB);
   const recommendationC = getRecommendation(playerC, positionRankC);
-  );
 
   const profileName =
     profile.charAt(0).toUpperCase() + profile.slice(1);
