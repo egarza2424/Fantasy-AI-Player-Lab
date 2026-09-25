@@ -111,6 +111,22 @@ jobs:
                     sorted(schedule_teams - pbp_teams))
               print("PBP teams missing from schedule:",
                     sorted(pbp_teams - schedule_teams))
+              schedule_2026 = schedule[
+                  (schedule["season"] == 2026)
+                  & (schedule["game_type"] == "REG")
+              ]
+
+              print("2026 games with dates:",
+                    schedule_2026["gameday"].notna().sum())
+              print("2026 games with kickoff times:",
+                    schedule_2026["gametime"].notna().sum())
+              print("Week 3 kickoff details:")
+              print(
+                  schedule_2026.loc[
+                      schedule_2026["week"] == 3,
+                      ["game_id", "gameday", "gametime"]
+                  ].head(3).to_string(index=False)
+              )                    
               print("Building pregame trench metrics...")
               rows = build(pbp, schedule)
 
