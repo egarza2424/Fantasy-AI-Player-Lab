@@ -11149,6 +11149,14 @@ jobs:
 
           with output_file.open("w", encoding="utf-8") as f:
               json.dump(data, f, indent=2)
+          print("Teams with trench signals:", sorted(signals))
+          print(
+              "Upcoming teams without trench signals:",
+              sorted(
+                  set(data.get("team_next_opponent", {}))
+                  - set(signals)
+              )
+          )
 
           print(
               f"Added {len(signals)} current "
