@@ -1520,3 +1520,23 @@ footer a {
   color: #f5f7fb !important;
   opacity: 1 !important;
 }
+
+/* Signal 10 — experimental trench matchup */
+.results .trench-signal {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #43536b;
+}
+
+.results .trench-signal .metric-name,
+.results .trench-signal strong {
+  color: #f5f7fb;
+}
+
+.results .trench-note {
+  margin: 10px 0 0;
+  color: #b9c8da;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+  
