@@ -1975,7 +1975,7 @@ function calculateScore(player, profile) {
 
   return Number(score.toFixed(1));
 }
-
+const injuryOpportunityCache = new Map();
 
 const rankingCache = {};
 
@@ -1985,6 +1985,82 @@ function clearRankingCaches() {
   });
 
   playerMetricsCache.clear();
+  injuryOpportunityCache.clear();
+}
+
+function calculateInjuryOpportunityBoost(player) {
+  if (!player || !player.team) return 0;
+
+  if (injuryOpportunityCache.has(player.id)) {
+    return injuryOpportunityCache.get(player.id);
+  }
+
+  const teammatesOut = players.filter((teammate) =>
+    teammate.team === player.team &&
+    teammate.id !== player.id &&
+    String(teammate.injuryStatus || "")
+      .trim()
+      .toUpperCase() === "OUT"
+  );
+
+  let boost = 0;
+
+  teammatesOut.forEach((absentPlayer) => {
+    const recentGames = getPlayerWeeklyStats(absentPlayer)
+      .sort((a, b) =>
+        Number(b.season) - Number(a.season) ||
+        Number(b.week) - Number(a.week)
+      )
+      .slice(0, 4);
+
+    if (recentGames.length === 0) return;
+
+    const averageOpportunities =
+      recentGames.reduce((total, game) => {
+        if (absentPlayer.position === "QB") {
+          return total +
+            Number(game.attempts || 0) +
+            Number(game.carries || 0);
+        }
+
+        return total +
+          Number(game.targets || 0) +
+          Number(game.carries || 0);
+      }, 0) / recentGames.length;
+
+    const significantRole =
+      averageOpportunities >= 8 ||
+      absentPlayer.depthChartOrder === 1;
+
+    if (!significantRole) return;
+
+    if (
+      absentPlayer.position === "RB" &&
+      player.position === "RB"
+    ) {
+      boost += player.depthChartOrder === 2 ? 6 : 3;
+    }
+
+    if (
+      ["WR", "TE"].includes(absentPlayer.position) &&
+      ["WR", "TE"].includes(player.position)
+    ) {
+      boost += 3;
+    }
+
+    if (
+      absentPlayer.position === "RB" &&
+      ["WR", "TE"].includes(player.position)
+    ) {
+      boost += 1;
+    }
+  });
+
+  boost = Math.min(8, boost);
+
+  injuryOpportunityCache.set(player.id, boost);
+
+  return boost;
 }
 
 function getPositionRankings(position, profile) {
