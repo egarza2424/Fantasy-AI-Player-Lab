@@ -2474,6 +2474,11 @@ function renderPlayerCard(
   getPlayerVsDefensiveCallerDetails(player);
   const trench = getTrenchMatchup(player);
   const gameCompleted = isPlayerMatchupCompleted(player);
+  
+  const injuryBoost = snapshotWeek
+    ? 0
+    : calculateInjuryOpportunityBoost(player);
+
   return `
 
     <article class="player-result-card">
@@ -2526,9 +2531,25 @@ function renderPlayerCard(
         ${score}<span>/100</span>
       </div>
 
+
+      ${injuryBoost > 0 && !["OUT", "IR", "PUP"].includes(
+        String(player.injuryStatus || "").toUpperCase()
+      ) ? `
+        <div class="injury-opportunity-boost">
+          <strong>Injury Opportunity Boost</strong>
+          <span>+${injuryBoost} model points</span>
+          <p>
+            Potential additional opportunities due to
+            an unavailable teammate.
+            Experimental adjustment.
+          </p>
+        </div>
+      ` : ""}
+
       <div class="why-section">
         <h4>Why this player?</h4>
-        <ul>
+
+      <ul>
           ${topSignals.map(([label, value]) => `
             <li>
               <strong>${label}</strong> ${value}/100
