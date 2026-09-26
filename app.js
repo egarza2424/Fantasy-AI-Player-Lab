@@ -1968,13 +1968,43 @@ function calculateScore(player, profile) {
   const normalizedBaseScore =
     baseScore / originalWeightTotal;
 
+ 
   const score = trench
     ? normalizedBaseScore * originalWeightScale +
       trench.score * trenchWeight
     : normalizedBaseScore;
 
-  return Number(score.toFixed(1));
+  const injury = String(player.injuryStatus || "")
+    .trim()
+    .toUpperCase();
+
+  const rosterStatus = String(player.status || "")
+    .trim()
+    .toUpperCase();
+
+  const isUnavailable =
+    ["OUT", "IR", "INJURED_RESERVE", "PUP"].includes(injury) ||
+    [
+      "INACTIVE",
+      "INJURED_RESERVE",
+      "IR",
+      "SUSPENDED",
+      "PUP"
+    ].includes(rosterStatus);
+
+  const injuryBoost =
+    !snapshotWeek && !isUnavailable
+      ? calculateInjuryOpportunityBoost(player)
+      : 0;
+
+  const adjustedScore = Math.min(
+    100,
+    score + injuryBoost
+  );
+
+  return Number(adjustedScore.toFixed(1));
 }
+
 const injuryOpportunityCache = new Map();
 
 const rankingCache = {};
